@@ -1,0 +1,190 @@
+/*
+ * Copyright (C) 2022 jhonessales
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package tests;
+
+import br.com.jhondbs.core.db.DBAPI;
+import br.com.jhondbs.core.db.base.Entidade;
+import br.com.jhondbs.core.db.filter.ItemFilter;
+import br.com.jhondbs.core.db.filter.StringFilter;
+import br.com.jhondbs.core.db.io.IO;
+import java.io.File;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import tests.objects.EnteTeste;
+
+/**
+ * Testa as funções da API do banco de dados.
+ * @author jhonessales
+ */
+public class DBAPITest {
+    
+    public void testStringIgual(){
+        String cmd = "ti nome Jhones";
+        StringFilter f = new StringFilter("nome", "Jhones");
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringContem(){
+        String cmd = "tp nome Jhones";
+        StringFilter f = new StringFilter(StringFilter.POSSUI, "nome", "Jhones");
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringComeca(){
+        String cmd = "tc nome Jhones";
+        StringFilter f = new StringFilter(StringFilter.COMECA, "nome", "Jhones");
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringTermina(){
+        String cmd = "tt nome Jhones";
+        StringFilter f = new StringFilter(StringFilter.TERMINA, "nome", "Jhones");
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringComecalIgnoreCase(){
+        String cmd = "tci nome JHONES";
+        StringFilter f = new StringFilter(StringFilter.COMECA, "nome", "Jhones", true);
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringTerminaIgnoreCase(){
+        String cmd = "tti nome JHONES";
+        StringFilter f = new StringFilter(StringFilter.TERMINA, "nome", "Jhones", true);
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringPossuiIgnoreCase(){
+        String cmd = "tpi nome JHONES";
+        StringFilter f = new StringFilter(StringFilter.POSSUI, "nome", "Jhones", true);
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringIgualIgnoreCase(){
+        String cmd = "tii nome JHONES";
+        StringFilter f = new StringFilter(StringFilter.IGUAL, "nome", "Jhones", true);
+        assert DBAPI.toString(f).equals(cmd);
+    }
+    
+    public void testStringIgualInverse(){
+        try {
+            String cmd = "ti nome Jhones";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringContemInverse(){
+        try {
+            String cmd = "tp nome Jhones";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringComecaInverse(){
+        try {
+            String cmd = "tc nome Jhones";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringTerminaInverse(){
+        try {
+            String cmd = "tt nome Jhones";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringComecalIgnoreCaseInverse(){
+        try {
+            String cmd = "tci nome JHONES";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringTerminaIgnoreCaseInverse(){
+        try {
+            String cmd = "tti nome JHONES";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringPossuiIgnoreCaseInverse(){
+        try {
+            String cmd = "tpi nome JHONES";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testStringIgualIgnoreCaseInverse(){
+        try {
+            String cmd = "tii nome JHONES";
+            ItemFilter f = DBAPI.toFilter(cmd);
+            assert DBAPI.toString(f).equals(cmd);
+        } catch (Exception ex) {
+            assert false;
+        }
+    }
+    
+    public void testLoadAllByCMD(){
+        try {
+            File db = new File("db");
+            IO.deleteDiretorio(db);
+            
+            EnteTeste a = new EnteTeste(27, "Jhones", true);
+            EnteTeste b = new EnteTeste(53, "Carla", true);
+            EnteTeste c = new EnteTeste(30, "Maria", false);
+            
+            a.save();
+            b.save();
+            c.save();
+            
+            /**
+             * Recupera uma lista de todos os objetos do tipo EnteTeste salvos no
+             * banco de dados, filtrados para somente os que o nome contém a letra
+             * 'a'.
+             */
+            List<Entidade> byf = DBAPI.getByFilter("EnteTeste tpi nome a");
+            assert byf.size() == 2;
+        } catch (Exception ex) {
+            Logger.getLogger(DBAPITest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
+    }
+    
+}
