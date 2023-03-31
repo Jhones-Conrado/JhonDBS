@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.jhondbs.core.db.filter.ItemFilter;
+import java.util.Arrays;
 
 /**
  * Responsável por transformar uma classe em uma entidade com funções de CRUD.
@@ -182,6 +183,42 @@ public interface Entidade extends Serializable, Cloneable{
             }
         }
         return false;
+    }
+    
+    /**
+     * Busca nos campos da entidade se encontra algum campo com mesmo nome passado
+     * como parâmetro do método, retornando o seu valor na forma de um Object.
+     * @param campo Nome do parâmetro a ser buscado.
+     * @return Objeto do campo solicitado.
+     * @throws IllegalArgumentException.
+     * @throws IllegalAccessException Caso, por algum motivo, não tenha sido obtido acesso
+     * ao valor da variável.
+     */
+    default <T> T getValueFrom(String campo) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException{
+        Field field = null;
+        Class clazz = this.getClass();
+        
+        while(field == null && clazz != Object.class){
+            
+            List<Field> list = Arrays.asList(clazz.getDeclaredFields());
+            
+            for(Field f : list){
+                if(f.getName().endsWith(campo)){
+                    Object cast = clazz.cast(this);
+                    if(cast != null){
+                        try {
+                            f.setAccessible(true);
+                            return (T) f.get(cast);
+                        } catch (IllegalArgumentException | IllegalAccessException illegalArgumentException) {
+                        }
+                    }
+                }
+            }
+            clazz = clazz.getSuperclass();
+            
+        }
+        
+        return null;
     }
     
 }

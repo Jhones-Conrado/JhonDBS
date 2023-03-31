@@ -16,7 +16,6 @@
  */
 package br.com.jhondbs.core.db.base;
 
-import br.com.jhondbs.core.db.errors.AttributeNotFind;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.List;
@@ -63,24 +62,40 @@ public class FieldsManager {
     /**
      * Busca nos campos da entidade se encontra algum campo com mesmo nome passado
      * como parâmetro do método, retornando o seu valor na forma de um Object.
+     * @param <T>
      * @param campo Nome do parâmetro a ser buscado.
      * @param e Entidade a ter o valor do seu parâmetro extraído.
      * @return Objeto do campo solicitado.
+     * @throws java.lang.NoSuchFieldException
      * @throws IllegalArgumentException.
      * @throws IllegalAccessException Caso, por algum motivo, não tenha sido obtido acesso
      * ao valor da variável.
-     * @throws br.com.jhondbs.core.db.errors.AttributeNotFind 
      */
     public static <T> T getValueFrom(String campo, Object e) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException{
-        Field field = e.getClass().getField(campo);
-        Class clazz = e.getClass().getSuperclass();
-        while(field == null && clazz != Object.class){
-            clazz.getField(campo);
-            clazz = clazz.getSuperclass();
+        if(e instanceof Entidade){
+            Entidade ee = Entidade.class.cast(e);
+            return ee.getValueFrom(campo);
+        } else {
+            Field field = null;
+            Class clazz = e.getClass();
+
+            while(field == null && clazz != Object.class){
+
+                List<Field> list = Arrays.asList(clazz.getDeclaredFields());
+
+                for(Field f : list){
+                    if(f.getName().endsWith(campo)){
+                        Object cast = clazz.cast(e);
+                        if(cast != null){
+                            f.setAccessible(true);
+                            return (T) f.get(cast);
+                        }
+                    }
+                }
+                clazz = clazz.getSuperclass();
+            }
         }
-        field.setAccessible(true);
-        Object cast = clazz.cast(e);
-        return (T) field.get(cast);
+        return null;
     }
     
     /**
