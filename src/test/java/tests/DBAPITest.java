@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.junit.Test;
 import tests.objects.EnteTeste;
 
 /**
@@ -33,54 +34,66 @@ import tests.objects.EnteTeste;
  */
 public class DBAPITest {
     
+    @Test
     public void testStringIgual(){
+        System.out.println("String Igual");
         String cmd = "ti nome Jhones";
         StringFilter f = new StringFilter("nome", "Jhones");
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringContem(){
+        System.out.println("String Contém");
         String cmd = "tp nome Jhones";
         StringFilter f = new StringFilter(StringFilter.POSSUI, "nome", "Jhones");
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringComeca(){
+        System.out.println("String Começa");
         String cmd = "tc nome Jhones";
         StringFilter f = new StringFilter(StringFilter.COMECA, "nome", "Jhones");
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringTermina(){
         String cmd = "tt nome Jhones";
         StringFilter f = new StringFilter(StringFilter.TERMINA, "nome", "Jhones");
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringComecalIgnoreCase(){
         String cmd = "tci nome JHONES";
         StringFilter f = new StringFilter(StringFilter.COMECA, "nome", "Jhones", true);
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringTerminaIgnoreCase(){
         String cmd = "tti nome JHONES";
         StringFilter f = new StringFilter(StringFilter.TERMINA, "nome", "Jhones", true);
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringPossuiIgnoreCase(){
         String cmd = "tpi nome JHONES";
         StringFilter f = new StringFilter(StringFilter.POSSUI, "nome", "Jhones", true);
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringIgualIgnoreCase(){
         String cmd = "tii nome JHONES";
         StringFilter f = new StringFilter(StringFilter.IGUAL, "nome", "Jhones", true);
         assert DBAPI.toString(f).equals(cmd);
     }
     
+    @Test
     public void testStringIgualInverse(){
         try {
             String cmd = "ti nome Jhones";
@@ -91,6 +104,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringContemInverse(){
         try {
             String cmd = "tp nome Jhones";
@@ -101,6 +115,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringComecaInverse(){
         try {
             String cmd = "tc nome Jhones";
@@ -111,6 +126,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringTerminaInverse(){
         try {
             String cmd = "tt nome Jhones";
@@ -121,6 +137,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringComecalIgnoreCaseInverse(){
         try {
             String cmd = "tci nome JHONES";
@@ -131,6 +148,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringTerminaIgnoreCaseInverse(){
         try {
             String cmd = "tti nome JHONES";
@@ -141,6 +159,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringPossuiIgnoreCaseInverse(){
         try {
             String cmd = "tpi nome JHONES";
@@ -151,6 +170,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testStringIgualIgnoreCaseInverse(){
         try {
             String cmd = "tii nome JHONES";
@@ -161,6 +181,7 @@ public class DBAPITest {
         }
     }
     
+    @Test
     public void testLoadAllByCMD(){
         try {
             File db = new File("db");

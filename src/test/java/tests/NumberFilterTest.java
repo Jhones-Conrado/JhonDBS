@@ -18,6 +18,7 @@ package tests;
 
 import tests.objects.EnteTeste;
 import br.com.jhondbs.core.db.filter.NumberFilter;
+import org.junit.Test;
 
 /**
  * Testes dos filtros de números.
@@ -25,28 +26,48 @@ import br.com.jhondbs.core.db.filter.NumberFilter;
  */
 public class NumberFilterTest {
     
+    /**
+     * Testa o filtro de igualdade entre dois valores.
+     */
+    @Test
     public void testNumberEquals(){
+        System.out.println("NumberEquals");
         EnteTeste e = new EnteTeste();
         e.idade = 18;
         NumberFilter f = new NumberFilter("idade", NumberFilter.IGUAL, 18d);
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro de "menor" entre dois números.
+     */
+    @Test
     public void testNumberSmaller(){
+        System.out.println("NumberSmaller");
         EnteTeste e = new EnteTeste();
         e.idade = 15;
         NumberFilter f = new NumberFilter("idade", NumberFilter.MENOR, 18d);
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro de "maior" entre dois números.
+     */
+    @Test
     public void testNumberBigger(){
+        System.out.println("NumberBigger");
         EnteTeste e = new EnteTeste();
         e.idade = 25;
         NumberFilter f = new NumberFilter("idade", NumberFilter.MAIOR, 18d);
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro de "entre dois valores".
+     */
+    @Test
     public void testNumberBetween(){
+        System.out.println("NumberBetween");
         EnteTeste e = new EnteTeste();
         e.idade = 18;
         NumberFilter f = new NumberFilter("idade", 15, 30d);

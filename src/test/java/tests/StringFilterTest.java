@@ -17,6 +17,7 @@
 package tests;
 
 import br.com.jhondbs.core.db.filter.StringFilter;
+import org.junit.Test;
 import tests.objects.EnteTeste;
 
 /**
@@ -25,6 +26,10 @@ import tests.objects.EnteTeste;
  */
 public class StringFilterTest {
     
+    /**
+     * Testa o filtro que verifica se uma String possui um trecho específico.
+     */
+    @Test
     public void testContains(){
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
@@ -32,6 +37,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String começa com um valor.
+     */
+    @Test
     public void testStarts(){
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
@@ -39,6 +48,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String termina com um valor.
+     */
+    @Test
     public void testEnds(){
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
@@ -46,6 +59,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String é igual a outra.
+     */
+    @Test
     public void testEquals(){
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
@@ -53,6 +70,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String contém um trecho, ignorando maiúsculas e minúsculas.
+     */
+    @Test
     public void testContainsIgnoreCase(){
         EnteTeste e = new EnteTeste();
         e.nome = "JHones Conrado";
@@ -60,6 +81,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String começa com um valor, ignorando maiúsculas e minúsculas.
+     */
+    @Test
     public void testStartsIgnoreCase(){
         EnteTeste e = new EnteTeste();
         e.nome = "JhOnes Conrado";
@@ -67,6 +92,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String termina com um valor, ignorando maiúsculas e minúsculas.
+     */
+    @Test
     public void testEndsIgnoreCase(){
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones ConradO";
@@ -74,6 +103,10 @@ public class StringFilterTest {
         assert f.filtrar(e);
     }
     
+    /**
+     * Testa o filtro que verifica se uma String é igual a outra, ignorando maiúsculas e minúsculas.
+     */
+    @Test
     public void testEqualsIgnoreCase(){
         EnteTeste e = new EnteTeste();
         e.nome = "JhONes CoNrAdo";

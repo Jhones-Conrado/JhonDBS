@@ -72,6 +72,11 @@ public class FieldsManager {
      * ao valor da variável.
      */
     public static <T> T getValueFrom(String campo, Object e) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException{
+        /*
+        * Essa parte foi preciso ser inclusa, pois estava dando erro na hora de obter
+        * o valor de campos privados de alguns objetos.
+        * Ainda assim, é apenas uma medida paleativa.
+        */
         if(e instanceof Entidade){
             Entidade ee = Entidade.class.cast(e);
             return ee.getValueFrom(campo);

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="8" failures="0" name="tests.StringFilterTest" time="0.005" errors="0" skipped="0">
+<testsuite tests="8" failures="0" name="tests.StringFilterTest" time="0" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="java.vm.version" value="17.0.2+8-86"/>
@@ -56,12 +56,12 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.endian" value="little"/>
   </properties>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testContains" time="0.001"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testStarts" time="0"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testEnds" time="0"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testEquals" time="0"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testContainsIgnoreCase" time="0.004"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testStartsIgnoreCase" time="0"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testEndsIgnoreCase" time="0"/>
-  <testcase classname="tests.StringFilterTest" name="tests.StringFilterTest.testEqualsIgnoreCase" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testContainsIgnoreCase" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testStartsIgnoreCase" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testEnds" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testEqualsIgnoreCase" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testEndsIgnoreCase" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testContains" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testEquals" time="0"/>
+  <testcase classname="tests.StringFilterTest" name="testStarts" time="0"/>
 </testsuite>

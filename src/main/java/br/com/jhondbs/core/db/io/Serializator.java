@@ -64,7 +64,44 @@ public class Serializator {
                 if (jsonMap.containsKey(field.getName())) {
                     try {
                         field.setAccessible(true);
-                        field.set(object, jsonMap.get(field.getName()));
+                        if(field.getType() == Short.TYPE){
+                            System.out.println("Short TYPE");
+                            Object getx = jsonMap.get(field.getName());
+                            String of = String.valueOf(getx);
+                            if(of.contains(".")){
+                                of = of.substring(0, of.indexOf("."));
+                            }
+                            short get = Short.parseShort(of);
+                            field.set(object, get);
+                        } else if(field.getType() == Integer.TYPE){
+                            System.out.println("Integer TYPE");
+                            Object getx = jsonMap.get(field.getName());
+                            String of = String.valueOf(getx);
+                            if(of.contains(".")){
+                                of = of.substring(0, of.indexOf("."));
+                            }
+                            int get = Integer.parseInt(of);
+                            field.set(object, get);
+                        } else if(field.getType() == Long.TYPE){
+                            System.out.println("Long TYPE");
+                            Object getx = jsonMap.get(field.getName());
+                            String of = String.valueOf(getx);
+                            if(of.contains(".")){
+                                of = of.substring(0, of.indexOf("."));
+                            }
+                            long get = Long.parseLong(of);
+                            field.set(object, get);
+                        } else if(field.getType() == Float.TYPE){
+                            System.out.println("Float TYPE");
+                            Object getx = jsonMap.get(field.getName());
+                            String of = String.valueOf(getx);
+                            float get = Float.parseFloat(of);
+                            field.set(object, get);
+                        } else if(field.getType() == Double.TYPE){
+                            System.out.println("Double TYPE");
+                            Double get = (Double) jsonMap.get(field.getName());
+                            field.set(object, get);
+                        }
                     } catch (IllegalAccessException e) {
                         throw new RuntimeException("Error deserializing object: " + e.getMessage(), e);
                     }
