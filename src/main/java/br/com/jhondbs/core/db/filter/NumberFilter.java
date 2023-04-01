@@ -17,8 +17,6 @@
 package br.com.jhondbs.core.db.filter;
 
 import br.com.jhondbs.core.db.base.Entidade;
-import br.com.jhondbs.core.db.base.FieldsManager;
-import br.com.jhondbs.core.db.errors.AttributeNotFind;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -108,29 +106,71 @@ public class NumberFilter implements ItemFilter{
     @Override
     public boolean filtrar(Entidade e) {
         try {
-            double valor = Double.parseDouble(String.valueOf(FieldsManager.getValueFrom(field, e)));
-            switch (this.method) {
-                case ENTRE:
-                    return valor >= init && valor <= end;
-                    // Verifica se é menor que o valor definido.
-                case MENOR:
-                    return valor < init;
-                    // Verifica se é maior que o valor definido.
-                case MAIOR:
-                    return valor > init;
-                    // Verifica se é igual ao valor definido.
-                case IGUAL:
-                    return valor == init;
-                default:
-                    return false;
+            
+            double valor = 0d;
+            Object from = e.getValueFrom(field);
+            
+            try {
+                valor = (Short) from;
+                System.out.println("Short");
+                return test(valor);
+            } catch (Exception ex) {
+                try {
+                    valor = (Integer) from;
+                    System.out.println("Integer");
+                    return test(valor);
+                } catch (Exception ex2) {
+                    try {
+                        valor = (Long) from;
+                        System.out.println("Long");
+                        return test(valor);
+                    } catch (Exception ex3) {
+                        try {
+                            valor = (Float) from;
+                            System.out.println("Float");
+                            return test(valor);
+                        } catch (Exception ex4) {
+                            try {
+                                valor = (Double) from;
+                                System.out.println("Double");
+                                return test(valor);
+                            } catch (Exception ex5) {
+                                try {
+                                    String val = (String) from;
+                                    valor = Double.parseDouble((String) val);
+                                    System.out.println("String");
+                                    return test(valor);
+                                } catch (Exception ex6) {
+                                    System.out.println("Erro parsing number field.");
+                                }
+                            }
+                        }
+                    }
+                }
             }
             
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-//            Logger.getLogger(NumberFilter.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchFieldException ex) {
+        } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException ex) {
             Logger.getLogger(NumberFilter.class.getName()).log(Level.SEVERE, null, ex);
         }
         return false;
+    }
+    
+    private boolean test(double value){
+        switch (this.method) {
+                case ENTRE:
+                    return value >= init && value <= end;
+                    // Verifica se é menor que o valor definido.
+                case MENOR:
+                    return value < init;
+                    // Verifica se é maior que o valor definido.
+                case MAIOR:
+                    return value > init;
+                    // Verifica se é igual ao valor definido.
+                case IGUAL:
+                    return value == init;
+                default:
+                    return false;
+            }
     }
     
     /**

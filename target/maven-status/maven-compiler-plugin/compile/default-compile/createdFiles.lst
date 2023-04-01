@@ -10,7 +10,6 @@ br/com/jhondbs/core/db/base/Entidade.class
 br/com/jhondbs/core/db/base/padrao/DefaultEntity.class
 br/com/jhondbs/core/db/DBAPI.class
 br/com/jhondbs/core/servidor/Conexão.class
-com/jhondbs/IOBase.class
 br/com/jhondbs/core/db/UniqueAnalyser.class
 br/com/jhondbs/core/db/filter/ItemFilter.class
 br/com/jhondbs/core/servidor/errors/InvalidHash.class

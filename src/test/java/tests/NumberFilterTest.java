@@ -28,28 +28,28 @@ public class NumberFilterTest {
     public void testNumberEquals(){
         EnteTeste e = new EnteTeste();
         e.idade = 18;
-        NumberFilter f = new NumberFilter("idade", NumberFilter.IGUAL, 18);
+        NumberFilter f = new NumberFilter("idade", NumberFilter.IGUAL, 18d);
         assert f.filtrar(e);
     }
     
     public void testNumberSmaller(){
         EnteTeste e = new EnteTeste();
         e.idade = 15;
-        NumberFilter f = new NumberFilter("idade", NumberFilter.MENOR, 18);
+        NumberFilter f = new NumberFilter("idade", NumberFilter.MENOR, 18d);
         assert f.filtrar(e);
     }
     
     public void testNumberBigger(){
         EnteTeste e = new EnteTeste();
         e.idade = 25;
-        NumberFilter f = new NumberFilter("idade", NumberFilter.MAIOR, 18);
+        NumberFilter f = new NumberFilter("idade", NumberFilter.MAIOR, 18d);
         assert f.filtrar(e);
     }
     
     public void testNumberBetween(){
         EnteTeste e = new EnteTeste();
         e.idade = 18;
-        NumberFilter f = new NumberFilter("idade", 15, 30);
+        NumberFilter f = new NumberFilter("idade", 15, 30d);
         assert f.filtrar(e);
     }
     
