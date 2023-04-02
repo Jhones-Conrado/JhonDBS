@@ -20,10 +20,9 @@ package tests.objects;
  *
  * @author jhonessales
  */
-public class ObjTesteExtendido extends ObjTeste{
+public abstract class Abstrato {
     
-    private double altura = 1.72;
-    private float grito = 15.3f;
-    public boolean bonito = true;
+    public abstract void print();
+    public abstract String getName();
     
 }

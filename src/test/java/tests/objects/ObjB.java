@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 jhonessales
+ * Copyright (C) 2023 jhonessales
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,25 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tests;
-
-import br.com.jhondbs.core.db.filter.BooleanFilter;
-import org.junit.Test;
-import tests.objects.EnteTeste;
+package tests.objects;
 
 /**
- * Testa a classe de filtragem booleana.
+ *
  * @author jhonessales
  */
-public class BooleanFilterTest {
+public class ObjB extends Abstrato{
+
+    @Override
+    public void print() {
+        System.out.println("Objeto B");
+    }
     
-    @Test
-    public void testBooleanFilter(){
-        System.out.println("Boolean Filter");
-        EnteTeste e = new EnteTeste();
-        e.rico = true;
-        BooleanFilter f = new BooleanFilter("rico", true);
-        assert f.filtrar(e);
+    @Override
+    public String getName(){
+        return "b";
     }
     
 }

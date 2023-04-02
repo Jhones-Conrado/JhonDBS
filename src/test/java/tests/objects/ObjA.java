@@ -20,10 +20,18 @@ package tests.objects;
  *
  * @author jhonessales
  */
-public class ObjTesteExtendido extends ObjTeste{
+public class ObjA extends Abstrato{
     
-    private double altura = 1.72;
-    private float grito = 15.3f;
-    public boolean bonito = true;
+    public String grupo = "Grupo certo";
+    
+    @Override
+    public void print() {
+        System.out.println("Objeto A: "+grupo);
+    }
+    
+    @Override
+    public String getName(){
+        return "a";
+    }
     
 }

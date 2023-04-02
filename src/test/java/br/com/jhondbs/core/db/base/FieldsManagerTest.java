@@ -14,9 +14,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tests;
+package br.com.jhondbs.core.db.base;
 
-import br.com.jhondbs.core.db.base.FieldsManager;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import junit.framework.Assert;

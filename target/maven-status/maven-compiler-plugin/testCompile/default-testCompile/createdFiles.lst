@@ -1,5 +1,1 @@
-tests/StringFilterTest.class
-tests/BooleanFilterTest.class
 tests/objects/EnteTeste.class
-tests/DBAPITest.class
-tests/NumberFilterTest.class

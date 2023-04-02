@@ -20,10 +20,8 @@ package tests.objects;
  *
  * @author jhonessales
  */
-public class ObjTesteExtendido extends ObjTeste{
+public class ObjMantemAbstrato extends ObjTesteExtendido {
     
-    private double altura = 1.72;
-    private float grito = 15.3f;
-    public boolean bonito = true;
+    public Abstrato item;
     
 }

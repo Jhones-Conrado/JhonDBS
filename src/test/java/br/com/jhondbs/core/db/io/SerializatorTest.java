@@ -23,7 +23,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
+import tests.objects.ObjA;
+import tests.objects.ObjB;
+import tests.objects.ObjMantemAbstrato;
 import tests.objects.ObjTesteExtendido;
 
 /**
@@ -58,24 +60,59 @@ public class SerializatorTest {
     public void testSerialize() {
         System.out.println("serialize");
         ObjTesteExtendido obj = new ObjTesteExtendido();
-        String result = Serializator.serialize(obj);
-        System.out.println(result);
         try {
-            Object d = Serializator.deserialize(result);
-            System.out.println(d.getClass());
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
-            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            Serializator.serialize(obj);
+            assert true;
+        } catch (IllegalAccessException | IllegalArgumentException e) {
+            assert false;
         }
-        assert true;
     }
 
     /**
      * Test of deserialize method, of class Serializator.
      */
     @Test
-    public void testDeserialize() throws Exception {
+    public void testDeserialize() {
         System.out.println("deserialize");
-        assert true;
+        ObjTesteExtendido obj = new ObjTesteExtendido();
+        try {
+            Object d = Serializator.deserialize(Serializator.serialize(obj));
+            assert d != null;
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
+    }
+    
+    @Test
+    public void testDeserializeAbstract(){
+        System.out.println("deserialize abstract");
+        
+        ObjMantemAbstrato oba = new ObjMantemAbstrato();
+        oba.item = new ObjA();
+        
+        ObjMantemAbstrato obb = new ObjMantemAbstrato();
+        obb.item = new ObjB();
+        
+        try {
+            Object da = Serializator.deserialize(Serializator.serialize(oba));
+            Object db = Serializator.deserialize(Serializator.serialize(obb));
+            
+            ObjMantemAbstrato castA = ObjMantemAbstrato.class.cast(da);
+            ObjMantemAbstrato castB = ObjMantemAbstrato.class.cast(db);
+            
+            if(castA.item.getName().equals("a") &&
+                    castB.item.getName().equals("b") &&
+                    castA.bonito == true &&
+                    castB.bonito == true){
+                assert true;
+            } else {
+                assert false;
+            }
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
+            assert false;
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
 }

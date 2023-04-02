@@ -31,7 +31,7 @@
     <property name="java.class.version" value="61.0"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="os.version" value="6.2.7-200.fc37.x86_64"/>
+    <property name="os.version" value="6.2.8-200.fc37.x86_64"/>
     <property name="library.jansi.path" value="/app/netbeans/java/maven/lib/jansi-native"/>
     <property name="user.home" value="/home/jhonessales"/>
     <property name="user.timezone" value="America/Fortaleza"/>

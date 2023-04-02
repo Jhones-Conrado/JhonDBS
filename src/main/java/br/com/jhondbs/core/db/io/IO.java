@@ -52,8 +52,9 @@ public class IO {
      * @throws DuplicatedUniqueField Caso algum campo unico da entidade tenha um
      * valor já usado por outra entidade previamente salva.
      * @throws br.com.jhondbs.core.db.errors.EntIdBadImplementation
+     * @throws java.lang.IllegalAccessException
      */
-    public static boolean save(Entidade e) throws DuplicatedUniqueField, EntIdBadImplementation{
+    public static boolean save(Entidade e) throws DuplicatedUniqueField, EntIdBadImplementation, IllegalArgumentException, IllegalAccessException{
         Keys.gerarId(e);
         if(new UniqueAnalyser().analise(e)){ //Precisa passar no teste de campos únicos.
             File pasta = new File("db/"+e.getClass().getName().replaceAll("[.]", "/"));
@@ -64,7 +65,8 @@ public class IO {
                 File entidadeNova = new File(pasta.getPath()+"/"+String.valueOf(e.getEnteId()));
                 
                 //Converte o objeto em JSON e salva.
-                String json = g.toJson(e);
+                String json = Serializator.serialize(e);
+//                String json = g.toJson(e);
                 try (BufferedWriter w = Files.newBufferedWriter(entidadeNova.toPath(), StandardCharsets.UTF_8)) {
                     w.write(json);
                     w.flush();
@@ -96,8 +98,9 @@ public class IO {
                 try (BufferedReader r = Files.newBufferedReader(Paths.get(file.getPath()))) {
                     json = r.readLine();
                 }
-                return g.fromJson(json, e.getClass());
-            } catch (IOException ex) {
+                return Serializator.deserialize(json);
+//                return g.fromJson(json, e.getClass());
+            } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
                 Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
             }
             
