@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="2" failures="0" name="br.com.jhondbs.core.db.io.IOTest" time="0.07" errors="0" skipped="0">
+<testsuite tests="2" failures="0" name="br.com.jhondbs.core.db.io.IOTest" time="0.147" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="java.vm.version" value="17.0.2+8-86"/>
@@ -56,6 +56,6 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.endian" value="little"/>
   </properties>
-  <testcase classname="br.com.jhondbs.core.db.io.IOTest" name="testLoad" time="0.066"/>
-  <testcase classname="br.com.jhondbs.core.db.io.IOTest" name="testSave" time="0.004"/>
+  <testcase classname="br.com.jhondbs.core.db.io.IOTest" name="testLoad" time="0.142"/>
+  <testcase classname="br.com.jhondbs.core.db.io.IOTest" name="testSave" time="0.005"/>
 </testsuite>

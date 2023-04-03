@@ -16,6 +16,9 @@
  */
 package br.com.jhondbs.core.db.io;
 
+import br.com.jhondbs.core.db.base.Entidade;
+import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
+import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import com.google.gson.Gson;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -41,11 +44,25 @@ public class Serializator {
         Map<String, Object> mapObj = new LinkedHashMap<>();
         Map<String, Object> map = new LinkedHashMap<>();
         
+        Object ins = null;
+        
         for(Field field : getAllFields(object.getClass())){
             if(isPrimitive(field)){
                 map.put(field.getName(), toMap(field, object));
             } else {
-                map.put(field.getName(), serialize(field.get(object)));
+                try {
+                    ins = field.getType().newInstance();
+                    if(ins instanceof Entidade){
+                        Entidade get = (Entidade) field.get(object);
+                        get.save();
+                        map.put(field.getName(), get.getEnteId());
+                    } else {
+                        map.put(field.getName(), serialize(field.get(object)));
+                    }
+                } catch (InstantiationException | DuplicatedUniqueField | EntIdBadImplementation ex) {
+//                    Logger.getLogger(Serializator.class.getName()).log(Level.SEVERE, null, ex);
+                    map.put(field.getName(), serialize(field.get(object)));
+                }
             }
         }
         
@@ -102,7 +119,20 @@ public class Serializator {
                 }
                 
             } else {
-                field.set(instance, deserialize((String) inner.get(field.getName())));
+                
+                try {
+                    Object ins = field.getType().newInstance();
+                    if(ins instanceof Entidade){
+                        Entidade e = (Entidade) ins;
+                        String get = String.valueOf(inner.get(field.getName()));
+                        long id = Long.parseLong(get.substring(0, get.indexOf(".")));
+                        field.set(instance, e.load(id));
+                    } else {
+                        field.set(instance, deserialize((String) inner.get(field.getName())));
+                    }
+                } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException e) {
+                    field.set(instance, deserialize((String) inner.get(field.getName())));
+                }
             }
         }
         

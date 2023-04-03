@@ -16,6 +16,8 @@
  */
 package br.com.jhondbs.core.db.io;
 
+import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
+import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -23,6 +25,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tests.objects.EnteA;
+import tests.objects.EnteBase;
 import tests.objects.ObjA;
 import tests.objects.ObjB;
 import tests.objects.ObjMantemAbstrato;
@@ -112,6 +116,25 @@ public class SerializatorTest {
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
             assert false;
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    @Test
+    public void testSubEntity(){
+        System.out.println("test sub entity");
+        
+        EnteBase base = new EnteBase();
+        EnteA a = new EnteA();
+        a.name = "Jhones";
+        base.a = a;
+        
+        try {
+            base.save();
+            EnteBase b = base.load(base.getEnteId());
+            assert b.a.name.equals("Jhones");
+        } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
         }
     }
     

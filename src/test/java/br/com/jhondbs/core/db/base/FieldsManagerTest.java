@@ -35,7 +35,6 @@ public class FieldsManagerTest {
         ObjTeste o = new ObjTeste();
         try {
             Object v = FieldsManager.getValueFrom("name", o);
-            System.out.println(v);
             Assert.assertNotNull(v);
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException ex) {
             Logger.getLogger(FieldsManagerTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -48,7 +47,6 @@ public class FieldsManagerTest {
         ObjTeste o = new ObjTeste();
         try {
             Object v = FieldsManager.getValueFrom("idade", o);
-            System.out.println(v);
             Assert.assertNotNull(v);
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException ex) {
             Logger.getLogger(FieldsManagerTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -61,7 +59,6 @@ public class FieldsManagerTest {
         ObjTesteExtendido o = new ObjTesteExtendido();
         try {
             Object v = FieldsManager.getValueFrom("idade", o);
-            System.out.println(v);
             Assert.assertNotNull(v);
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException ex) {
             Logger.getLogger(FieldsManagerTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -74,7 +71,6 @@ public class FieldsManagerTest {
         ObjTesteExtendido o = new ObjTesteExtendido();
         try {
             Object v = FieldsManager.getValueFrom("altura", o);
-            System.out.println(v);
             Assert.assertNotNull(v);
         } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException ex) {
             Logger.getLogger(FieldsManagerTest.class.getName()).log(Level.SEVERE, null, ex);

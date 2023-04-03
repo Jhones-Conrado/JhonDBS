@@ -80,7 +80,7 @@ public interface Entidade extends Serializable, Cloneable{
      * @throws EntIdBadImplementation Caso a classe tenha implementado de forma incorreta
      * os métodos getId e onSetId.
      */
-    default boolean save() throws DuplicatedUniqueField, EntIdBadImplementation{
+    default boolean save() throws DuplicatedUniqueField, EntIdBadImplementation, IllegalArgumentException, IllegalAccessException{
         return IO.save(this);
     }
     

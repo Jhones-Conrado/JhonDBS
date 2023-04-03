@@ -18,7 +18,6 @@ package br.com.jhondbs.core.db.io;
 
 import br.com.jhondbs.core.db.Keys;
 import br.com.jhondbs.core.db.UniqueAnalyser;
-import com.google.gson.Gson;
 import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
 import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
@@ -60,8 +59,6 @@ public class IO {
             File pasta = new File("db/"+e.getClass().getName().replaceAll("[.]", "/"));
             pasta.mkdirs(); //Cria a pasta da classe da entidade.
             if(pasta.exists()){ //Verifica se a pasta da classe pôde ser criada com sucesso.
-                //Forma antiga utilizando JSON
-                Gson g = new Gson();
                 File entidadeNova = new File(pasta.getPath()+"/"+String.valueOf(e.getEnteId()));
                 
                 //Converte o objeto em JSON e salva.
@@ -91,7 +88,6 @@ public class IO {
         File file = new File("db/"+e.getClass().getName().replaceAll("[.]", "/")+"/"+String.valueOf(id));
 
         //Método antigo utilizando JSON
-        Gson g = new Gson();
         if(file.exists()){
             try {
                 String json;

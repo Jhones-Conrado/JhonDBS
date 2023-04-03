@@ -19,7 +19,6 @@ package br.com.jhondbs.core.db;
 import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.filter.StringFilter;
-import br.com.jhondbs.core.db.io.IO;
 import java.io.File;
 import java.util.List;
 import java.util.logging.Level;
@@ -183,8 +182,6 @@ public class DBAPITest {
     @Test
     public void testLoadAllByCMD(){
         try {
-            File db = new File("db");
-            IO.deleteDiretorio(db);
             
             EnteTeste a = new EnteTeste(27, "Jhones", true);
             EnteTeste b = new EnteTeste(53, "Carla", true);

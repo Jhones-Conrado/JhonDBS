@@ -56,8 +56,8 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.endian" value="little"/>
   </properties>
-  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberSmaller" time="0.001"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberBigger" time="0.001"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberEquals" time="0.003"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberSmaller" time="0"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberBigger" time="0"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberEquals" time="0.005"/>
   <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberBetween" time="0.001"/>
 </testsuite>

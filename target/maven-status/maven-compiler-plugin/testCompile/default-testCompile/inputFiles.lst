@@ -3,10 +3,12 @@
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/ObjTeste.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/ObjB.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/filter/NumberFilterTest.java
+/home/jhonessales/git/JhonDBS/src/test/java/tests/objects/EnteBase.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/io/SerializatorTest.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/filter/StringFilterTest.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/Abstrato.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/DBAPITest.java
+/home/jhonessales/git/JhonDBS/src/test/java/tests/objects/EnteA.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/ObjA.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/io/IOTest.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/base/FieldsManagerTest.java

@@ -112,33 +112,27 @@ public class NumberFilter implements ItemFilter{
             
             try {
                 valor = (Short) from;
-                System.out.println("Short");
                 return test(valor);
             } catch (Exception ex) {
                 try {
                     valor = (Integer) from;
-                    System.out.println("Integer");
                     return test(valor);
                 } catch (Exception ex2) {
                     try {
                         valor = (Long) from;
-                        System.out.println("Long");
                         return test(valor);
                     } catch (Exception ex3) {
                         try {
                             valor = (Float) from;
-                            System.out.println("Float");
                             return test(valor);
                         } catch (Exception ex4) {
                             try {
                                 valor = (Double) from;
-                                System.out.println("Double");
                                 return test(valor);
                             } catch (Exception ex5) {
                                 try {
                                     String val = (String) from;
                                     valor = Double.parseDouble((String) val);
-                                    System.out.println("String");
                                     return test(valor);
                                 } catch (Exception ex6) {
                                     System.out.println("Erro parsing number field.");
