@@ -20,6 +20,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 /**
+ * It serves to annotate the fields of entities that cannot be duplicated among
+ * other entities of the same type.<br>
  * Serve para anotar os campos das entidades que não podem ser duplicados entre
  * as outras entidades de mesmo tipo.
  * @author jhonesconrado

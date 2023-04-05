@@ -16,11 +16,11 @@
  */
 package br.com.jhondbs.core.db;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.base.FieldsManager;
 import br.com.jhondbs.core.db.io.IO;
 import java.lang.reflect.Field;
 import java.util.List;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
  * Analisa se uma entidade está apta para ser salva. Ou seja, se não possui
@@ -33,29 +33,31 @@ public class UniqueAnalyser {
     public UniqueAnalyser() {}
     
     /**
+     * Analyzes if the entity has any field annotated as Unique where the value
+     * has already been used by another entity of the same type.
+     * <br><br>
      * Analisa se a entidade possui algum campo anotado como Unique onde o valor
-     * já tenha sido usado por outra entidade.
-     * @param e
+     * já tenha sido usado por outra entidade de mesmo tipo.
+     * @param entity
      * @return True se estiver apto a ser salvo, False se estiver com um campo já usado.
      */
-    public boolean analise(Entidade e){
-        List<Field> unicos = FieldsManager.getFieldsUnique(e);
+    public boolean analise(Entity entity){
+        List<Field> unicos = FieldsManager.getFieldsUnique(entity);
         if(!unicos.isEmpty()){
-            for(Long l : IO.loadAllOnlyIds(e)){
-                if(l != e.getEnteId()){
-                    Entidade load = e.load(l);
+            for(Long l : IO.loadAllOnlyIds(entity)){
+                if(l != entity.getEnteId()){
+                    Entity load = entity.load(l);
                     for(Field f : unicos){
                         f.setAccessible(true);
                         try {
-                            if(f.get(e) == null){
+                            if(f.get(entity) == null){
                                 return true;
                             }
-                            if(f.get(e).equals(f.get(load))){
+                            if(f.get(entity).equals(f.get(load))){
                                 return false;
                             }
                         } catch (IllegalArgumentException | IllegalAccessException ex) {
                             return false;
-//                            Logger.getLogger(Unique2.class.getName()).log(Level.SEVERE, null, ex);
                         }
                     }
                 }

@@ -1,4 +1,3 @@
-/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Entidade.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/UniqueAnalyser.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/Servidor.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/StringFilter.java
@@ -27,3 +26,4 @@
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/FieldsManager.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/errors/DuplicatedUniqueField.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/InterpretadorGlobal.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Entity.java

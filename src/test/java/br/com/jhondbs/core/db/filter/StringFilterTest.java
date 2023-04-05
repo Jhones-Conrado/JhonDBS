@@ -33,7 +33,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
         StringFilter f = new StringFilter(StringFilter.POSSUI, "nome", "Jhones");
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -44,7 +44,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
         StringFilter f = new StringFilter(StringFilter.COMECA, "nome", "Jho");
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -55,7 +55,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
         StringFilter f = new StringFilter(StringFilter.TERMINA, "nome", "do");
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -66,7 +66,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones Conrado";
         StringFilter f = new StringFilter(StringFilter.IGUAL, "nome", "Jhones Conrado");
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -77,7 +77,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "JHones Conrado";
         StringFilter f = new StringFilter(StringFilter.POSSUI, "nome", "Jho", true);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -88,7 +88,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "JhOnes Conrado";
         StringFilter f = new StringFilter(StringFilter.COMECA, "nome", "Jho", true);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -99,7 +99,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "Jhones ConradO";
         StringFilter f = new StringFilter(StringFilter.TERMINA, "nome", "do", true);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -110,7 +110,7 @@ public class StringFilterTest {
         EnteTeste e = new EnteTeste();
         e.nome = "JhONes CoNrAdo";
         StringFilter f = new StringFilter(StringFilter.IGUAL, "nome", "Jhones Conrado", true);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
 }

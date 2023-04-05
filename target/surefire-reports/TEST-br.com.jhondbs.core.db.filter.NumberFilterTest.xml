@@ -58,6 +58,6 @@
   </properties>
   <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberSmaller" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberBigger" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberEquals" time="0.005"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberBetween" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberEquals" time="0.004"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.NumberFilterTest" name="testNumberBetween" time="0.002"/>
 </testsuite>

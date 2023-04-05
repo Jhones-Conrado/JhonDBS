@@ -16,22 +16,29 @@
  */
 package br.com.jhondbs.core.db.base.padrao;
 
-import br.com.jhondbs.core.db.base.Entidade;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
- * Uma entidade com os métodos de ID pre-configurados, ideal para poupar o programador
- * do trabalho repetitivo. Caso sua classe não precise extender nenhuma outra,
+ * ENGLISH <br>
+ * An entity with preconfigured ID methods to be used on entities
+ * that need to be saved. If your class doesn't need to extend any other class,
+ * it is recommended that your entity class extend this. <br>
+ * PORTUGUÊS <br>
+ * Uma entidade com os métodos de ID pre-configurados para ser usada em entidades
+ * que precisem ser salvas. Caso sua classe não precise extender nenhuma outra,
  * é recomendado que a sua classe de entidade extenda esta.
  * @author jhonesconrado
  */
-public abstract class DefaultEntity implements Entidade {
+public abstract class DefaultEntity implements Entity {
     
     /**
-     * Id de entidade que representará o objeto no banco de dados.
+     * Entity ID that will represent the object in the database. 
+     * ID de entidade que representará o objeto no banco de dados.
      */
     private long enteId = -1l;
     
     /**
+     * The entity id of the class responsible for its identification in the database.
      * O id de entidade da classe responsável por sua identificação no banco de
      * dados.
      * @return ID de entidade.
@@ -42,9 +49,10 @@ public abstract class DefaultEntity implements Entidade {
     }
     
     /**
+     * The entity id of the class responsible for its identification in the database.
      * O id de entidade da classe responsável por sua identificação no banco de
      * dados.
-     * @param id Id de entidade responsável por identificar o objeto no banco
+     * @param id ID Number for be saved in the database.
      * de dados.
      */
     @Override
@@ -53,15 +61,17 @@ public abstract class DefaultEntity implements Entidade {
     }
     
     /**
+     * ENGLISH<br>
+     * Creates a clone of the current object.
+     * <br><br>
+     * PORTUGUÊS<br>
      * Cria um clone do objeto atual.
-     * @return Clone do objeto atual.
+     * @return Clone of the current object.
      * @throws CloneNotSupportedException 
      */
     @Override
     public DefaultEntity clone() throws CloneNotSupportedException {
         return (DefaultEntity) super.clone();
     }
-    
-    
     
 }

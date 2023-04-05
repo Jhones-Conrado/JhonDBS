@@ -16,7 +16,6 @@
  */
 package br.com.jhondbs.core.db;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.filter.StringFilter;
 import java.io.File;
@@ -25,6 +24,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.Test;
 import tests.objects.EnteTeste;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
  * Testa as funções da API do banco de dados.
@@ -196,7 +196,7 @@ public class DBAPITest {
              * banco de dados, filtrados para somente os que o nome contém a letra
              * 'a'.
              */
-            List<Entidade> byf = DBAPI.getByFilter("EnteTeste tpi nome a");
+            List<Entity> byf = DBAPI.getByFilter("EnteTeste tpi nome a");
             assert byf.size() == 2;
         } catch (Exception ex) {
             Logger.getLogger(DBAPITest.class.getName()).log(Level.SEVERE, null, ex);

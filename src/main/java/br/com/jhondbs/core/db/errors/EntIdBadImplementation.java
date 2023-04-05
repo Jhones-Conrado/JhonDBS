@@ -17,7 +17,12 @@
 package br.com.jhondbs.core.db.errors;
 
 /**
- * Errado lançado caso um objeto que implemente Entidade não tenha possua uma
+ * ENGLISH<br>
+ * Error thrown if an object that implements Entity does not have an adequate
+ * implementation of the getId and setId methods, where the value returned for
+ * the ID variable will always be -1l.<br><br>
+ * PORTUGUÊS<br>
+ * Erro lançado caso um objeto que implemente Entidade não possua uma
  * implementação adequada dos métodos getId e setId, onde o valor retornado para
  * a variável ID será sempre -1l.
  * @author jhonesconrado
@@ -25,14 +30,14 @@ package br.com.jhondbs.core.db.errors;
 public class EntIdBadImplementation extends Exception {
 
     /**
-     * Creates a new instance of <code>EntidadeIDMalImplementado</code> without
+     * Creates a new instance of <code>EntIdBadImplementation</code> without
      * detail message.
      */
     public EntIdBadImplementation() {
     }
 
     /**
-     * Constructs an instance of <code>EntidadeIDMalImplementado</code> with the
+     * Constructs an instance of <code>EntIdBadImplementation</code> with the
      * specified detail message.
      *
      * @param msg the detail message.

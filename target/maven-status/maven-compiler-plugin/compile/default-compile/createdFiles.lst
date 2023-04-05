@@ -6,7 +6,6 @@ br/com/jhondbs/core/db/errors/EntIdBadImplementation.class
 br/com/jhondbs/core/db/base/Unique.class
 br/com/jhondbs/core/db/io/IO.class
 br/com/jhondbs/core/db/filter/Filter.class
-br/com/jhondbs/core/db/base/Entidade.class
 br/com/jhondbs/core/db/base/padrao/DefaultEntity.class
 br/com/jhondbs/core/db/DBAPI.class
 br/com/jhondbs/core/servidor/Conexão.class

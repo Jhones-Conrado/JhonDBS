@@ -31,7 +31,7 @@ public class BooleanFilterTest {
         EnteTeste e = new EnteTeste();
         e.rico = true;
         BooleanFilter f = new BooleanFilter("rico", true);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
 }

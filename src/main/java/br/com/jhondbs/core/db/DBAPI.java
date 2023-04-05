@@ -16,7 +16,6 @@
  */
 package br.com.jhondbs.core.db;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.filter.BooleanFilter;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.db.filter.NumberFilter;
@@ -24,30 +23,46 @@ import br.com.jhondbs.core.db.filter.StringFilter;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.io.Reflection;
 import java.util.List;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
+ * It has methods to convert String into search filters and vice versa.<br>
  * Dispõe de métodos para converter String em fitlros de busca e vice-versa.
  * @author jhonesconrado
  */
 public class DBAPI {
     
     /**
+     * ENGLISH<br>
+     * Receives a string command that must follow the "ClassName CMD Field Parameter" format.</br>
+      * example: Customer tci name John. It can be understood as "fetch all entities of the class
+      * Customer in which the 'name' variable is of type String and starts with John,
+      * ignoring case.
+      * For more than one filter, the commands must be separated by a space,
+      * semicolon and space, example: " ; " without quotes.
+      * Using the previous example.
+      * Customer tci name John; n> age 17 <br>
+      * Could be translated to: search for all customers named John over the age of 17.
+     * <br><br>
+     * PORTUGUÊS<br>
      * Recebe um comando em forma de string que deve seguir o formato ClassName CMD Field Parameter.</br>
      * exemplo: Cliente tci nome João. Pode-se entender como "busque todas as entidades da classe
      * Cliente em que a variável 'nome' seja do tipo String e comece com João, ignorando maiúsculas e
      * minúsculas. Para mais de um filtro, deve-se separar os comandos por espaço, ponto e vírgula e
      * espaço, exemplo: " ; " sem as aspas. Utilizando do exemplo mais anterior.
-     * Cliente tci nome João ; n> idade 17
+     * Cliente tci nome João ; n> idade 17 <br>
+     * Pode ser traduzido para: busque todos os clientes com nome João com idade
+     * maior que 17 anos.
      * @param cmd String de comando de busca, seguindo o formato ClassName CMD Field Parameter.
      * @return Lista de entidades que passaram no teste.
      * @throws Exception
      */
-    public static List<Entidade> getByFilter(String cmd) throws Exception{
+    public static List<Entity> getByFilter(String cmd) throws Exception{
         if(cmd.contains(" ")){
             try {
                 String cName = cmd.substring(0, cmd.indexOf(" "));
                 String cm = cmd.substring(cmd.indexOf(" ") + 1);
-                Entidade obj = new Reflection().getNewInstance(cName);
+                Entity obj = new Reflection().getNewInstance(cName);
                 System.out.println("CLASSE: "+obj.getClass().getName());
                 Filter f = new Filter();
                 if(cm.contains(" ; ")){
@@ -67,6 +82,10 @@ public class DBAPI {
     }
     
     /**
+     * It receives a search command and an entity and returns a list of all
+     * entities saved in the database that passed the filter test obtained by
+     * the filtering command.
+     * <br><br>
      * Recebe um comando de busca e uma entidade e trás uma lista de todas as entidades
      * salvas no banco de dados que passaram no teste do filtro obtido pelo comando de
      * filtragem.
@@ -75,13 +94,16 @@ public class DBAPI {
      * @return Lista de objetos que passaram no teste.
      * @throws Exception 
      */
-    public List<Entidade> getByFilter(Entidade ente, String filter) throws Exception{
+    public List<Entity> getByFilter(Entity ente, String filter) throws Exception{
         Filter fil = new Filter();
         fil.addItem(toFilter(filter));
         return ente.loadAll(fil);
     }
     
     /**
+     * Converts a command line into a filtering object that can be used later to
+     * filter system entities.
+     * <br><br>
      * Converte uma linha em comando em um objeto de filtragem que poderá ser usado
      * posteriormente para filtrar entidades do sistema.
      * @param cmd Comando a ser convertido em um objeto de filtragem.
@@ -92,6 +114,16 @@ public class DBAPI {
         return shortCmdText(cmd);
     }
     
+    /**
+     * Converts a command line into a filtering object that can be used later to
+     * filter system entities.
+     * <br><br>
+     * Converte uma linha em comando em um objeto de filtragem que poderá ser usado
+     * posteriormente para filtrar entidades do sistema.
+     * @param cmd
+     * @return
+     * @throws Exception 
+     */
     private static ItemFilter shortCmdText(String cmd) throws Exception{
         String[] split = cmd.split(" ");
         
@@ -146,6 +178,9 @@ public class DBAPI {
     }
     
     /**
+     * Converts a filtering object into a command line that can be sent over
+     * connections or stored in text format.
+     * <br><br>
      * Converte um objeto de filtragem em uma linha de comando que poderá ser
      * enviada através de conexões ou armazenada em formato texto.
      * @param filtro Objeto de filtragem do tipo StringFilter ou NumberFilter.
@@ -177,11 +212,11 @@ public class DBAPI {
             }
             sb.append(" ");
             sb.append(f.getField()).append(" ");
-            sb.append(f.getParametro());
+            sb.append(f.getParameter());
         } else if(filtro.getClass().getName().contains("Number")){
             NumberFilter f = (NumberFilter) filtro;
             sb.append("n");
-            switch (f.getMetodo()) {
+            switch (f.getMethod()) {
                 case NumberFilter.IGUAL:
                     sb.append("i ");
                     break;
@@ -198,8 +233,8 @@ public class DBAPI {
                     break;
             }
             sb.append(f.getField()).append(" ");
-            sb.append(String.valueOf(f.getParametroInicio()));
-            if(f.getMetodo() == NumberFilter.ENTRE){
+            sb.append(String.valueOf(f.getInitParameter()));
+            if(f.getMethod() == NumberFilter.ENTRE){
                 sb.append(" ").append(String.valueOf(f.getParametroFim()));
             }
         } else if(filtro.getClass().getName().contains("Boolean")){

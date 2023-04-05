@@ -16,7 +16,6 @@
  */
 package br.com.jhondbs.core.db.io;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
 import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import com.google.gson.Gson;
@@ -24,10 +23,17 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
+ * ENGLISH<br>
+ * Serializing and deserializing objects while maintaining their respective class
+ * references makes it possible to serialize abstract fields.<br>
+ * The whole process completely ignores the SerialVersionUID.
+ * <br><br>
+ * PORTUGUÊS<br>
  * Serializa e desserializa objetos, mantendo as respectivas referências de classe,
- * isso torna possível serializar campos abstratos. <br/>
+ * isso torna possível serializar campos abstratos. <br>
  * Todo o processo ignora completamente o SerialVersionUID.
  * @author jhonessales
  */
@@ -35,6 +41,18 @@ public class Serializator {
     
     private static final Gson gson = new Gson();
     
+    /**
+     * Serializes an object to a JSON map that maintains the class reference of
+     * all objects and fields, ignoring the SerialVersionUID.
+     * <br><br>
+     * Serializa um objeto para um mapa JSON que mantém a referência de classe de todos
+     * os objetos e campos, ignorando o SerialVersionUID.
+     * @param <T>
+     * @param object
+     * @return
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
     public static <T> String serialize(T object) throws IllegalArgumentException, IllegalAccessException {
         
         if (object == null) {
@@ -52,15 +70,14 @@ public class Serializator {
             } else {
                 try {
                     ins = field.getType().newInstance();
-                    if(ins instanceof Entidade){
-                        Entidade get = (Entidade) field.get(object);
+                    if(ins instanceof Entity){
+                        Entity get = (Entity) field.get(object);
                         get.save();
                         map.put(field.getName(), get.getEnteId());
                     } else {
                         map.put(field.getName(), serialize(field.get(object)));
                     }
                 } catch (InstantiationException | DuplicatedUniqueField | EntIdBadImplementation ex) {
-//                    Logger.getLogger(Serializator.class.getName()).log(Level.SEVERE, null, ex);
                     map.put(field.getName(), serialize(field.get(object)));
                 }
             }
@@ -69,7 +86,20 @@ public class Serializator {
         mapObj.put(object.getClass().getName(), map);
         return gson.toJson(mapObj);
     }
-
+    
+    /**
+     * It receives a JSON of maps with objects, fields and their respective class
+     * and type references and deserializes it, returning the created object.
+     * <br><br>
+     * Recebe um JSON de mapas com objetos, campos e suas respectivas referências
+     * de classe e tipo e desserializa, retornando o objeto criado.
+     * @param <T>
+     * @param json
+     * @return
+     * @throws ClassNotFoundException
+     * @throws IllegalAccessException
+     * @throws InstantiationException 
+     */
     public static <T> T deserialize(String json) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         Map<String, Object> jsonMap = gson.fromJson(json, Map.class);
         String clName = (String) Arrays.asList(jsonMap.keySet().toArray()).get(0);
@@ -122,8 +152,8 @@ public class Serializator {
                 
                 try {
                     Object ins = field.getType().newInstance();
-                    if(ins instanceof Entidade){
-                        Entidade e = (Entidade) ins;
+                    if(ins instanceof Entity){
+                        Entity e = (Entity) ins;
                         String get = String.valueOf(inner.get(field.getName()));
                         long id = Long.parseLong(get.substring(0, get.indexOf(".")));
                         field.set(instance, e.load(id));
@@ -139,6 +169,13 @@ public class Serializator {
         return (T) instance;
     }
     
+    /**
+     * Converts a field to a map of type 'key' 'value' and converts it to JSON.<br>
+     * Converte um campo em um mapa do tipo 'chave' 'valor' e o converte em JSON.
+     * @param field
+     * @param obj
+     * @return 
+     */
     private static Map toMap(Field field, Object obj){
         Map map = new LinkedHashMap();
         field.setAccessible(true);
@@ -155,6 +192,12 @@ public class Serializator {
         return map;
     }
     
+    /**
+     * Checks whether the field is numeric, boolean, byte, or text.<br>
+     * Verifica se o campo é numérico, boleano, byte ou texto.
+     * @param field
+     * @return 
+     */
     private static boolean isPrimitive(Field field){
         return !(field.getType() != Short.TYPE &&
             field.getType() != Integer.TYPE &&
@@ -166,6 +209,12 @@ public class Serializator {
             field.getType() != String.class);
     }
     
+    /**
+     * Ensures that all fields of the class and its superclasses are returned.
+     * Garante que todos os campos da classe e suas superclasses sejam retornados.
+     * @param clazz
+     * @return 
+     */
     private static List<Field> getAllFields(Class<?> clazz) {
         List<Field> fields = new ArrayList<>();
         while(clazz != null){

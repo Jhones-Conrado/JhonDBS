@@ -16,7 +16,6 @@
  */
 package br.com.jhondbs.core.db.io;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
 import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import java.util.logging.Level;
@@ -27,6 +26,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tests.objects.EnteTeste;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
  *
@@ -59,7 +59,7 @@ public class IOTest {
     @Test
     public void testSave() {
         System.out.println("save");
-        Entidade e = new EnteTeste();
+        Entity e = new EnteTeste();
         try {
             assert IO.save(e);
         } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
@@ -74,10 +74,10 @@ public class IOTest {
     @Test
     public void testLoad() {
         System.out.println("load");
-        Entidade e = new EnteTeste();
+        Entity e = new EnteTeste();
         try {
             IO.save(e);
-            Entidade load = (Entidade) IO.load(e, e.getEnteId());
+            Entity load = (Entity) IO.load(e, e.getEnteId());
             assert load != null;
         } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
             assert false;
@@ -92,7 +92,7 @@ public class IOTest {
 //    @Test
 //    public void testLoadAll_Entidade() {
 //        System.out.println("loadAll");
-//        Entidade e = null;
+//        Entity e = null;
 //        List<Entidade> expResult = null;
 //        List<Entidade> result = IO.loadAll(e);
 //        assertEquals(expResult, result);
@@ -106,7 +106,7 @@ public class IOTest {
 //    @Test
 //    public void testLoadAll_3args() {
 //        System.out.println("loadAll");
-//        Entidade e = null;
+//        Entity e = null;
 //        List<ItemFilter> filtros = null;
 //        boolean todos = false;
 //        List<Entidade> expResult = null;
@@ -122,7 +122,7 @@ public class IOTest {
 //    @Test
 //    public void testLoadAll_Entidade_Filter() {
 //        System.out.println("loadAll");
-//        Entidade e = null;
+//        Entity e = null;
 //        Filter filtro = null;
 //        List<Entidade> expResult = null;
 //        List<Entidade> result = IO.loadAll(e, filtro);
@@ -137,7 +137,7 @@ public class IOTest {
 //    @Test
 //    public void testLoadAllOnlyIds() {
 //        System.out.println("loadAllOnlyIds");
-//        Entidade e = null;
+//        Entity e = null;
 //        List<Long> expResult = null;
 //        List<Long> result = IO.loadAllOnlyIds(e);
 //        assertEquals(expResult, result);
@@ -151,7 +151,7 @@ public class IOTest {
 //    @Test
 //    public void testDelete_Entidade() {
 //        System.out.println("delete");
-//        Entidade e = null;
+//        Entity e = null;
 //        boolean expResult = false;
 //        boolean result = IO.delete(e);
 //        assertEquals(expResult, result);
@@ -184,13 +184,13 @@ public class IOTest {
 //    }
 //
 //    /**
-//     * Test of deleteDiretorio method, of class IO.
+//     * Test of deleteDirectory method, of class IO.
 //     */
 //    @Test
 //    public void testDeleteDiretorio() {
-//        System.out.println("deleteDiretorio");
+//        System.out.println("deleteDirectory");
 //        File diretorio = null;
-//        IO.deleteDiretorio(diretorio);
+//        IO.deleteDirectory(diretorio);
 //        // TODO review the generated test code and remove the default call to fail.
 //        fail("The test case is a prototype.");
 //    }

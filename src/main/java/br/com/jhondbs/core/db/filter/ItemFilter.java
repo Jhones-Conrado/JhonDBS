@@ -16,14 +16,15 @@
  */
 package br.com.jhondbs.core.db.filter;
 
-import br.com.jhondbs.core.db.base.Entidade;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
+ * Filters an entity to see if it passes any fetch tests.<br>
  * Filtra uma entidade para ver se passou em algum teste de busca.
  * @author jhonesconrado
  */
 public interface ItemFilter {
     
-    boolean filtrar(Entidade e);
+    boolean filter(Entity e);
     
 }

@@ -17,6 +17,7 @@
 package br.com.jhondbs.core.db.errors;
 
 /**
+ * Error thrown in case an attribute was not found in a given class.<br>
  * Erro lançado em caso de um atribute não ter sido encontrado em uma determinada
  * classe.
  * @author jhonesconrado
@@ -24,14 +25,14 @@ package br.com.jhondbs.core.db.errors;
 public class AttributeNotFind extends Exception {
 
     /**
-     * Creates a new instance of <code>AtributoNaoEncontrado</code> without
+     * Creates a new instance of <code>AttributeNotFind</code> without
      * detail message.
      */
     public AttributeNotFind() {
     }
 
     /**
-     * Constructs an instance of <code>AtributoNaoEncontrado</code> with the
+     * Constructs an instance of <code>AttributeNotFind</code> with the
      * specified detail message.
      *
      * @param msg the detail message.

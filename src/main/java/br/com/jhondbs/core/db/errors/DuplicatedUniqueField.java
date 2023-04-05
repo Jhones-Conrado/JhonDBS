@@ -17,6 +17,8 @@
 package br.com.jhondbs.core.db.errors;
 
 /**
+ * Error thrown if trying to save an entity that has a variable value that has
+ * already been used by another that is saved in the database.<br><br>
  * Erro lançado caso tente salvar uma entidade que possui um valor de varíavel
  * que já tenha sido usada por outra que está salva no banco de dados.
  * @author jhonesconrado

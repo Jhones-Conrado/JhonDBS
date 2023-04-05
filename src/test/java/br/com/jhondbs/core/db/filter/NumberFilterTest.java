@@ -34,7 +34,7 @@ public class NumberFilterTest {
         EnteTeste e = new EnteTeste();
         e.idade = 18;
         NumberFilter f = new NumberFilter("idade", NumberFilter.IGUAL, 18d);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -46,7 +46,7 @@ public class NumberFilterTest {
         EnteTeste e = new EnteTeste();
         e.idade = 15;
         NumberFilter f = new NumberFilter("idade", NumberFilter.MENOR, 18d);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -58,7 +58,7 @@ public class NumberFilterTest {
         EnteTeste e = new EnteTeste();
         e.idade = 25;
         NumberFilter f = new NumberFilter("idade", NumberFilter.MAIOR, 18d);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
     /**
@@ -70,7 +70,7 @@ public class NumberFilterTest {
         EnteTeste e = new EnteTeste();
         e.idade = 18;
         NumberFilter f = new NumberFilter("idade", 15, 30d);
-        assert f.filtrar(e);
+        assert f.filter(e);
     }
     
 }

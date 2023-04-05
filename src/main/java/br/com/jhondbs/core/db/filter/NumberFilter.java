@@ -16,21 +16,70 @@
  */
 package br.com.jhondbs.core.db.filter;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
- * Um filtro númerico que vai verificar o campo de uma entidade.</br>
+ * ENGLISH<br>
+ * A numerical filter that will check the field of an entity.<br>
+ * Usage examples: "ni age 20" without the quotes can be understood as "verify
+ * if in the 'age' variable of our filtered entity, the value is equal to 20".<br>
+ * <br>
+ * Um filtro númerico que vai verificar o campo de uma entidade.<br>
  * Exemplos de uso: "ni idade 20" sem as aspas pode ser entendido como "verifique
- * se na variável 'idade' da nossa entidade filtrada, o valor é igual a 20".</br>
- * Outros possíveis comandos: ni variável valor (número igual);
- * n< variável valor. (número menor);
- * n> variável valor. (número maior);
- * n~ variável valor valor. (número entre dois valores.
+ * se na variável 'idade' da nossa entidade filtrada, o valor é igual a 20".<br>
+ * <br>
+ * Other possible commands:<br>
+ * ni 'variable name' 'value' (equal number);<br>
+ * n< 'variable name' 'value'. (smaller number);<br>
+ * n> 'variable' 'value'. (larger number);<br>
+ * n~ 'variable' 'value' 'value'. (number between two values.<br><br>
+ *
+ * ni age 20 -> is the 'age' field a numerical variable equal to twenty?<br>
+ * n< age 18 -> is the 'age' field a numerical variable less than eighteen?<br>
+ * n> age 18 -> is the 'age' field a numerical variable greater than eighteen?<br>
+ * n~ age 18 30 -> the 'age' field is a numeric variable with a value greater than or
+ * equal to eighteen and less than or equal to thirty?
+ * <br><br>
+ * Outros possíveis comandos:<br>
+ * ni 'nome variável' 'valor' (número igual);<br>
+ * n< 'nome variável' 'valor'. (número menor);<br>
+ * n> 'variável' 'valor'. (número maior);<br>
+ * n~ 'variável' 'valor' 'valor'. (número entre dois valores.<br><br>
+ * 
+ * ni idade 20 -> o campo 'idade' é uma varíavel numérica igual a vinte?<br>
+ * n< idade 18 -> o campo 'idade' é uma varíavel numérica menor que dezoito?<br>
+ * n> idade 18 -> o campo 'idade' é uma variável numérica maior que dezoito?<br>
+ * n~ idade 18 30 -> o campo 'idade' é uma variável numérica com valor maior ou
+ * igual a dezoito e menor ou igual a trinta?
  * @author jhonesconrado
  */
 public class NumberFilter implements ItemFilter{
+    
+    /**
+     * The filter will only return true if the entity's field is equal to the
+     * value declared as a parameter when creating the filter.
+     */
+    public static final int EQUAL = 0;
+    
+    /**
+     * The filter will only return true if the entity's field is less than the
+     * value declared as a parameter when creating the filter.
+     */
+    public static final int SMALLER = 1;
+    
+    /**
+     * The filter will only return true if the entity's field is greater than
+     * the value declared as a parameter when creating the filter.
+     */
+    public static final int GREATER = 2;
+    
+    /**
+     * It is not received when creating the filter but is used to identify that
+     * the method used in the filter should be a range comparison between two values.
+     */
+    public static final int BETWEEN = 3;
     
     /**
      * O filtro retornará verdadeiro somente se o campo da entidade for igual ao
@@ -51,7 +100,7 @@ public class NumberFilter implements ItemFilter{
     public static final int MAIOR = 2;
     
     /**
-     * Não é recebido na criação do método mas é usado para identificar que o
+     * Não é recebido na criação do filtro mas é usado para identificar que o
      * método usado no filtro deverá ser a comparação de intervalo entre dois
      * valores.
      */
@@ -63,16 +112,21 @@ public class NumberFilter implements ItemFilter{
     private final double end;
     
     /**
+     * Creates a numeric filter that will check a given field of an entity.<br>
      * Cria um filtro numérico que verificará um determinado campo de uma entidade.
-     * @param field Nome do campo que será buscado e filtrado.
-     * @param method Método escolhido de filtragem, se "maior que", "menor que" ou "igual".
-     * @param parameter Numero de critério de filtragem.
+     * @param field Name of the field that will be searched and filtered.<br>
+     * Nome do campo que será buscado e filtrado.
+     * @param method Chosen method of filtering, whether "greater than",
+     * "less than" or "equal".<br>
+     * Método escolhido de filtragem, se "maior que", "menor que" ou "igual".
+     * @param parameter Filter criteria number.<br>
+     * Numero de critério de filtragem.
      */
     public NumberFilter(String field, int method, double parameter) {
         if(method > 3 || method < 0){
             this.field = field;
             this.method = NumberFilter.ENTRE;
-            this.init = 0;
+            this.init = method;
             this.end = parameter;
         } else {
             this.field = field;
@@ -83,11 +137,17 @@ public class NumberFilter implements ItemFilter{
     }
     
     /**
+     * Creates a numeric filter that will check a given field of an entity.
+     * Ensuring that the value of this field falls within a defined numeric range.
+     * <br>
      * Cria um filtro numérico que verificará um determinado campo de uma entidade.
      * Garantindo que o valor deste campo esteja entre um intervalo numérico definido.
-     * @param field Nome do campo que será buscado e filtrado.
-     * @param init Início do intervalo numérico do filtro.
-     * @param end Final do intervalo numérico do filtro.
+     * @param field Name of the field that will be searched and filtered.<br>
+     * Nome do campo que será buscado e filtrado.
+     * @param init Start of the filter's numeric range.<br>
+     * Início do intervalo numérico do filtro.
+     * @param end End of the filter's numeric range.<br>
+     * Final do intervalo numérico do filtro.
      */
     public NumberFilter(String field, double init, double end) {
         this.field = field;
@@ -97,44 +157,48 @@ public class NumberFilter implements ItemFilter{
     }
     
     /**
+     * It will check if the entity has a field with the name defined when creating
+     * the filter and also if this value passes the test, according to the
+     * filtering method defined when creating the filter.
+     * <br><br>
      * Vai verificar se a entidade possui um campo com o nome definido na criação
      * do filtro e também se esse valor passa no teste, de acordo com o método de
      * filtragem definido na criação do filtro.
-     * @param e Entidade a ser filtrada.
+     * @param entity Entity a ser filtrada.
      * @return Verdadeiro para caso tenha passado no teste.
      */
     @Override
-    public boolean filtrar(Entidade e) {
+    public boolean filter(Entity entity) {
         try {
             
-            double valor = 0d;
-            Object from = e.getValueFrom(field);
+            double value = 0d;
+            Object from = entity.getValueFrom(field);
             
             try {
-                valor = (Short) from;
-                return test(valor);
+                value = (Short) from;
+                return test(value);
             } catch (Exception ex) {
                 try {
-                    valor = (Integer) from;
-                    return test(valor);
+                    value = (Integer) from;
+                    return test(value);
                 } catch (Exception ex2) {
                     try {
-                        valor = (Long) from;
-                        return test(valor);
+                        value = (Long) from;
+                        return test(value);
                     } catch (Exception ex3) {
                         try {
-                            valor = (Float) from;
-                            return test(valor);
+                            value = (Float) from;
+                            return test(value);
                         } catch (Exception ex4) {
                             try {
-                                valor = (Double) from;
-                                return test(valor);
+                                value = (Double) from;
+                                return test(value);
                             } catch (Exception ex5) {
                                 try {
                                     String val = (String) from;
-                                    valor = Double.parseDouble((String) val);
-                                    return test(valor);
-                                } catch (Exception ex6) {
+                                    value = Double.parseDouble((String) val);
+                                    return test(value);
+                                } catch (NumberFormatException ex6) {
                                     System.out.println("Erro parsing number field.");
                                 }
                             }
@@ -149,17 +213,24 @@ public class NumberFilter implements ItemFilter{
         return false;
     }
     
+    /**
+     * Do numerical verification.<br>
+     * Faz a verificação numérica.
+     * @param value
+     * @return Test result.
+     */
     private boolean test(double value){
         switch (this.method) {
+                // Verifica se está entre um intervalo.
                 case ENTRE:
                     return value >= init && value <= end;
-                    // Verifica se é menor que o valor definido.
+                // Verifica se é menor que o valor definido.
                 case MENOR:
                     return value < init;
-                    // Verifica se é maior que o valor definido.
+                // Verifica se é maior que o valor definido.
                 case MAIOR:
                     return value > init;
-                    // Verifica se é igual ao valor definido.
+                // Verifica se é igual ao valor definido.
                 case IGUAL:
                     return value == init;
                 default:
@@ -168,23 +239,30 @@ public class NumberFilter implements ItemFilter{
     }
     
     /**
+     * Returns the number of the method that the filter was created.<br>
      * Retorna o número do método que o filtro foi criado.
-     * @return Metodo.
+     * @return Method number.
      */
-    public int getMetodo(){
+    public int getMethod(){
         return method;
     }
     
     /**
+     * Returns the number of the start parameter.
+     * This number is used for all filtering methods.
+     * <br><br>
      * Retorna o número do parâmetro inicio. Este número é usado para todos os
      * metodos de filtragem.
-     * @return Parâmetro inicio.
+     * @return Init parameter.
      */
-    public double getParametroInicio(){
+    public double getInitParameter(){
         return init;
     }
     
     /**
+     * Returns the end parameter number. This number is only used for filtering
+     * the BETWEEN method.
+     * <br><br>
      * Retorna o número do parâmetro fim. Este número é usado somente para a
      * filtragem do méotod ENTRE.
      * @return 
@@ -193,6 +271,11 @@ public class NumberFilter implements ItemFilter{
         return end;
     }
     
+    /**
+     * Name of the field to be checked.<br>
+     * Nome do campo que será verificado.
+     * @return 
+     */
     public String getField(){
         return this.field;
     }

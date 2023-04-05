@@ -16,13 +16,13 @@
  */
 package tests.objects;
 
-import br.com.jhondbs.core.db.base.Entidade;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
  *
  * @author jhonessales
  */
-public class EnteTeste implements Entidade{
+public class EnteTeste implements Entity{
     
     public long enteId;
     

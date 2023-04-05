@@ -16,30 +16,35 @@
  */
 package br.com.jhondbs.core.db.filter;
 
-import br.com.jhondbs.core.db.base.Entidade;
 import java.util.ArrayList;
 import java.util.List;
+import br.com.jhondbs.core.db.base.Entity;
 
 /**
+ * A class that can store filtering settings and be saved for future repetitive uses.
  * Uma classe que pode armazenar configurações de filtragem e ser salva para
  * futuros usos repetitivos.
  * @author jhonesconrado
  */
-public class Filter implements Entidade{
+public class Filter implements Entity{
     
     private long id = -1l;
     
     /**
-     * Avisa ao filtro se deve consedirar todos os itens de filtragem ou somente um.
+     * Tells the filter whether to consider all filtering items or just one.<br>
+     * Avisa ao filtro se deve considerar todos os itens de filtragem ou somente um.
      */
     public boolean all;
     
     /**
+     * List of filters that will be applied in the filtering.<br>
      * Lista de filtros que serão aplicados na filtragem.
      */
     public List<ItemFilter> filters;
     
     /**
+     * Creates a new filter with a default value of true for "all tests" and an
+     * empty list of filters.<br>
      * Cria um novo filtro com valor padrão de verdadeiro para "todos os testes"
      * e uma lista vazia de filters.
      */
@@ -49,6 +54,8 @@ public class Filter implements Entidade{
     }
     
     /**
+     * Creates a new filter that takes a value of true or false for the "all tests"
+     * requirement and has an initially empty list of filters.<br>
      * Cria um novo filtro que recebe um valor de verdadeiro ou falso para a exigência
      * de "todos os testes" e possui uma lista de filters inicialmente vazia.
      * @param all Verdadeiro para indicar que a entidade precisa passar em all
@@ -61,8 +68,10 @@ public class Filter implements Entidade{
     }
     
     /**
+     * Creates a new filter that takes a value of true or false for the "all tests"
+     * requirement and has an initially empty list of filters.<br>
      * Cria um novo filtro que recebe um valor de verdadeiro ou falso para a exigência
-     * de "all os testes" e uma lista de filters.
+     * de "all os testes" e uma lista de filtros.
      * @param all Verdadeiro para indicar que a entidade precisa passar em all
      * os testes da lista para ser aprovada. Falso para caso a entidade precise
      * ser aprovada em somente um dos testes.
@@ -74,6 +83,7 @@ public class Filter implements Entidade{
     }
     
     /**
+     * Adds a new filter item to the filtering list.<br>
      * Adiciona um novo item de filtro na lista de filtragem.
      * @param filter A ser adicionado na lista de requisitos.
      */
@@ -84,6 +94,7 @@ public class Filter implements Entidade{
     }
     
     /**
+     * Removes a filter item from the filtering list.<br>
      * Remove um item de filtro da lista de filtragem.
      * @param filtro A ser removido da lista de requisitos.
      */
@@ -94,26 +105,28 @@ public class Filter implements Entidade{
     }
     
     /**
+     * Receives an entity and checks if it passes the validation test.<br>
      * Recebe uma entidade e verifica se passa no teste de validação.
-     * @param e Entidade a ser filtrada.
-     * @return Verdadeiro ou Falso para a validação da entidade.
+     * @param entity Entity to be filtered.<br>
+     * Entity a ser filtrada.
+     * @return 
      */
-    public boolean filter(Entidade e){
-        boolean passou = false;
+    public boolean filter(Entity entity){
+        boolean approved = false;
         for(ItemFilter f : filters){
             if(all){
-                passou = true;
-                if(!f.filtrar(e)){
+                approved = true;
+                if(!f.filter(entity)){
                     return false;
                 }
             } else {
-                passou = false;
-                if(f.filtrar(e)){
+                approved = false;
+                if(f.filter(entity)){
                     return true;
                 }
             }
         }
-        return passou;
+        return approved;
     }
     
     @Override
@@ -126,18 +139,23 @@ public class Filter implements Entidade{
         this.id = id;
     }
     
-    public int getFiltroCount(){
+    /**
+     * Returns the number of tests in the filter.<br>
+     * Retorna o número de testes no filtro.
+     * @return 
+     */
+    public int getFilterCount(){
         return filters.size();
     }
     
     /**
      * Converte uma lista de itens de filtragem em um objeto filtro configurado
      * com a exigência de all os testes serem verdadeiros para aprovar uma entidade.
-     * @param lista Lista de itens de filtragem.
+     * @param list Lista de itens de filtragem.
      * @return Objeto Filter com a lista de filtragem.
      */
-    public static Filter listToFiltro(List<ItemFilter> lista){
-        return new Filter(true, lista);
+    public static Filter listToFilter(List<ItemFilter> list){
+        return new Filter(true, list);
     }
     
 }

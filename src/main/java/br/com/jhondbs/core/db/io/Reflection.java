@@ -35,6 +35,14 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * ENGLISH<br>
+ * It will go through the folder where the program was run, looking for .jar or 
+ * .class files, checking all it finds and putting them in a List.</br>
+ * Items in this List can be further filtered to create instances of specific
+ * objects, as in the case of interpreters that do not need to be instantiated
+ * to function.
+ * <br><br>
+ * PORTUGUÊS<br>
  * Percorrerá a pasta em que o programa foi executado, procurando por arquivos
  * .jar ou .class, verificando todos que encontrar e os colocando em uma List.</br>
  * Os itens dessa List podem ser filtrados posteriormente para se criar instâncias
@@ -47,20 +55,25 @@ public final class Reflection {
     private static List<String> array;
     
     /**
-     * Cria uma nova instância de Reflection. Essa classe serve para refletir de
-     * forma rápida e fácil todos os arquivos dentro do jar ou projeto.
+     * Creates a new instance of Reflection.
+     * This class serves to quickly and easily reflect all the files
+     * inside the jar or project.
+     * <br><br>
+ Cria uma nova instância de Reflection. Essa classe serve para reflect de
+ forma rápida e fácil todos os arquivos dentro do jar ou projeto.
      * @throws IOException 
      */
     public Reflection() throws IOException {
     }
     
     /**
+     * Brings a list of all files inside the jar or project.<br>
      * Traz uma lista com todos os arquivos dentro do jar ou projeto.
      * @return Lista com todos os arquivos do jar ou projeto.
      * @throws URISyntaxException
      * @throws IOException 
      */
-    public List<String> refletir() throws URISyntaxException, IOException{
+    public List<String> reflect() throws URISyntaxException, IOException{
         if(array == null){
             String name = Reflection.class.getName();
             String init = name.substring(0, name.indexOf("."));
@@ -88,11 +101,16 @@ public final class Reflection {
     }
     
     /**
+     * Creates a recursive call that will scan all files found inside the jar or
+     * project and add the Path in the form of a String in the container list.
+     * <br><br>
      * Cria uma chamada recursiva que vai varrer todos os arquivos encontrados
      * dentro do jar ou projeto e adicionar o Path em forma de String na lista
      * de container.
-     * @param container List que receberá as Strings de path dos arquivos.
-     * @param folder Pasta que será varrida.
+     * @param container List that will receive the file path Strings.<br>
+     * List que receberá as Strings de path dos arquivos.
+     * @param folder Folder to be scanned.<br>
+     * Pasta que será varrida.
      */
     private void getFiles(List<String> container, File folder){
         for(File f : folder.listFiles()){
@@ -105,6 +123,13 @@ public final class Reflection {
     }
     
     /**
+     * ENGLISH<br>
+     * Returns a list of all classes that extend or implement the given class
+     * or interface. Ex: if I inform the Serializible interface as a parameter,
+     * a list of all classes that implement serializable or that extend some
+     * class that implements it will be returned.
+     * <br><br>
+     * PORTUGUÊS<br>
      * Retorna uma lista de todas as classes que extendem ou implementam a classe
      * ou interface informada. Ex: se eu informar a interface Serializible como
      * parâmetro, será retornado a lista de todas as classes que implementam
@@ -115,7 +140,7 @@ public final class Reflection {
     public List<String> allImplements(Class classe){
         List<String> retorno = new ArrayList<>();
         try {
-            List<String> reflexo = refletir();
+            List<String> reflexo = reflect();
             for(String s : reflexo){
                 Class cl = StringToClass(s);
                 if(cl != null){
@@ -142,8 +167,15 @@ public final class Reflection {
     }
     
     /**
+     * ENGLISH<br>
+     * Returns a list of all classes that implement, extend, or annotate 'class'
+     * that are not abstract and have an empty constructor.
+     * That is, classes that need mandatory parameters in the constructor will
+     * not appear in the list.
+     * <br><br>
+     * PORTUGUÊS<br>
      * Retorna uma lista de todas as classes que implementam, extendem ou anotam
-     * de 'classe' em que não sejam abstratas e possuam um construtor vazio. </br>
+     * de 'classe' e que não sejam abstratas e possuam um construtor vazio. </br>
      * ou seja, classes que precisam de parâmetros obrigatórios no construtor não
      * aparecerão na lista.
      * @param classe
@@ -157,17 +189,20 @@ public final class Reflection {
                     retorno.add(c);
                 }
             } catch (URISyntaxException | IOException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-//                Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
         return retorno;
     }
     
     /**
+     * Looks for the first occurrence of the class name in the project and tries
+     * to create a new instance of it.
+     * <br><br>
      * Procura a primeira ocorrência do nome de classe no projeto e tenta criar
      * uma nova instância da mesma.
      * @param <T>
-     * @param className Nome da classe - Somente o nome, sem pacotes ou extensões.
+     * @param className Class Name - Name only, no packages or extensions.<br>
+     * Nome da classe - Somente o nome, sem pacotes ou extensões.
      * @return Nova instância da classe solicitada.
      * @throws URISyntaxException
      * @throws IOException
@@ -180,8 +215,7 @@ public final class Reflection {
             className = className.substring(className.lastIndexOf("/")+1);
         }
         String name = className.replaceAll(".class", "");
-        String root = this.getClass().getName().substring(0, this.getClass().getName().indexOf("."));
-        String path = refletir()
+        String path = reflect()
                 .stream()
                 .filter(f -> f.contains(name))
                 .collect(Collectors.toList())
@@ -204,6 +238,8 @@ public final class Reflection {
     }
     
     /**
+     * Returns a Class object from a String path reference to the class.
+     * <br><br>
      * Retorna um objeto Class a partir de uma String de referência de caminho para
      * a classe.
      * @param path Caminho para a classe.
@@ -222,7 +258,7 @@ public final class Reflection {
                 }
 
                 String name = a.substring(path.lastIndexOf("/")+1);
-                return Class.forName(refletir()
+                return Class.forName(reflect()
                         .stream()
                         .filter(f -> f.contains(name))
                         .collect(Collectors.toList())
@@ -230,7 +266,6 @@ public final class Reflection {
                         .replaceAll("/", ".").replaceAll(".class", "")
                 );
             } catch (URISyntaxException | IOException | ClassNotFoundException ex) {
-//                Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return null;
