@@ -192,4 +192,21 @@ public class FieldsManager {
         }
     }
     
+    /**
+     * Checks whether the field is numeric, boolean, byte, or text.<br>
+     * Verifica se o campo é numérico, boleano, byte ou texto.
+     * @param field
+     * @return 
+     */
+    public static boolean isPrimitive(Field field){
+        return !(field.getType() != Short.TYPE &&
+            field.getType() != Integer.TYPE &&
+            field.getType() != Long.TYPE &&
+            field.getType() != Byte.TYPE &&
+            field.getType() != Float.TYPE &&
+            field.getType() != Double.TYPE &&
+            field.getType() != Boolean.TYPE &&
+            field.getType() != String.class);
+    }
+    
 }

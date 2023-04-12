@@ -213,6 +213,23 @@ public interface Entity extends Serializable, Cloneable{
     
     /**
      * ENGLISH<br>
+     * Deletes the entity and all sub entities that are values of its fields.<br>
+     * In other words: If the entity has a field that stores the reference to
+     * another entity and so on, then recursive calls to the fullDelete method
+     * will be made so that all child entities are deleted.
+     * <br><br>
+     * PORTUGUÊS<br>
+     * Deleta a entidade e todas as sub entidades que sejam valores de seus campos.<br>
+     * Em outras palavras: Se a entidade possuir um campo que armazene a referência
+     * para outra entidade e assim por diante, então serão feitas chamadas recursivas
+     * ao método fullDelete para que todas as entidades filho sejam deletadas.
+     */
+    default void fullDelete(){
+        IO.fullDelete(this);
+    }
+    
+    /**
+     * ENGLISH<br>
      * Receives a list of entities that should REMAIN in the database, deleting
      * any entity that is not on that list!<br><br>
      * PORTUGUÊS<br>

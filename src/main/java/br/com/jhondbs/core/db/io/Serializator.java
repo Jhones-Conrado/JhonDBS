@@ -24,6 +24,7 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.jhondbs.core.db.base.Entity;
+import br.com.jhondbs.core.db.base.FieldsManager;
 
 /**
  * ENGLISH<br>
@@ -65,7 +66,7 @@ public class Serializator {
         Object ins = null;
         
         for(Field field : getAllFields(object.getClass())){
-            if(isPrimitive(field)){
+            if(FieldsManager.isPrimitive(field)){
                 map.put(field.getName(), toMap(field, object));
             } else {
                 try {
@@ -111,7 +112,7 @@ public class Serializator {
         
         for(Field field : getAllFields(forName)){
             field.setAccessible(true);
-            if(isPrimitive(field)){
+            if(FieldsManager.isPrimitive(field)){
                 Map map = (Map) inner.get(field.getName());
                 
                 //Verificações necessárias para não dar erro na conversão de tipos numéricos.
@@ -180,7 +181,7 @@ public class Serializator {
         Map map = new LinkedHashMap();
         field.setAccessible(true);
         
-        if(isPrimitive(field)){
+        if(FieldsManager.isPrimitive(field)){
             try {
                 map.put(field.getType().getName(), field.get(obj));
             } catch (IllegalArgumentException | IllegalAccessException ex) {
@@ -190,23 +191,6 @@ public class Serializator {
             map.put(field.getType().getName(), toMap(field, obj));
         }
         return map;
-    }
-    
-    /**
-     * Checks whether the field is numeric, boolean, byte, or text.<br>
-     * Verifica se o campo é numérico, boleano, byte ou texto.
-     * @param field
-     * @return 
-     */
-    private static boolean isPrimitive(Field field){
-        return !(field.getType() != Short.TYPE &&
-            field.getType() != Integer.TYPE &&
-            field.getType() != Long.TYPE &&
-            field.getType() != Byte.TYPE &&
-            field.getType() != Float.TYPE &&
-            field.getType() != Double.TYPE &&
-            field.getType() != Boolean.TYPE &&
-            field.getType() != String.class);
     }
     
     /**

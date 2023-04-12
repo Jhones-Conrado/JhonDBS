@@ -27,6 +27,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tests.objects.EnteTeste;
 import br.com.jhondbs.core.db.base.Entity;
+import tests.objects.OFDDad;
+import tests.objects.OFDSon;
 
 /**
  *
@@ -158,7 +160,65 @@ public class IOTest {
 //        // TODO review the generated test code and remove the default call to fail.
 //        fail("The test case is a prototype.");
 //    }
-//
+    
+    /**
+     * Test of fullDelete method, of class IO.
+     */
+    @Test
+    public void testFullDelete(){
+        OFDDad obj = new OFDDad();
+        long prevId = obj.getEnteId();
+        long prevSonId = obj.son.getEnteId();
+        
+        try {
+            obj.save();
+            
+            if(obj.getEnteId() == prevId || obj.son.getEnteId() == prevSonId){
+                assert false;
+            } else {
+                prevId = obj.getEnteId();
+                prevSonId = obj.son.getEnteId();
+                
+                OFDSon son = new OFDSon().load(prevSonId);
+                if(son != null){
+                    obj.fullDelete();
+                    son = new OFDSon().load(prevSonId);
+                    if(son == null){
+                        assert true;
+                    } else {
+                        assert false;
+                    }
+                } else {
+                    assert false;
+                }
+            }
+            
+        } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
+            Logger.getLogger(IOTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
+        
+        OFDDad dad = new OFDDad();
+        try {
+            dad.save();
+            long sonId = dad.son.getEnteId();
+            
+            dad.delete();
+            
+            OFDSon son2 = new OFDSon().load(sonId);
+            if(son2 != null){
+                assert true;
+            } else {
+                assert false;
+            }
+            
+        } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
+            Logger.getLogger(IOTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
+    }
+    
+    
 //    /**
 //     * Test of delete method, of class IO.
 //     */

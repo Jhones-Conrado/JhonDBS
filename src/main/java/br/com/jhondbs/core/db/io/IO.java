@@ -36,6 +36,8 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.base.Entity;
+import br.com.jhondbs.core.db.base.FieldsManager;
+import java.lang.reflect.Field;
 
 /**
  * Responsible for saving, deleting and loading database entities.<br><br>
@@ -204,6 +206,37 @@ public class IO {
      */
     public static void delete(List<Entity> entities){
         entities.forEach(e -> IO.delete(e));
+    }
+    
+    /**
+     * ENGLISH<br>
+     * Deletes the entity and all sub entities that are values of its fields.<br>
+     * In other words: If the entity has a field that stores the reference to
+     * another entity and so on, then recursive calls to the fullDelete method
+     * will be made so that all child entities are deleted.<br><br>
+     * PORTUGUÊS<br>
+     * Deleta a entidade e todas as sub entidades que sejam valores de seus campos.<br>
+     * Em outras palavras: Se a entidade possuir um campo que armazene a referência
+     * para outra entidade e assim por diante, então serão feitas chamadas recursivas
+     * ao método fullDelete para que todas as entidades filho sejam deletadas.
+     * @param entity
+     */
+    public static void fullDelete(Entity entity){
+        List<Field> fields = FieldsManager.getAllFields(entity);
+        for(Field f : fields){
+            try {
+                Object type = f.getType().newInstance();
+                if(type instanceof Entity){
+                    f.setAccessible(true);
+                    Object get = f.get(entity);
+                    Entity cast = (Entity) get;
+                    cast.fullDelete();
+                    cast.delete();
+                }
+            } catch (IllegalAccessException | InstantiationException e) {
+            }
+        }
+        delete(entity);
     }
     
     /**
