@@ -25,6 +25,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.base.FieldsManager;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * ENGLISH<br>
@@ -65,26 +67,51 @@ public class Serializator {
         
         Object ins = null;
         
-        for(Field field : getAllFields(object.getClass())){
-            if(FieldsManager.isPrimitive(field)){
-                map.put(field.getName(), toMap(field, object));
-            } else {
-                try {
-                    ins = field.getType().newInstance();
-                    if(ins instanceof Entity){
-                        Entity get = (Entity) field.get(object);
-                        get.save();
-                        map.put(field.getName(), get.getEnteId());
-                    } else {
-                        map.put(field.getName(), serialize(field.get(object)));
+        if(Reflection.isPrimitive(object)){
+            mapObj.put(object.getClass().getName(), object);
+        } else {
+            
+            for(Field field : getAllFields(object.getClass())){
+                field.setAccessible(true);
+
+                Class<?> type = field.getType();
+                if(Reflection.isInstance(type, Number.class)){
+                    if(Reflection.isInstance(type, BigInteger.class)){
+                        BigInteger big = (BigInteger) field.get(object);
+                        map.put(field.getName(), big.toString());
+                    } else if(Reflection.isInstance(type, BigDecimal.class)){
+                        BigDecimal big = (BigDecimal) field.get(object);
+                        map.put(field.getName(), big.toString());
                     }
-                } catch (InstantiationException | DuplicatedUniqueField | EntIdBadImplementation ex) {
-                    map.put(field.getName(), serialize(field.get(object)));
+                } else if(Reflection.isInstance(type, List.class)){
+                    List<?> list = (List<?>) field.get(object);
+                    List<String> serializeds = new ArrayList<>();
+                    for(Object o : list){
+                        serializeds.add(serialize(o));
+                    }
+                    map.put(field.getName(), serializeds);
+                } else {
+                    if(FieldsManager.isPrimitive(field)){
+                        map.put(field.getName(), toMap(field, object));
+                    } else {
+                        try {
+                            ins = field.getType().newInstance();
+                            if(ins instanceof Entity){
+                                Entity get = (Entity) field.get(object);
+                                get.save();
+                                map.put(field.getName(), get.getEnteId());
+                            } else {
+                                map.put(field.getName(), serialize(field.get(object)));
+                            }
+                        } catch (InstantiationException | DuplicatedUniqueField | EntIdBadImplementation ex) {
+                            map.put(field.getName(), serialize(field.get(object)));
+                        }
+                    }
                 }
+
             }
+            mapObj.put(object.getClass().getName(), map);
         }
-        
-        mapObj.put(object.getClass().getName(), map);
         return gson.toJson(mapObj);
     }
     
@@ -105,69 +132,71 @@ public class Serializator {
         Map<String, Object> jsonMap = gson.fromJson(json, Map.class);
         String clName = (String) Arrays.asList(jsonMap.keySet().toArray()).get(0);
         
-        Class<?> forName = Class.forName(clName);
-        Object instance = forName.newInstance();
-        
-        Map<String, Object> inner = (Map<String, Object>) jsonMap.get(clName);
-        
-        for(Field field : getAllFields(forName)){
-            field.setAccessible(true);
-            if(FieldsManager.isPrimitive(field)){
-                Map map = (Map) inner.get(field.getName());
-                
-                //Verificações necessárias para não dar erro na conversão de tipos numéricos.
-                if(field.getType() == Short.TYPE){
-                    String a = String.valueOf(map.get(field.getType().getName()));
-                    if(a.contains(".")){
-                        a = a.substring(0, a.indexOf("."));
+        if(clName.endsWith("String")
+                || clName.endsWith("Byte")
+                || clName.endsWith("byte")
+                || clName.endsWith("Short")
+                || clName.endsWith("short")
+                || clName.endsWith("Integer")
+                || clName.endsWith("int")
+                || clName.endsWith("Long")
+                || clName.endsWith("long")
+                || clName.endsWith("Float")
+                || clName.endsWith("float")
+                || clName.endsWith("Double")
+                || clName.endsWith("double")
+                || clName.endsWith("Boolean")
+                || clName.endsWith("boolean")){
+            return (T) jsonMap.get(clName);
+        } else {
+            Class<?> forName = Class.forName(clName);
+            Object instance = forName.newInstance();
+
+            Map<String, Object> inner = (Map<String, Object>) jsonMap.get(clName);
+
+            for(Field field : getAllFields(forName)){
+                field.setAccessible(true);
+
+                // VERIFICA SE É UM NÚMERO OU STRING.
+                if(FieldsManager.isPrimitive(field)){
+                    fillPrimitive(inner, field, instance);
+                // VERIFICA SE É UM BIG INTEGER OU BIG DECIMAL.
+                } else if(Reflection.isInstance(field.getType(), Number.class)){
+                    if(Reflection.isInstance(field.getType(), BigInteger.class)){
+                        String value = (String) inner.get(field.getName());
+                        field.set(instance, new BigInteger(value));
+                    } else if(Reflection.isInstance(field.getType(), BigDecimal.class)){
+                        String value = (String) inner.get(field.getName());
+                        field.set(instance, new BigDecimal(value));
                     }
-                    short get = Short.parseShort(a);
-                    field.set(instance, get);
-                } else if(field.getType() == Integer.TYPE){
-                    String a = String.valueOf(map.get(field.getType().getName()));
-                    if(a.contains(".")){
-                        a = a.substring(0, a.indexOf("."));
+                // VERIFICA SE É UMA LISTA.
+                } else if(Reflection.isInstance(field.getType(), List.class)){
+                    List<String> jsonList = (List<String>) inner.get(field.getName());
+                    List<?> backList = new ArrayList<>();
+                    for(String s : jsonList){
+                        backList.add(deserialize(s));
                     }
-                    int get = Integer.parseInt(a);
-                    field.set(instance, get);
-                } else if(field.getType() == Long.TYPE){
-                    String a = String.valueOf(map.get(field.getType().getName()));
-                    if(a.contains(".")){
-                        a = a.substring(0, a.indexOf("."));
-                    }
-                    long get = Long.parseLong(a);
-                    field.set(instance, get);
-                } else if(field.getType() == Float.TYPE){
-                    String a = String.valueOf(map.get(field.getType().getName()));
-                    float get = Float.parseFloat(a);
-                    field.set(instance, get);
-                } else if(field.getType() == Double.TYPE){
-                    String a = String.valueOf(map.get(field.getType().getName()));
-                    double get = Double.parseDouble(a);
-                    field.set(instance, get);
+                    field.set(instance, backList);
                 } else {
-                    field.set(instance, map.get(field.getType().getName()));
-                }
-                
-            } else {
-                
-                try {
-                    Object ins = field.getType().newInstance();
-                    if(ins instanceof Entity){
-                        Entity e = (Entity) ins;
-                        String get = String.valueOf(inner.get(field.getName()));
-                        long id = Long.parseLong(get.substring(0, get.indexOf(".")));
-                        field.set(instance, e.load(id));
-                    } else {
+
+                    try {
+                        Object ins = field.getType().newInstance();
+                        if(ins instanceof Entity){
+                            Entity e = (Entity) ins;
+                            String get = String.valueOf(inner.get(field.getName()));
+                            long id = Long.parseLong(get.substring(0, get.indexOf(".")));
+                            field.set(instance, e.load(id));
+                        } else {
+                            field.set(instance, deserialize((String) inner.get(field.getName())));
+                        }
+                    } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException e) {
                         field.set(instance, deserialize((String) inner.get(field.getName())));
                     }
-                } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException e) {
-                    field.set(instance, deserialize((String) inner.get(field.getName())));
                 }
             }
+
+            return (T) instance;
         }
-        
-        return (T) instance;
     }
     
     /**
@@ -191,6 +220,53 @@ public class Serializator {
             map.put(field.getType().getName(), toMap(field, obj));
         }
         return map;
+    }
+    
+    /**
+     * Checks if a field taken from JSON is a primitive type and if it is, converts
+     * it to the correct type, setting the acquired value in the instance object variable.
+     * <br><br>
+     * Verifica se um campo retirado do JSON é um tipo primitivo e se for realiza
+     * a conversão para o tipo correto, setando o valor adquirido na variável do
+     * objeto de instância.
+     * @param inner
+     * @param field
+     * @param instance
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException 
+     */
+    private static void fillPrimitive(Map<String, Object> inner, Field field, Object instance) throws IllegalArgumentException, IllegalAccessException{
+        Map map = (Map) inner.get(field.getName());
+                
+        //Verificações necessárias para não dar erro na conversão de tipos numéricos.
+        String a = String.valueOf(map.get(field.getType().getName()));
+        if(field.getType() == Short.TYPE){
+            if(a.contains(".")){
+                a = a.substring(0, a.indexOf("."));
+            }
+            short get = Short.parseShort(a);
+            field.set(instance, get);
+        } else if(field.getType() == Integer.TYPE){
+            if(a.contains(".")){
+                a = a.substring(0, a.indexOf("."));
+            }
+            int get = Integer.parseInt(a);
+            field.set(instance, get);
+        } else if(field.getType() == Long.TYPE){
+            if(a.contains(".")){
+                a = a.substring(0, a.indexOf("."));
+            }
+            long get = Long.parseLong(a);
+            field.set(instance, get);
+        } else if(field.getType() == Float.TYPE){
+            float get = Float.parseFloat(a);
+            field.set(instance, get);
+        } else if(field.getType() == Double.TYPE){
+            double get = Double.parseDouble(a);
+            field.set(instance, get);
+        } else {
+            field.set(instance, map.get(field.getType().getName()));
+        }
     }
     
     /**

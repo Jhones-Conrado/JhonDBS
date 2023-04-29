@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="8" failures="0" name="br.com.jhondbs.core.db.filter.StringFilterTest" time="0.004" errors="0" skipped="0">
+<testsuite tests="8" failures="0" name="br.com.jhondbs.core.db.filter.StringFilterTest" time="0.011" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="java.vm.version" value="17.0.2+8-86"/>
@@ -31,7 +31,7 @@
     <property name="java.class.version" value="61.0"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="os.version" value="6.2.10-200.fc37.x86_64"/>
+    <property name="os.version" value="6.2.12-300.fc38.x86_64"/>
     <property name="library.jansi.path" value="/app/netbeans/java/maven/lib/jansi-native"/>
     <property name="user.home" value="/home/jhonessales"/>
     <property name="user.timezone" value="America/Fortaleza"/>
@@ -41,7 +41,7 @@
     <property name="java.class.path" value="/app/netbeans/java/maven/boot/plexus-classworlds-2.6.0.jar"/>
     <property name="java.vm.specification.version" value="17"/>
     <property name="sun.arch.data.model" value="64"/>
-    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher -Dmaven.ext.class.path=/app/netbeans/java/maven-nblib/netbeans-eventspy.jar test"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher -Dmaven.ext.class.path=/app/netbeans/java/maven-nblib/netbeans-eventspy.jar --no-transfer-progress test"/>
     <property name="java.home" value="/home/jhonessales/NetBeansJDKs/openjdk-17.0.2_linux-x64_bin.tar/jdk-17.0.2"/>
     <property name="user.language" value="pt"/>
     <property name="java.specification.vendor" value="Oracle Corporation"/>
@@ -60,8 +60,8 @@
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testStartsIgnoreCase" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEnds" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEqualsIgnoreCase" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEndsIgnoreCase" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testContains" time="0.003"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEquals" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEndsIgnoreCase" time="0.002"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testContains" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEquals" time="0.008"/>
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testStarts" time="0"/>
 </testsuite>

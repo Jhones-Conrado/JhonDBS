@@ -271,4 +271,46 @@ public final class Reflection {
         return null;
     }
     
+    /**
+     * Faz uma verificação a partir de uma classe para identificar se é uma instância
+     * de alguma outra superclass.
+     * @param son
+     * @param dad
+     * @return 
+     */
+    public static boolean isInstance(Class son, Class dad){
+        
+        Class temp = son;
+        while(temp != Object.class){
+            if(temp == dad){
+                return true;
+            }
+            temp = temp.getSuperclass();
+            if(temp == null){
+                break;
+            }
+        }
+        
+        return false;
+    }
+    
+    public static boolean isPrimitive(Object object){
+        Class<? extends Object> aClass = object.getClass();
+        return  isInstance(aClass, Byte.class) ||
+                isInstance(aClass, Short.class) ||
+                isInstance(aClass, Integer.class) ||
+                isInstance(aClass, Long.class) ||
+                isInstance(aClass, Float.class) ||
+                isInstance(aClass, Double.class) ||
+                isInstance(aClass, Boolean.class) ||
+                isInstance(aClass, byte.class) ||
+                isInstance(aClass, short.class) ||
+                isInstance(aClass, int.class) ||
+                isInstance(aClass, long.class) ||
+                isInstance(aClass, float.class) ||
+                isInstance(aClass, double.class) ||
+                isInstance(aClass, boolean.class) ||
+                isInstance(aClass, String.class);
+    }
+    
 }

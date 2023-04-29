@@ -27,6 +27,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import tests.objects.EnteA;
 import tests.objects.EnteBase;
+import tests.objects.HardObject;
 import tests.objects.ObjA;
 import tests.objects.ObjB;
 import tests.objects.ObjMantemAbstrato;
@@ -133,6 +134,38 @@ public class SerializatorTest {
             EnteBase b = base.load(base.getEnteId());
             assert b.a.name.equals("Jhones");
         } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
+    }
+    
+    @Test
+    public void testHardObject(){
+        System.out.println("test HardObject serialization");
+        HardObject o = new HardObject();
+        try {
+            String json = Serializator.serialize(o);
+            System.out.println("HARD OBJECT JSON: "+json);
+            
+            HardObject o2 = Serializator.deserialize(json);
+            
+            System.out.println("ACERTO -=-=-=-=-=-=-=-");
+            System.out.println(o2.getName());
+            System.out.println(o2.getMoney().toString());
+            
+            for(Object ob : o2.getList()){
+                if(Reflection.isInstance(ob.getClass(), EnteA.class)){
+                    EnteA ente = (EnteA) ob;
+                    System.out.println(ente.name);
+                }
+            }
+            
+            
+            assert true;
+        } catch (IllegalArgumentException | IllegalAccessException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        } catch (ClassNotFoundException | InstantiationException ex) {
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
             assert false;
         }

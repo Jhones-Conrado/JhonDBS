@@ -16,20 +16,48 @@
  */
 package tests.objects;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  *
  * @author jhonessales
  */
-public class ObjB extends Abstrato{
+public class HardObject {
+    
+    private BigDecimal money;
+    private List<Object> textList;
+    private final String name;
 
-    @Override
-    public void print() {
-        System.out.println("Objeto B");
+    public HardObject() {
+        money = new BigDecimal(50);
+        textList = new ArrayList<>();
+        name = "Jhones";
+        
+        EnteA ente = new EnteA();
+        ente.name = "João";
+        
+        textList.add("casa");
+        textList.add("sapato");
+        textList.add(55);
+        textList.add(33.002);
+        textList.add("boneca");
+        textList.add("mato");
+        textList.add(ente);
+        
     }
     
-    @Override
     public String getName(){
-        return "b";
+        return name;
+    }
+    
+    public BigDecimal getMoney(){
+        return money;
+    }
+    
+    public List<Object> getList(){
+        return textList;
     }
     
 }
