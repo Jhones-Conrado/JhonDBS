@@ -162,10 +162,7 @@ public class SerializatorTest {
             
             
             assert true;
-        } catch (IllegalArgumentException | IllegalAccessException ex) {
-            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
-            assert false;
-        } catch (ClassNotFoundException | InstantiationException ex) {
+        } catch (IllegalArgumentException | IllegalAccessException | ClassNotFoundException | InstantiationException ex) {
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
             assert false;
         }

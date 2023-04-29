@@ -130,8 +130,12 @@ public class Serializator {
      */
     public static <T> T deserialize(String json) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         Map<String, Object> jsonMap = gson.fromJson(json, Map.class);
-        String clName = (String) Arrays.asList(jsonMap.keySet().toArray()).get(0);
+        String clName = jsonMap.keySet().iterator().next();
         
+        /*
+        I kept this check instead of using "Class.forName" with "Reflection.isPrimitive"
+        due to the possibility of error when calling "Class.forName".
+        */
         if(clName.endsWith("String")
                 || clName.endsWith("Byte")
                 || clName.endsWith("byte")
@@ -156,7 +160,6 @@ public class Serializator {
 
             for(Field field : getAllFields(forName)){
                 field.setAccessible(true);
-
                 // VERIFICA SE É UM NÚMERO OU STRING.
                 if(FieldsManager.isPrimitive(field)){
                     fillPrimitive(inner, field, instance);
@@ -178,7 +181,7 @@ public class Serializator {
                     }
                     field.set(instance, backList);
                 } else {
-
+                    // EM CASO DE SER UM OBJETO, VERIFICA SE É UMA ENTIDADE OU OBJETO COMUM.
                     try {
                         Object ins = field.getType().newInstance();
                         if(ins instanceof Entity){
@@ -194,7 +197,6 @@ public class Serializator {
                     }
                 }
             }
-
             return (T) instance;
         }
     }
