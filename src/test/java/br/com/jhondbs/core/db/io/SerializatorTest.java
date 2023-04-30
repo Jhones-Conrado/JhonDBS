@@ -16,14 +16,11 @@
  */
 package br.com.jhondbs.core.db.io;
 
-import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
 import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -163,6 +160,29 @@ public class SerializatorTest {
                 assert true;
             }
         } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
+    }
+    
+    @Test
+    public void testListSerialize(){
+        System.out.println("test List serialization");
+        List<Object> list = new ArrayList<>();
+        list.add("Texto 1");
+        list.add(50);
+        list.add(new EnteA());
+        try {
+            String json = Serializator.serialize(list);
+            List<Object> desList = Serializator.deserialize(json);
+            assert desList.size() == 3;
+        } catch (IllegalArgumentException | IllegalAccessException | DuplicatedUniqueField | EntIdBadImplementation ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        } catch (InstantiationException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        } catch (Exception ex) {
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
             assert false;
         }

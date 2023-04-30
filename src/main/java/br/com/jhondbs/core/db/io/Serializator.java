@@ -74,6 +74,8 @@ public class Serializator {
             return serializeByte((Byte) object);
         } else if(Reflection.isInstance(object.getClass(), Entity.class)){
             return serializeEntity((Entity) object);
+        } else if(Reflection.isInstance(object.getClass(), List.class)){
+            return serializeList((List) object);
         } else {
             return serializeObject(object);
         }
@@ -112,6 +114,8 @@ public class Serializator {
                 return (T) deserializeByte(json);
             } else if(Reflection.isInstance(Class.forName(clName), Entity.class)){
                 return (T) deserializeEntity(json);
+            } else if(Reflection.isInstance(Class.forName(clName), List.class)){
+                return (T) deserializeList(json);
             } else {
                 return (T) deserializeObject(json);
             }
@@ -235,20 +239,7 @@ public class Serializator {
                 fieldEnte.save();
                 map.put(field.getName(), fieldEnte.getEnteId());
             } else if(Reflection.isInstance(field.getType(), List.class)){
-                List list = (List) field.get(obj);
-                List<String> backList = new ArrayList<>();
-                for(Object o : list){
-                    if(Reflection.isInstance(o.getClass(), Entity.class)){
-                        Entity castEntity = (Entity) o;
-                        castEntity.save();
-                        Map<String, Long> castEntityMap = new LinkedHashMap<>();
-                        castEntityMap.put(castEntity.getClass().getName(), castEntity.getEnteId());
-                        backList.add("->"+gson.toJson(castEntityMap));
-                    } else {
-                        backList.add(serialize(o));
-                    }
-                }
-                map.put(field.getName(), backList);
+                map.put(field.getName(), serializeList((List) field.get(obj)));
             } else {
                 map.put(field.getName(), serialize(field.get(obj)));
             }
@@ -272,27 +263,55 @@ public class Serializator {
                     Entity load = e.load(((Number) fields.get(field.getName())).longValue());
                     field.set(instance, load);
                 } else if(Reflection.isInstance(field.getType(), List.class)){
-                    List<String> listObjs = (List<String>) fields.get(field.getName());
-                    List<Object> backList = new ArrayList<>();
-                    for(String s : listObjs){
-                        if(s.startsWith("->")){
-                            Map<String, Long> mat = gson.fromJson(s.substring(2), Map.class);
-                            String clName = mat.keySet().iterator().next();
-                            Class<?> forName = Class.forName(clName);
-                            Long id = ((Number) mat.get(clName)).longValue();
-                            Entity load = (Entity) IO.load((Entity) forName.newInstance(), id);
-                            backList.add(load);
-                        } else {
-                            backList.add(deserialize(s));
-                        }
-                    }
-                    field.set(instance, backList);
+                    field.set(instance, deserializeList((String) fields.get(field.getName())));
                 } else {
                     field.set(instance, deserialize((String) fields.get(field.getName())));
                 }
             }
         }
         return (T) instance;
+    }
+    
+    private static String serializeList(List list) throws IllegalArgumentException, IllegalAccessException, DuplicatedUniqueField, EntIdBadImplementation{
+        List<String> backList = new ArrayList<>();
+        for(Object object : list){
+            if(Reflection.isInstance(object.getClass(), Entity.class)){
+                Entity castEntity = (Entity) object;
+                castEntity.save();
+                Map<String, Long> castEntityMap = new LinkedHashMap<>();
+                castEntityMap.put(castEntity.getClass().getName(), castEntity.getEnteId());
+                backList.add("->"+gson.toJson(castEntityMap));
+            } else {
+                backList.add(serialize(object));
+            }
+        }
+        Map<String, List<String>> backMap = new HashMap<>();
+        backMap.put(list.getClass().getName(), backList);
+        return gson.toJson(backMap);
+    }
+    
+    private static List<Object> deserializeList(List<String> list) throws IllegalAccessException, InstantiationException, Exception{
+        List<Object> backList = new ArrayList<>();
+        for(String s : list){
+            if(s.startsWith("->")){
+                Map<String, Long> mat = gson.fromJson(s.substring(2), Map.class);
+                String clName = mat.keySet().iterator().next();
+                Class<?> forName = Class.forName(clName);
+                Long id = ((Number) mat.get(clName)).longValue();
+                Entity load = (Entity) IO.load((Entity) forName.newInstance(), id);
+                backList.add(load);
+            } else {
+                backList.add(deserialize(s));
+            }
+        }
+        return backList;
+    }
+    
+    private static List<Object> deserializeList(String json) throws InstantiationException, Exception{
+        Map<String, List<String>> map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        List<String> list = map.get(className);
+        return deserializeList(list);
     }
     
     /**
