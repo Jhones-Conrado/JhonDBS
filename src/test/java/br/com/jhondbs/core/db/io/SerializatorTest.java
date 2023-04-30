@@ -16,8 +16,14 @@
  */
 package br.com.jhondbs.core.db.io;
 
+import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
 import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -70,6 +76,8 @@ public class SerializatorTest {
             assert true;
         } catch (IllegalAccessException | IllegalArgumentException e) {
             assert false;
+        } catch (DuplicatedUniqueField | EntIdBadImplementation ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 
@@ -84,6 +92,9 @@ public class SerializatorTest {
             Object d = Serializator.deserialize(Serializator.serialize(obj));
             assert d != null;
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        } catch (Exception ex) {
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
             assert false;
         }
@@ -115,8 +126,11 @@ public class SerializatorTest {
                 assert false;
             }
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
-            assert false;
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        } catch (Exception ex) {
+            Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
         }
     }
     
@@ -144,25 +158,11 @@ public class SerializatorTest {
         System.out.println("test HardObject serialization");
         HardObject o = new HardObject();
         try {
-            String json = Serializator.serialize(o);
-            System.out.println("HARD OBJECT JSON: "+json);
-            
-            HardObject o2 = Serializator.deserialize(json);
-            
-            System.out.println("ACERTO -=-=-=-=-=-=-=-");
-            System.out.println(o2.getName());
-            System.out.println(o2.getMoney().toString());
-            
-            for(Object ob : o2.getList()){
-                if(Reflection.isInstance(ob.getClass(), EnteA.class)){
-                    EnteA ente = (EnteA) ob;
-                    System.out.println(ente.name);
-                }
+            if(o.save()){
+                HardObject load = o.load(o.getEnteId());
+                assert true;
             }
-            
-            
-            assert true;
-        } catch (IllegalArgumentException | IllegalAccessException | ClassNotFoundException | InstantiationException ex) {
+        } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);
             assert false;
         }

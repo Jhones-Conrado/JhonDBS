@@ -21,10 +21,7 @@ import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import com.google.gson.Gson;
 import java.lang.reflect.Field;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import br.com.jhondbs.core.db.base.Entity;
-import br.com.jhondbs.core.db.base.FieldsManager;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -46,8 +43,7 @@ public class Serializator {
     
     /**
      * Serializes an object to a JSON map that maintains the class reference of
-     * all objects and fields, ignoring the SerialVersionUID.
-     * <br><br>
+     * all objects and fields, ignoring the SerialVersionUID.<br><br>
      * Serializa um objeto para um mapa JSON que mantém a referência de classe de todos
      * os objetos e campos, ignorando o SerialVersionUID.
      * @param <T>
@@ -55,64 +51,32 @@ public class Serializator {
      * @return
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
+     * @throws br.com.jhondbs.core.db.errors.DuplicatedUniqueField 
+     * @throws br.com.jhondbs.core.db.errors.EntIdBadImplementation 
      */
-    public static <T> String serialize(T object) throws IllegalArgumentException, IllegalAccessException {
+    public static <T> String serialize(T object) throws IllegalArgumentException, IllegalAccessException, DuplicatedUniqueField, EntIdBadImplementation {
         
         if (object == null) {
             return null;
         }
         
-        Map<String, Object> mapObj = new LinkedHashMap<>();
-        Map<String, Object> map = new LinkedHashMap<>();
-        
-        Object ins = null;
-        
-        if(Reflection.isPrimitive(object)){
-            mapObj.put(object.getClass().getName(), object);
+        if(Reflection.isInstance(object.getClass(), Date.class)){
+            return serializeDate((Date) object);
+        } else if(Reflection.isInstance(object.getClass(), Calendar.class)){
+            return serializeCalendar((Calendar) object);
+        } else if(Reflection.isInstance(object.getClass(), Number.class)){
+            return serializeNumber((Number) object);
+        } else if(Reflection.isInstance(object.getClass(), String.class)){
+            return serializeString((String) object);
+        } else if(Reflection.isInstance(object.getClass(), Boolean.class)){
+            return serializeBoolean((Boolean) object);
+        } else if(Reflection.isInstance(object.getClass(), Byte.class)){
+            return serializeByte((Byte) object);
+        } else if(Reflection.isInstance(object.getClass(), Entity.class)){
+            return serializeEntity((Entity) object);
         } else {
-            
-            for(Field field : getAllFields(object.getClass())){
-                field.setAccessible(true);
-
-                Class<?> type = field.getType();
-                if(Reflection.isInstance(type, Number.class)){
-                    if(Reflection.isInstance(type, BigInteger.class)){
-                        BigInteger big = (BigInteger) field.get(object);
-                        map.put(field.getName(), big.toString());
-                    } else if(Reflection.isInstance(type, BigDecimal.class)){
-                        BigDecimal big = (BigDecimal) field.get(object);
-                        map.put(field.getName(), big.toString());
-                    }
-                } else if(Reflection.isInstance(type, List.class)){
-                    List<?> list = (List<?>) field.get(object);
-                    List<String> serializeds = new ArrayList<>();
-                    for(Object o : list){
-                        serializeds.add(serialize(o));
-                    }
-                    map.put(field.getName(), serializeds);
-                } else {
-                    if(FieldsManager.isPrimitive(field)){
-                        map.put(field.getName(), toMap(field, object));
-                    } else {
-                        try {
-                            ins = field.getType().newInstance();
-                            if(ins instanceof Entity){
-                                Entity get = (Entity) field.get(object);
-                                get.save();
-                                map.put(field.getName(), get.getEnteId());
-                            } else {
-                                map.put(field.getName(), serialize(field.get(object)));
-                            }
-                        } catch (InstantiationException | DuplicatedUniqueField | EntIdBadImplementation ex) {
-                            map.put(field.getName(), serialize(field.get(object)));
-                        }
-                    }
-                }
-
-            }
-            mapObj.put(object.getClass().getName(), map);
+            return serializeObject(object);
         }
-        return gson.toJson(mapObj);
     }
     
     /**
@@ -128,147 +92,207 @@ public class Serializator {
      * @throws IllegalAccessException
      * @throws InstantiationException 
      */
-    public static <T> T deserialize(String json) throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-        Map<String, Object> jsonMap = gson.fromJson(json, Map.class);
-        String clName = jsonMap.keySet().iterator().next();
+    public static <T> T deserialize(String json) throws ClassNotFoundException, IllegalAccessException, InstantiationException, Exception {
+        if(!json.isBlank()){
+            
+            Map<String, Object> jsonMap = gson.fromJson(json, Map.class);
+            String clName = jsonMap.keySet().iterator().next();
+            
+            if(Reflection.isInstance(Class.forName(clName), Date.class)){
+                return (T) deserializeDate(json);
+            } else if(Reflection.isInstance(Class.forName(clName), Calendar.class)){
+                return (T) deserializeCalendar(json);
+            } else if(Reflection.isInstance(Class.forName(clName), Number.class)){
+                return (T) deserializeNumber(json);
+            } else if(Reflection.isInstance(Class.forName(clName), String.class)){
+                return (T) deserializeString(json);
+            } else if(Reflection.isInstance(Class.forName(clName), Boolean.class)){
+                return (T) deserializeBoolean(json);
+            } else if(Reflection.isInstance(Class.forName(clName), Byte.class)){
+                return (T) deserializeByte(json);
+            } else if(Reflection.isInstance(Class.forName(clName), Entity.class)){
+                return (T) deserializeEntity(json);
+            } else {
+                return (T) deserializeObject(json);
+            }
+        }
+        throw new Exception("Blank JSON");
+    }
+    
+    private static String serializeDate(Date date){
+        Map<String, Long> map = new HashMap<>();
+        map.put(date.getClass().getName(), date.getTime());
+        return gson.toJson(map);
+    }
+    
+    private static Date deserializeDate(String json) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        Double time = (Double) map.get(className);
+        Date instance = (Date) Class.forName(className).newInstance();
+        instance.setTime(time.longValue());
+        return instance;
+    }
+    
+    private static String serializeCalendar(Calendar calendar){
+        Map<String, Long> map = new HashMap<>();
+        map.put(calendar.getClass().getName(), calendar.getTimeInMillis());
+        return gson.toJson(map);
+    }
+    
+    private static Calendar deserializeCalendar(String json) throws ClassNotFoundException, InstantiationException, IllegalAccessException{
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        Double time = (Double) map.get(className);
+        Calendar instance = (Calendar) Class.forName(className).newInstance();
+        instance.setTimeInMillis(time.longValue());
+        return instance;
+    }
+    
+    private static String serializeNumber(Number number){
+        Map<String, String> map = new HashMap<>();
+        map.put(number.getClass().getName(), number.toString());
+        return gson.toJson(map);
+    }
+    
+    private static Number deserializeNumber(String json) throws ClassNotFoundException{
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        String textNumber = (String) map.get(className);
         
-        /*
-        I kept this check instead of using "Class.forName" with "Reflection.isPrimitive"
-        due to the possibility of error when calling "Class.forName".
-        */
-        if(clName.endsWith("String")
-                || clName.endsWith("Byte")
-                || clName.endsWith("byte")
-                || clName.endsWith("Short")
-                || clName.endsWith("short")
-                || clName.endsWith("Integer")
-                || clName.endsWith("int")
-                || clName.endsWith("Long")
-                || clName.endsWith("long")
-                || clName.endsWith("Float")
-                || clName.endsWith("float")
-                || clName.endsWith("Double")
-                || clName.endsWith("double")
-                || clName.endsWith("Boolean")
-                || clName.endsWith("boolean")){
-            return (T) jsonMap.get(clName);
-        } else {
-            Class<?> forName = Class.forName(clName);
-            Object instance = forName.newInstance();
-
-            Map<String, Object> inner = (Map<String, Object>) jsonMap.get(clName);
-
-            for(Field field : getAllFields(forName)){
-                field.setAccessible(true);
-                // VERIFICA SE É UM NÚMERO OU STRING.
-                if(FieldsManager.isPrimitive(field)){
-                    fillPrimitive(inner, field, instance);
-                // VERIFICA SE É UM BIG INTEGER OU BIG DECIMAL.
-                } else if(Reflection.isInstance(field.getType(), Number.class)){
-                    if(Reflection.isInstance(field.getType(), BigInteger.class)){
-                        String value = (String) inner.get(field.getName());
-                        field.set(instance, new BigInteger(value));
-                    } else if(Reflection.isInstance(field.getType(), BigDecimal.class)){
-                        String value = (String) inner.get(field.getName());
-                        field.set(instance, new BigDecimal(value));
+        Class<?> clazz = Class.forName(className);
+        
+        if(Reflection.isInstance(clazz, BigInteger.class)){
+            return new BigInteger(textNumber);
+        } else if(Reflection.isInstance(clazz, BigDecimal.class)){
+            return new BigDecimal(textNumber);
+        }
+        
+        Double number = Double.valueOf(textNumber);
+        if(Reflection.isInstance(clazz, Short.class)){
+            return number.shortValue();
+        } else if(Reflection.isInstance(clazz, Integer.class)){
+            return number.intValue();
+        } else if(Reflection.isInstance(clazz, Long.class)){
+            return number.longValue();
+        } else if(Reflection.isInstance(clazz, Float.class)){
+            return number.floatValue();
+        }
+        return number;
+    }
+    
+    private static String serializeString(String string){
+        Map<String, String> map = new HashMap<>();
+        map.put(string.getClass().getName(), string);
+        return gson.toJson(map);
+    }
+    
+    private static String deserializeString(String json){
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        return (String) map.get(className);
+    }
+    
+    private static String serializeBoolean(Boolean bool){
+        Map<String, Boolean> map = new HashMap<>();
+        map.put(bool.getClass().getName(), bool);
+        return gson.toJson(map);
+    }
+    
+    private static Boolean deserializeBoolean(String json){
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        return (Boolean) map.get(className);
+    }
+    
+    private static String serializeByte(Byte b){
+        Map<String, Byte> map = new HashMap<>();
+        map.put(b.getClass().getName(), b);
+        return gson.toJson(map);
+    }
+    
+    private static Byte deserializeByte(String json){
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        return (Byte) map.get(className);
+    }
+    
+    private static String serializeEntity(Entity entity) throws IllegalArgumentException, IllegalAccessException, DuplicatedUniqueField, EntIdBadImplementation{
+        return serializeObject(entity);
+    }
+    
+    private static Entity deserializeEntity(String json) throws ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
+        return deserializeObject(json);
+    }
+    
+    private static String serializeObject(Object obj) throws IllegalArgumentException, IllegalAccessException, DuplicatedUniqueField, EntIdBadImplementation{
+        Map<String, Object> mapObj = new LinkedHashMap<>();
+        Map<String, Object> map = new LinkedHashMap<>();
+        for(Field field : getAllFields(obj.getClass())){
+            field.setAccessible(true);
+            if(Reflection.isInstance(field.getType(), Entity.class)){
+                Entity fieldEnte = (Entity) field.get(obj);
+                fieldEnte.save();
+                map.put(field.getName(), fieldEnte.getEnteId());
+            } else if(Reflection.isInstance(field.getType(), List.class)){
+                List list = (List) field.get(obj);
+                List<String> backList = new ArrayList<>();
+                for(Object o : list){
+                    if(Reflection.isInstance(o.getClass(), Entity.class)){
+                        Entity castEntity = (Entity) o;
+                        castEntity.save();
+                        Map<String, Long> castEntityMap = new LinkedHashMap<>();
+                        castEntityMap.put(castEntity.getClass().getName(), castEntity.getEnteId());
+                        backList.add("->"+gson.toJson(castEntityMap));
+                    } else {
+                        backList.add(serialize(o));
                     }
-                // VERIFICA SE É UMA LISTA.
+                }
+                map.put(field.getName(), backList);
+            } else {
+                map.put(field.getName(), serialize(field.get(obj)));
+            }
+        }
+        mapObj.put(obj.getClass().getName(), map);
+        return gson.toJson(mapObj);
+    }
+    
+    private static <T> T deserializeObject(String json) throws ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
+        Map map = gson.fromJson(json, Map.class);
+        String className = (String) map.keySet().iterator().next();
+        Class<?> entityClass = Class.forName(className);
+        T instance = (T) entityClass.newInstance();
+        Map fields = (Map) map.get(className);
+        List<Field> allFields = getAllFields(entityClass);
+        for(Field field : allFields){
+            field.setAccessible(true);
+            if(fields.containsKey(field.getName())){
+                if(Reflection.isInstance(field.getType(), Entity.class)){
+                    Entity e = (Entity) field.getType().newInstance();
+                    Entity load = e.load(((Number) fields.get(field.getName())).longValue());
+                    field.set(instance, load);
                 } else if(Reflection.isInstance(field.getType(), List.class)){
-                    List<String> jsonList = (List<String>) inner.get(field.getName());
-                    List<?> backList = new ArrayList<>();
-                    for(String s : jsonList){
-                        backList.add(deserialize(s));
+                    List<String> listObjs = (List<String>) fields.get(field.getName());
+                    List<Object> backList = new ArrayList<>();
+                    for(String s : listObjs){
+                        if(s.startsWith("->")){
+                            Map<String, Long> mat = gson.fromJson(s.substring(2), Map.class);
+                            String clName = mat.keySet().iterator().next();
+                            Class<?> forName = Class.forName(clName);
+                            Long id = ((Number) mat.get(clName)).longValue();
+                            Entity load = (Entity) IO.load((Entity) forName.newInstance(), id);
+                            backList.add(load);
+                        } else {
+                            backList.add(deserialize(s));
+                        }
                     }
                     field.set(instance, backList);
                 } else {
-                    // EM CASO DE SER UM OBJETO, VERIFICA SE É UMA ENTIDADE OU OBJETO COMUM.
-                    try {
-                        Object ins = field.getType().newInstance();
-                        if(ins instanceof Entity){
-                            Entity e = (Entity) ins;
-                            String get = String.valueOf(inner.get(field.getName()));
-                            long id = Long.parseLong(get.substring(0, get.indexOf(".")));
-                            field.set(instance, e.load(id));
-                        } else {
-                            field.set(instance, deserialize((String) inner.get(field.getName())));
-                        }
-                    } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InstantiationException e) {
-                        field.set(instance, deserialize((String) inner.get(field.getName())));
-                    }
+                    field.set(instance, deserialize((String) fields.get(field.getName())));
                 }
             }
-            return (T) instance;
         }
-    }
-    
-    /**
-     * Converts a field to a map of type 'key' 'value' and converts it to JSON.<br>
-     * Converte um campo em um mapa do tipo 'chave' 'valor' e o converte em JSON.
-     * @param field
-     * @param obj
-     * @return 
-     */
-    private static Map toMap(Field field, Object obj){
-        Map map = new LinkedHashMap();
-        field.setAccessible(true);
-        
-        if(FieldsManager.isPrimitive(field)){
-            try {
-                map.put(field.getType().getName(), field.get(obj));
-            } catch (IllegalArgumentException | IllegalAccessException ex) {
-                Logger.getLogger(Serializator.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        } else {
-            map.put(field.getType().getName(), toMap(field, obj));
-        }
-        return map;
-    }
-    
-    /**
-     * Checks if a field taken from JSON is a primitive type and if it is, converts
-     * it to the correct type, setting the acquired value in the instance object variable.
-     * <br><br>
-     * Verifica se um campo retirado do JSON é um tipo primitivo e se for realiza
-     * a conversão para o tipo correto, setando o valor adquirido na variável do
-     * objeto de instância.
-     * @param inner
-     * @param field
-     * @param instance
-     * @throws IllegalArgumentException
-     * @throws IllegalAccessException 
-     */
-    private static void fillPrimitive(Map<String, Object> inner, Field field, Object instance) throws IllegalArgumentException, IllegalAccessException{
-        Map map = (Map) inner.get(field.getName());
-                
-        //Verificações necessárias para não dar erro na conversão de tipos numéricos.
-        String a = String.valueOf(map.get(field.getType().getName()));
-        if(field.getType() == Short.TYPE){
-            if(a.contains(".")){
-                a = a.substring(0, a.indexOf("."));
-            }
-            short get = Short.parseShort(a);
-            field.set(instance, get);
-        } else if(field.getType() == Integer.TYPE){
-            if(a.contains(".")){
-                a = a.substring(0, a.indexOf("."));
-            }
-            int get = Integer.parseInt(a);
-            field.set(instance, get);
-        } else if(field.getType() == Long.TYPE){
-            if(a.contains(".")){
-                a = a.substring(0, a.indexOf("."));
-            }
-            long get = Long.parseLong(a);
-            field.set(instance, get);
-        } else if(field.getType() == Float.TYPE){
-            float get = Float.parseFloat(a);
-            field.set(instance, get);
-        } else if(field.getType() == Double.TYPE){
-            double get = Double.parseDouble(a);
-            field.set(instance, get);
-        } else {
-            field.set(instance, map.get(field.getType().getName()));
-        }
+        return (T) instance;
     }
     
     /**

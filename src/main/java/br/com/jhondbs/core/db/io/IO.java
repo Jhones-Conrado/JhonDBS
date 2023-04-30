@@ -110,6 +110,8 @@ public class IO {
                 return Serializator.deserialize(json);
             } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
                 Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
             }
             
         }

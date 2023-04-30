@@ -16,27 +16,34 @@
  */
 package tests.objects;
 
+import br.com.jhondbs.core.db.base.padrao.DefaultEntity;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 /**
  *
  * @author jhonessales
  */
-public class HardObject {
+public class HardObject extends DefaultEntity {
     
     private BigDecimal money;
     private List<Object> textList;
     private final String name;
+    private Date date;
+    private GregorianCalendar calendar;
 
     public HardObject() {
         money = new BigDecimal(50);
         textList = new ArrayList<>();
         name = "Jhones";
+        date = new Date();
+        calendar = new GregorianCalendar();
         
         EnteA ente = new EnteA();
-        ente.name = "João";
+        ente.name = "João HardObject";
         
         textList.add("casa");
         textList.add("sapato");
@@ -45,6 +52,7 @@ public class HardObject {
         textList.add("boneca");
         textList.add("mato");
         textList.add(ente);
+        textList.add(new Date());
         
     }
     
