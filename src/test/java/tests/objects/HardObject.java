@@ -21,7 +21,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -34,6 +36,7 @@ public class HardObject extends DefaultEntity {
     private final String name;
     private Date date;
     private GregorianCalendar calendar;
+    private Set set;
 
     public HardObject() {
         money = new BigDecimal(50);
@@ -53,6 +56,13 @@ public class HardObject extends DefaultEntity {
         textList.add("mato");
         textList.add(ente);
         textList.add(new Date());
+        
+        set = new HashSet();
+        set.add(5);
+        set.add(10);
+        set.add(11.3);
+        set.add("Jhones");
+        set.add(5);
         
     }
     

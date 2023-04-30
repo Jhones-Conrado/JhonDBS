@@ -76,6 +76,8 @@ public class Serializator {
             return serializeEntity((Entity) object);
         } else if(Reflection.isInstance(object.getClass(), List.class)){
             return serializeList((List) object);
+        } else if(Reflection.isInstance(object.getClass(), Set.class)){
+            return serializeSet((Set) object);
         } else {
             return serializeObject(object);
         }
@@ -116,6 +118,8 @@ public class Serializator {
                 return (T) deserializeEntity(json);
             } else if(Reflection.isInstance(Class.forName(clName), List.class)){
                 return (T) deserializeList(json);
+            }  else if(Reflection.isInstance(Class.forName(clName), Set.class)){
+                return (T) deserializeSet(json);
             } else {
                 return (T) deserializeObject(json);
             }
@@ -238,8 +242,6 @@ public class Serializator {
                 Entity fieldEnte = (Entity) field.get(obj);
                 fieldEnte.save();
                 map.put(field.getName(), fieldEnte.getEnteId());
-            } else if(Reflection.isInstance(field.getType(), List.class)){
-                map.put(field.getName(), serializeList((List) field.get(obj)));
             } else {
                 map.put(field.getName(), serialize(field.get(obj)));
             }
@@ -264,6 +266,8 @@ public class Serializator {
                     field.set(instance, load);
                 } else if(Reflection.isInstance(field.getType(), List.class)){
                     field.set(instance, deserializeList((String) fields.get(field.getName())));
+                } else if(Reflection.isInstance(field.getType(), Set.class)){
+                    field.set(instance, deserializeSet((String) fields.get(field.getName())));
                 } else {
                     field.set(instance, deserialize((String) fields.get(field.getName())));
                 }
@@ -312,6 +316,14 @@ public class Serializator {
         String className = (String) map.keySet().iterator().next();
         List<String> list = map.get(className);
         return deserializeList(list);
+    }
+    
+    private static String serializeSet(Set set) throws DuplicatedUniqueField, EntIdBadImplementation, IllegalArgumentException, IllegalAccessException{
+        return serializeList(Arrays.asList(set.toArray()));
+    }
+    
+    private static Set deserializeSet(String json) throws Exception{
+        return new HashSet(deserializeList(json));
     }
     
     /**
