@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -37,6 +38,7 @@ public class HardObject extends DefaultEntity {
     private Date date;
     private GregorianCalendar calendar;
     private Set set;
+    private Properties props;
 
     public HardObject() {
         money = new BigDecimal(50);
@@ -63,6 +65,9 @@ public class HardObject extends DefaultEntity {
         set.add(11.3);
         set.add("Jhones");
         set.add(5);
+        
+        props = new Properties();
+        props.put("nome", "Jhones");
         
     }
     

@@ -78,6 +78,8 @@ public class Serializator {
             return serializeList((List) object);
         } else if(Reflection.isInstance(object.getClass(), Set.class)){
             return serializeSet((Set) object);
+        } else if(Reflection.isInstance(object.getClass(), Properties.class)){
+            return serializeProperties((Properties) object);
         } else {
             return serializeObject(object);
         }
@@ -118,8 +120,10 @@ public class Serializator {
                 return (T) deserializeEntity(json);
             } else if(Reflection.isInstance(Class.forName(clName), List.class)){
                 return (T) deserializeList(json);
-            }  else if(Reflection.isInstance(Class.forName(clName), Set.class)){
+            } else if(Reflection.isInstance(Class.forName(clName), Set.class)){
                 return (T) deserializeSet(json);
+            } else if(Reflection.isInstance(Class.forName(clName), Properties.class)){
+                return (T) deserializeProperties(json);
             } else {
                 return (T) deserializeObject(json);
             }
@@ -324,6 +328,17 @@ public class Serializator {
     
     private static Set deserializeSet(String json) throws Exception{
         return new HashSet(deserializeList(json));
+    }
+    
+    public static String serializeProperties(Properties properties){
+        Map<String, Properties> map = new HashMap<>();
+        map.put(properties.getClass().getName(), properties);
+        return gson.toJson(map);
+    }
+    
+    public static Properties deserializeProperties(String json){
+        Map<String, Properties> map = gson.fromJson(json, Map.class);
+        return map.get(map.keySet().iterator().next());
     }
     
     /**
