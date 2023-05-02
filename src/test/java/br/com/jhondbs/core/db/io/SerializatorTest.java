@@ -18,7 +18,6 @@ package br.com.jhondbs.core.db.io;
 
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
 import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
-import com.google.gson.Gson;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -157,7 +156,9 @@ public class SerializatorTest {
         try {
             if(o.save()){
                 HardObject load = o.load(o.getEnteId());
-                assert true;
+                assert load.props.get("nome").equals("Jhones");
+            } else {
+                assert false;
             }
         } catch (DuplicatedUniqueField | EntIdBadImplementation | IllegalArgumentException | IllegalAccessException ex) {
             Logger.getLogger(SerializatorTest.class.getName()).log(Level.SEVERE, null, ex);

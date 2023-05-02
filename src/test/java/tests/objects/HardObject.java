@@ -38,7 +38,8 @@ public class HardObject extends DefaultEntity {
     private Date date;
     private GregorianCalendar calendar;
     private Set set;
-    private Properties props;
+    public Properties props;
+    private Properties propsBlank;
 
     public HardObject() {
         money = new BigDecimal(50);
@@ -68,6 +69,8 @@ public class HardObject extends DefaultEntity {
         
         props = new Properties();
         props.put("nome", "Jhones");
+        
+        propsBlank = new Properties();
         
     }
     

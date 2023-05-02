@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="6" failures="0" name="br.com.jhondbs.core.db.io.SerializatorTest" time="0.204" errors="0" skipped="0">
+<testsuite tests="6" failures="0" name="br.com.jhondbs.core.db.io.SerializatorTest" time="0.105" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="java.vm.version" value="17.0.2+8-86"/>
@@ -56,10 +56,10 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.endian" value="little"/>
   </properties>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testHardObject" time="0.17"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSubEntity" time="0.008"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSerialize" time="0.005"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testListSerialize" time="0.007"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserialize" time="0.005"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserializeAbstract" time="0.009"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testHardObject" time="0.078"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSubEntity" time="0.01"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSerialize" time="0.003"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testListSerialize" time="0.004"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserialize" time="0.003"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserializeAbstract" time="0.007"/>
 </testsuite>

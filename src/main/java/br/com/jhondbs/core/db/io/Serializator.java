@@ -22,6 +22,7 @@ import com.google.gson.Gson;
 import java.lang.reflect.Field;
 import java.util.*;
 import br.com.jhondbs.core.db.base.Entity;
+import com.google.gson.internal.LinkedTreeMap;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -330,15 +331,20 @@ public class Serializator {
         return new HashSet(deserializeList(json));
     }
     
-    public static String serializeProperties(Properties properties){
+    private static String serializeProperties(Properties properties){
         Map<String, Properties> map = new HashMap<>();
         map.put(properties.getClass().getName(), properties);
         return gson.toJson(map);
     }
     
-    public static Properties deserializeProperties(String json){
-        Map<String, Properties> map = gson.fromJson(json, Map.class);
-        return map.get(map.keySet().iterator().next());
+    private static Properties deserializeProperties(String json){
+        Map<String, Object> map = gson.fromJson(json, Map.class);
+        LinkedTreeMap<Object, Object> tree = (LinkedTreeMap<Object, Object>) map.get(map.keySet().iterator().next());
+        Properties back = new Properties();
+        tree.keySet().forEach(key -> {
+            back.put(key, tree.get(key));
+        });
+        return back;
     }
     
     /**
