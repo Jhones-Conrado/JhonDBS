@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="17" failures="0" name="br.com.jhondbs.core.db.DBAPITest" time="0.056" errors="0" skipped="0">
+<testsuite tests="17" failures="0" name="br.com.jhondbs.core.db.DBAPITest" time="0.036" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="java.vm.version" value="17.0.2+8-86"/>
@@ -56,21 +56,21 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.endian" value="little"/>
   </properties>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringTerminaInverse" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringTerminaInverse" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringPossuiIgnoreCaseInverse" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringIgualIgnoreCaseInverse" time="0.001"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringPossuiIgnoreCase" time="0.001"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testLoadAllByCMD" time="0.045"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringIgualIgnoreCaseInverse" time="0"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringPossuiIgnoreCase" time="0"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testLoadAllByCMD" time="0.031"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringComecalIgnoreCaseInverse" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringContemInverse" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringComecaInverse" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringTermina" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringComeca" time="0.001"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringContem" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringIgualIgnoreCase" time="0.007"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringContem" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringIgualIgnoreCase" time="0.001"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringTerminaIgnoreCase" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringTerminaIgnoreCaseInverse" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringComecalIgnoreCase" time="0"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringTerminaIgnoreCaseInverse" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringComecalIgnoreCase" time="0.001"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringIgualInverse" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.DBAPITest" name="testStringIgual" time="0"/>
 </testsuite>

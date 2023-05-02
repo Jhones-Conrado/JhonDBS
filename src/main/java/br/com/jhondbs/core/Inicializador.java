@@ -68,6 +68,8 @@ public class Inicializador {
                     ListaInterpretador.addInterpretador(r.getNewInstance(i));
                 } catch (URISyntaxException | IOException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
                     Logger.getLogger(Inicializador.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (Exception ex) {
+                    Logger.getLogger(Inicializador.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
             interpretadoresCarregados = true;

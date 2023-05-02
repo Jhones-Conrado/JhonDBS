@@ -9,6 +9,7 @@
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/OFDSon.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/Abstrato.java
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/DBAPITest.java
+/home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/io/ReflectionTest.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/EnteA.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/ObjA.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/HardObject.java
@@ -16,4 +17,5 @@
 /home/jhonessales/git/JhonDBS/src/test/java/br/com/jhondbs/core/db/base/FieldsManagerTest.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/EnteTeste.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/OFDDad.java
+/home/jhonessales/git/JhonDBS/src/test/java/tests/objects/ConstructorNotNull.java
 /home/jhonessales/git/JhonDBS/src/test/java/tests/objects/ObjMantemAbstrato.java

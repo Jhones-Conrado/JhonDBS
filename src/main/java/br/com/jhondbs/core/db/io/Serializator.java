@@ -259,14 +259,14 @@ public class Serializator {
         Map map = gson.fromJson(json, Map.class);
         String className = (String) map.keySet().iterator().next();
         Class<?> entityClass = Class.forName(className);
-        T instance = (T) entityClass.newInstance();
+        T instance = (T) new Reflection().getNewInstance(entityClass);
         Map fields = (Map) map.get(className);
         List<Field> allFields = getAllFields(entityClass);
         for(Field field : allFields){
             field.setAccessible(true);
             if(fields.containsKey(field.getName())){
                 if(Reflection.isInstance(field.getType(), Entity.class)){
-                    Entity e = (Entity) field.getType().newInstance();
+                    Entity e = (Entity) new Reflection().getNewInstance(field.getType());
                     Entity load = e.load(((Number) fields.get(field.getName())).longValue());
                     field.set(instance, load);
                 } else if(Reflection.isInstance(field.getType(), List.class)){
@@ -307,7 +307,7 @@ public class Serializator {
                 String clName = mat.keySet().iterator().next();
                 Class<?> forName = Class.forName(clName);
                 Long id = ((Number) mat.get(clName)).longValue();
-                Entity load = (Entity) IO.load((Entity) forName.newInstance(), id);
+                Entity load = (Entity) IO.load((Entity) new Reflection().getNewInstance(forName), id);
                 backList.add(load);
             } else {
                 backList.add(deserialize(s));

@@ -18,6 +18,11 @@ package br.com.jhondbs.core.db.io;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Parameter;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
@@ -190,6 +195,9 @@ public final class Reflection {
                     retorno.add(className);
                 }
             } catch (URISyntaxException | IOException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+                Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (Exception ex) {
+                Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
         return retorno;
@@ -211,7 +219,7 @@ public final class Reflection {
      * @throws InstantiationException
      * @throws IllegalAccessException 
      */
-    public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException{
+    public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
         while(className.endsWith("/")){
             className = className.substring(0, className.length()-1);
         }
@@ -239,9 +247,49 @@ public final class Reflection {
                     }
                 }
             }
-            return (T) Class.forName(path).newInstance();
+            return getNewInstance(Class.forName(path));
         }
         throw new ClassNotFoundException("Blank path");
+    }
+    
+    public <T extends Object> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+        Constructor[] constructors = clazz.getDeclaredConstructors();
+
+        Constructor a = null;
+        for(Constructor c : constructors){
+            if(a == null){
+                a = c;
+            }
+            if(c.getParameterCount() < a.getParameterCount()){
+                a = c;
+            }
+        }
+
+        List<Object> paramObjects = new ArrayList<>();
+        Parameter[] parameters = a.getParameters();
+
+        if(parameters.length == 0){
+            return (T) clazz.newInstance();
+        }
+
+        for(Parameter p : parameters){
+            if(Reflection.isInstance(p.getType(), Number.class)){
+                if(Reflection.isInstance(p.getType(), BigInteger.class)){
+                    paramObjects.add(new BigInteger("0"));
+                } else if(Reflection.isInstance(p.getType(), BigDecimal.class)){
+                    paramObjects.add(new BigDecimal(0));
+                } else {
+                    paramObjects.add(Integer.valueOf("0"));
+                }
+            } else if(Reflection.isInstance(p.getType(), String.class)){
+                paramObjects.add("");
+            } else if(Reflection.isTinyNumerical(p.getType())){
+                paramObjects.add(Short.valueOf("0"));
+            } else {
+                paramObjects.add(null);
+            }
+        }
+        return (T) a.newInstance(paramObjects.toArray());
     }
     
     /**
@@ -332,6 +380,23 @@ public final class Reflection {
                 isInstance(aClass, float.class) ||
                 isInstance(aClass, double.class) ||
                 isInstance(aClass, boolean.class);
+    }
+    
+    public static boolean isTinyNumerical(Object object){
+        Class<? extends Object> aClass = object.getClass();
+        return isInstance(aClass, short.class) ||
+                isInstance(aClass, int.class) ||
+                isInstance(aClass, long.class) ||
+                isInstance(aClass, float.class) ||
+                isInstance(aClass, double.class);
+    }
+    
+    public static boolean isTinyNumerical(Class clazz){
+        return isInstance(clazz, short.class) ||
+                isInstance(clazz, int.class) ||
+                isInstance(clazz, long.class) ||
+                isInstance(clazz, float.class) ||
+                isInstance(clazz, double.class);
     }
     
 }
