@@ -32,6 +32,8 @@ import java.util.Set;
  */
 public class HardObject extends DefaultEntity {
     
+    private static final int MONEY = 0;
+    
     private BigDecimal money;
     private List<Object> textList;
     private final String name;
@@ -40,7 +42,7 @@ public class HardObject extends DefaultEntity {
     private Set set;
     public Properties props;
     private Properties propsBlank;
-
+    
     public HardObject() {
         money = new BigDecimal(50);
         textList = new ArrayList<>();

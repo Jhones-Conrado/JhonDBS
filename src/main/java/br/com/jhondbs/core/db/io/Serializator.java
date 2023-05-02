@@ -23,6 +23,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import br.com.jhondbs.core.db.base.Entity;
 import com.google.gson.internal.LinkedTreeMap;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -242,13 +243,15 @@ public class Serializator {
         Map<String, Object> mapObj = new LinkedHashMap<>();
         Map<String, Object> map = new LinkedHashMap<>();
         for(Field field : getAllFields(obj.getClass())){
-            field.setAccessible(true);
-            if(Reflection.isInstance(field.getType(), Entity.class)){
-                Entity fieldEnte = (Entity) field.get(obj);
-                fieldEnte.save();
-                map.put(field.getName(), fieldEnte.getEnteId());
-            } else {
-                map.put(field.getName(), serialize(field.get(obj)));
+            if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
+                field.setAccessible(true);
+                if(Reflection.isInstance(field.getType(), Entity.class)){
+                    Entity fieldEnte = (Entity) field.get(obj);
+                    fieldEnte.save();
+                    map.put(field.getName(), fieldEnte.getEnteId());
+                } else {
+                    map.put(field.getName(), serialize(field.get(obj)));
+                }
             }
         }
         mapObj.put(obj.getClass().getName(), map);
