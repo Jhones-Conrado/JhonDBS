@@ -181,9 +181,13 @@ public class IOTest {
                 
                 OFDSon son = new OFDSon().load(prevSonId);
                 if(son != null){
+                    
+                    long enteId = obj.sonlist.iterator().next().getEnteId();
+                    
                     obj.fullDelete();
                     son = new OFDSon().load(prevSonId);
-                    if(son == null){
+                    OFDSon ofdson = new OFDSon().load(enteId);
+                    if(son == null && ofdson == null){
                         assert true;
                     } else {
                         assert false;

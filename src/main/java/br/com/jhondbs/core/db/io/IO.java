@@ -225,12 +225,25 @@ public class IO {
      */
     public static void fullDelete(Entity entity){
         List<Field> fields = FieldsManager.getAllFields(entity);
-        for(Field f : fields){
+        for(Field field : fields){
+            if(Reflection.isInstance(field.getType(), List.class)){
+                field.setAccessible(true);
+                try {
+                    List list = (List) field.get(entity);
+                    for(Object o : list){
+                        if(Reflection.isInstance(o.getClass(), Entity.class)){
+                            ((Entity) o).fullDelete();
+                        }
+                    }
+                } catch (IllegalArgumentException | IllegalAccessException ex) {
+                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
             try {
-                Object type = f.getType().newInstance();
+                Object type = field.getType().newInstance();
                 if(type instanceof Entity){
-                    f.setAccessible(true);
-                    Object get = f.get(entity);
+                    field.setAccessible(true);
+                    Object get = field.get(entity);
                     Entity cast = (Entity) get;
                     cast.fullDelete();
                     cast.delete();

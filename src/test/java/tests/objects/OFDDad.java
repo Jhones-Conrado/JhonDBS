@@ -17,6 +17,8 @@
 package tests.objects;
 
 import br.com.jhondbs.core.db.base.padrao.DefaultEntity;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -25,9 +27,13 @@ import br.com.jhondbs.core.db.base.padrao.DefaultEntity;
 public class OFDDad extends DefaultEntity{
     
     public OFDSon son;
+    public List<OFDSon> sonlist;
 
     public OFDDad() {
+        sonlist = new ArrayList<>();
         son = new OFDSon();
+        
+        sonlist.add(new OFDSon());
     }
     
 }
