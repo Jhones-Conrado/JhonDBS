@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<testsuite tests="8" failures="0" name="br.com.jhondbs.core.db.filter.StringFilterTest" time="0" errors="0" skipped="0">
+<testsuite tests="8" failures="0" name="br.com.jhondbs.core.db.filter.StringFilterTest" time="0.001" errors="0" skipped="0">
   <properties>
     <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
     <property name="java.vm.version" value="17.0.2+8-86"/>
@@ -63,5 +63,5 @@
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEndsIgnoreCase" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testContains" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testEquals" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testStarts" time="0"/>
+  <testcase classname="br.com.jhondbs.core.db.filter.StringFilterTest" name="testStarts" time="0.001"/>
 </testsuite>

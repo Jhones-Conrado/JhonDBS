@@ -56,10 +56,10 @@
     <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
     <property name="sun.cpu.endian" value="little"/>
   </properties>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testHardObject" time="0.269"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSubEntity" time="0.007"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testHardObject" time="0.277"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSubEntity" time="0.006"/>
   <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testSerialize" time="0.005"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testListSerialize" time="0.008"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserialize" time="0.005"/>
-  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserializeAbstract" time="0.011"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testListSerialize" time="0.005"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserialize" time="0.004"/>
+  <testcase classname="br.com.jhondbs.core.db.io.SerializatorTest" name="testDeserializeAbstract" time="0.008"/>
 </testsuite>
