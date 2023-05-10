@@ -2,7 +2,6 @@
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/Servidor.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/StringFilter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/ItemFilter.java
-/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/Cryptography.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/errors/EntIdBadImplementation.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/DBServer.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Represent.java

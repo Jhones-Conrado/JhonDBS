@@ -31,7 +31,7 @@
     <property name="java.class.version" value="61.0"/>
     <property name="java.specification.name" value="Java Platform API Specification"/>
     <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
-    <property name="os.version" value="6.2.13-300.fc38.x86_64"/>
+    <property name="os.version" value="6.2.14-300.fc38.x86_64"/>
     <property name="library.jansi.path" value="/app/netbeans/java/maven/lib/jansi-native"/>
     <property name="user.home" value="/home/jhonessales"/>
     <property name="user.timezone" value="America/Fortaleza"/>
@@ -41,7 +41,7 @@
     <property name="java.class.path" value="/app/netbeans/java/maven/boot/plexus-classworlds-2.6.0.jar"/>
     <property name="java.vm.specification.version" value="17"/>
     <property name="sun.arch.data.model" value="64"/>
-    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher -Dmaven.ext.class.path=/app/netbeans/java/maven-nblib/netbeans-eventspy.jar --no-transfer-progress test"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher -Dmaven.ext.class.path=/app/netbeans/java/maven-nblib/netbeans-eventspy.jar --no-transfer-progress clean install"/>
     <property name="java.home" value="/home/jhonessales/NetBeansJDKs/openjdk-17.0.2_linux-x64_bin.tar/jdk-17.0.2"/>
     <property name="user.language" value="pt"/>
     <property name="java.specification.vendor" value="Oracle Corporation"/>
@@ -58,6 +58,6 @@
   </properties>
   <testcase classname="br.com.jhondbs.core.db.base.FieldsManagerTest" name="getValueFromPublicTest" time="0"/>
   <testcase classname="br.com.jhondbs.core.db.base.FieldsManagerTest" name="getValueFromPrivateTest" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.base.FieldsManagerTest" name="getValueFromPrivateExtendTest" time="0"/>
-  <testcase classname="br.com.jhondbs.core.db.base.FieldsManagerTest" name="getValueFromPrivateExtend2Test" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.base.FieldsManagerTest" name="getValueFromPrivateExtendTest" time="0.001"/>
+  <testcase classname="br.com.jhondbs.core.db.base.FieldsManagerTest" name="getValueFromPrivateExtend2Test" time="0"/>
 </testsuite>
