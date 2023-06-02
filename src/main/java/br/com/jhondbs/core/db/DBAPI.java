@@ -60,18 +60,18 @@ public class DBAPI {
     public static List<Entity> getByFilter(String cmd) throws Exception{
         if(cmd.contains(" ")){
             try {
-                String cName = cmd.substring(0, cmd.indexOf(" "));
-                String cm = cmd.substring(cmd.indexOf(" ") + 1);
-                Entity obj = new Reflection().getNewInstance(cName);
+                String classSimpleName = cmd.substring(0, cmd.indexOf(" "));
+                String comando = cmd.substring(cmd.indexOf(" ") + 1);
+                Entity obj = new Reflection().getNewInstance(classSimpleName);
                 System.out.println("CLASSE: "+obj.getClass().getName());
                 Filter f = new Filter();
-                if(cm.contains(" ; ")){
-                    String[] cms = cm.split(" ; ");
+                if(comando.contains(" ; ")){
+                    String[] cms = comando.split(" ; ");
                     for(String s : cms){
                         f.addItem(toFilter(s));
                     }
                 } else {
-                    f.addItem(toFilter(cm));
+                    f.addItem(toFilter(comando));
                 }
                 return obj.loadAll(f);
             } catch (Exception ex) {

@@ -1,5 +1,4 @@
 br/com/jhondbs/core/db/base/FieldsManagerTest.class
-br/com/jhondbs/core/db/io/SerializatorTest.class
 tests/objects/ObjMantemAbstrato.class
 tests/objects/ObjTeste.class
 tests/objects/EnteA.class

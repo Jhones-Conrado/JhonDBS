@@ -4,7 +4,6 @@ br/com/jhondbs/core/Inicializador.class
 br/com/jhondbs/core/servidor/Servidor.class
 br/com/jhondbs/core/db/errors/EntIdBadImplementation.class
 br/com/jhondbs/core/db/base/Entity.class
-br/com/jhondbs/core/db/io/Serializator.class
 br/com/jhondbs/core/db/base/Unique.class
 br/com/jhondbs/core/servidor/DBServer$Analyzer.class
 br/com/jhondbs/core/db/io/IO.class

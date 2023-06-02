@@ -448,7 +448,7 @@ public class Capsule {
                         cap.make(entities, succes);
                         capsule.append("e");
                         capsule.append(dictionary.get(inner.getClass().getName()));
-                        capsule.append(";");
+                        capsule.append(":");
                         capsule.append(String.valueOf(inner.getEnteId()));
                     } else {
                         Capsule cap = new Capsule(field.get(obj));
@@ -633,23 +633,26 @@ public class Capsule {
      * @return Extracted entity.
      */
     private <T extends Entity> T extractEntity(){
-        String str = toString().substring(1);
-        String index = str.substring(0, str.indexOf(":"));
-        long id = Long.parseLong(str.substring(str.indexOf(":")+1));
-        String clName = (String) dictionary.keySet().stream().filter(key -> (dictionary.get(key).equals(index))).iterator().next();
         try {
-            File entity = new File("db/"+clName
-                    .replaceAll(".class", "")
-                    .replaceAll("[.]", "/")
-                    +"/"+String.valueOf(id));
-            try(BufferedReader r = Files.newBufferedReader(Paths.get(entity.getPath()))) {
-                String line = r.readLine();
-                Capsule cap = new Capsule(line);
-                r.close();
-                return cap.extract();
+            String str = toString().substring(1);
+            String index = str.substring(0, str.indexOf(":"));
+            long id = Long.parseLong(str.substring(str.indexOf(":") + 1));
+            String clName = (String) dictionary.keySet().stream().filter(key -> (dictionary.get(key).equals(index))).iterator().next();
+            try {
+                File entity = new File("db/" + clName
+                        .replaceAll(".class", "")
+                        .replaceAll("[.]", "/")
+                        + "/" + String.valueOf(id));
+                try (BufferedReader r = Files.newBufferedReader(Paths.get(entity.getPath()))) {
+                    String line = r.readLine();
+                    Capsule cap = new Capsule(line);
+                    r.close();
+                    return cap.extract();
+                }
+            } catch (Exception ex) {
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
             }
-        } catch (Exception ex) {
-            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NumberFormatException numberFormatException) {
         }
         return null;
     }

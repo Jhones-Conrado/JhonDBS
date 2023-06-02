@@ -117,7 +117,7 @@ public final class Reflection {
                 if(str.contains(".")){
                     str = str.substring(str.indexOf(".")+1);
                 } else {
-                    str = "";
+                    return null;
                 }
             }
         }
@@ -224,7 +224,10 @@ public final class Reflection {
      */
     public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
         if(!className.isBlank()){
-            return getNewInstance(makeClass(className));
+            String path = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).iterator().next();
+            if(path != null){
+                return getNewInstance(makeClass(path));
+            }
         }
         throw new ClassNotFoundException("Blank path");
     }

@@ -6,12 +6,12 @@
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/DBServer.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/DBAPI.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Represent.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/tools/BooleanLetter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/NumberFilter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/IO.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/Filter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/ListaInterpretador.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/InterpretadorParticular.java
-/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/Serializator.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/BooleanFilter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/Capsule.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/Interpretador.java
@@ -25,7 +25,9 @@
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/JDBS.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/errors/InvalidHash.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Unique.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/tools/DecimalLetter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/FieldsManager.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/errors/DuplicatedUniqueField.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/tools/NumberLetter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/InterpretadorGlobal.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Entity.java
