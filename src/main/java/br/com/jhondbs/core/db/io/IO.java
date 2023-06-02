@@ -16,16 +16,11 @@
  */
 package br.com.jhondbs.core.db.io;
 
-import br.com.jhondbs.core.db.Keys;
 import br.com.jhondbs.core.db.UniqueAnalyser;
-import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
-import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import br.com.jhondbs.core.db.filter.Filter;
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -36,8 +31,6 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.base.Entity;
-import br.com.jhondbs.core.db.base.FieldsManager;
-import java.lang.reflect.Field;
 
 /**
  * Responsible for saving, deleting and loading database entities.<br><br>
@@ -49,37 +42,18 @@ public class IO {
     /**
      * ENGLISH<br>
      * It saves an entity in the database, passing it through filters that
-     * guarantee the proper functioning of the system.
-     * How to verify if the unique values are available.
-     * <br><br>
+     * guarantee the proper functioning of the system.How to verify if the unique values are available.<br><br>
      * PORTUGUÊS<br>
      * Salva uma entidade no banco de dados passando a mesma por filters que garantem
      * o bom funcionamento do sistema.Como verificar se os valores unicos estão disponíveis.
      * @param entity Entity a ser salva no banco de dados.
      * @return Verdadeiro para caso a entidade tenha sido salva. Falso em caso de erro.
-     * @throws DuplicatedUniqueField Caso algum campo unico da entidade tenha um
-     * valor já usado por outra entidade previamente salva.
-     * @throws br.com.jhondbs.core.db.errors.EntIdBadImplementation
-     * @throws java.lang.IllegalAccessException
+     * @throws java.lang.Exception
      */
-    public static boolean save(Entity entity) throws DuplicatedUniqueField, EntIdBadImplementation, IllegalArgumentException, IllegalAccessException{
-        Keys.gerarId(entity);
+    public static boolean save(Entity entity) throws Exception {
         if(new UniqueAnalyser().analise(entity)){ //Precisa passar no teste de campos únicos.
-            File folder = new File("db/"+entity.getClass().getName().replaceAll("[.]", "/"));
-            folder.mkdirs(); //Cria a pasta da classe da entidade.
-            if(folder.exists()){ //Verifica se a pasta da classe pôde ser criada com sucesso.
-                File newEntity = new File(folder.getPath()+"/"+String.valueOf(entity.getEnteId()));
-                
-                //Converte o objeto em JSON e salva.
-                String json = Serializator.serialize(entity);
-                try (BufferedWriter w = Files.newBufferedWriter(newEntity.toPath(), StandardCharsets.UTF_8)) {
-                    w.write(json);
-                    w.flush();
-                    return  true;
-                } catch (IOException | IllegalArgumentException  ex) {
-                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
+            Capsule capsule = new Capsule(entity);
+            return capsule.make();
         }
         return false;
     }
@@ -98,22 +72,19 @@ public class IO {
      * @return Entity carregada do banco de dados. Nulo caso não encontre.
      */
     public static Object load(Entity entity, long id){
-        File file = new File("db/"+entity.getClass().getName().replaceAll("[.]", "/")+"/"+String.valueOf(id));
-
+        File file = new File(getDBFolderWithID(entity, id));
         //Método antigo utilizando JSON
         if(file.exists()){
             try {
-                String json;
                 try (BufferedReader r = Files.newBufferedReader(Paths.get(file.getPath()))) {
-                    json = r.readLine();
+                    Capsule capsule = new Capsule(r.readLine());
+                    return capsule.extract();
+                } catch (ClassNotFoundException ex) {
+                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
                 }
-                return Serializator.deserialize(json);
-            } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException ex) {
-                Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
         }
         return null;
     }
@@ -175,7 +146,7 @@ public class IO {
      */
     public static List<Long> loadAllOnlyIds(Entity entity){
         List<Long> list = new ArrayList<>();
-        File file = new File("db/"+entity.getClass().getName().replaceAll("[.]", "/"));
+        File file = new File(getDBFolder(entity));
         if(file.exists()){
             Arrays.asList(file.list()).forEach(n -> {
                 try {
@@ -194,7 +165,7 @@ public class IO {
      * @return 
      */
     public static boolean delete(Entity entity){
-        File ente = new File("db/"+entity.getClass().getName().replaceAll("[.]", "/")+"/"+entity.getEnteId());
+        File ente = new File(getDBFolderWithID(entity));
         if(ente.exists()){
             return ente.delete();
         }
@@ -224,34 +195,8 @@ public class IO {
      * @param entity
      */
     public static void fullDelete(Entity entity){
-        List<Field> fields = FieldsManager.getAllFields(entity);
-        for(Field field : fields){
-            if(Reflection.isInstance(field.getType(), List.class)){
-                field.setAccessible(true);
-                try {
-                    List list = (List) field.get(entity);
-                    for(Object o : list){
-                        if(Reflection.isInstance(o.getClass(), Entity.class)){
-                            ((Entity) o).fullDelete();
-                        }
-                    }
-                } catch (IllegalArgumentException | IllegalAccessException ex) {
-                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            try {
-                Object type = field.getType().newInstance();
-                if(type instanceof Entity){
-                    field.setAccessible(true);
-                    Object get = field.get(entity);
-                    Entity cast = (Entity) get;
-                    cast.fullDelete();
-                    cast.delete();
-                }
-            } catch (IllegalAccessException | InstantiationException e) {
-            }
-        }
-        delete(entity);
+        Capsule capsule = new Capsule(entity);
+        capsule.fullDelete();
     }
     
     /**
@@ -298,6 +243,19 @@ public class IO {
             }
             directory.delete();
         }
+    }
+    
+    public static String getDBFolder(Object object){
+        return "db/"+object.getClass().getName().replaceAll(".class", "")
+                .replaceAll("[.]", "/");
+    }
+
+    public static String getDBFolderWithID(Entity entity){
+        return getDBFolder(entity)+"/"+String.valueOf(entity.getEnteId());
+    }
+    
+    public static String getDBFolderWithID(Entity entity, long id){
+        return getDBFolder(entity)+"/"+String.valueOf(id);
     }
     
 }

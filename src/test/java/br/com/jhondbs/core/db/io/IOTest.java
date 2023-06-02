@@ -16,15 +16,11 @@
  */
 package br.com.jhondbs.core.db.io;
 
-import br.com.jhondbs.core.db.base.Entity;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tests.objects.EnteA;
 import tests.objects.HardObject;
 
 /**
@@ -36,37 +32,16 @@ public class IOTest <T> {
     public IOTest() {
         
         HardObject a = new HardObject();
-        Capsule capsule = new Capsule(a);
+        HardObject b = new HardObject();
         
         try {
-            capsule.make();
-            System.out.println(capsule.toString());
-            HardObject b = capsule.extract();
-            
-            if(b != null){
-                EnteA toDelete = null;
-                for(Object obj : b.getList()){
-                    if(Reflection.isInstance(obj.getClass(), Entity.class)){
-                        EnteA c = (EnteA) obj;
-                        System.out.println("EnteTeste Name: "+c.name);
-                        c.name = "João do campo";
-                        toDelete = c;
-                    }
-                }
-                b.getList().remove(toDelete);
-                Capsule cap = new Capsule(b);
-                cap.make();
-                
-                capsule.make();
-            } else {
-                System.out.println("FAILED");
-            }
-            
+            a.save();
+            b.save();
+            HardObject c = a.load(a.getEnteId());
+            c.fullDelete();
+            b.delete();
         } catch (Exception e) {
-            System.out.println("ERROR:");
-            System.out.println(e);
         }
-        
         
     }
     

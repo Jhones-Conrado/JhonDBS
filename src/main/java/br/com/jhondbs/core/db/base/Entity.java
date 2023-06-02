@@ -16,8 +16,6 @@
  */
 package br.com.jhondbs.core.db.base;
 
-import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
-import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.db.io.IO;
 import java.io.Serializable;
@@ -99,6 +97,7 @@ public interface Entity extends Serializable, Cloneable{
     /**
      * ENGLISH<br>
      * Save this entity to the database, ensuring that no values annotated with 
+     * @throws java.lang.Exception
      * @unique are duplicated.
      * <br><br>
      * PORTUGUÊS<br>
@@ -106,11 +105,9 @@ public interface Entity extends Serializable, Cloneable{
      * seja duplicado.
      * @return True if the entity was successfully saved.
      * False if there were errors.
-     * @throws DuplicatedUniqueField If any single field has a value already used. 
-     * @throws EntIdBadImplementation If the class has incorrectly implemented 
      * the getId and onSetId methods.
      */
-    default boolean save() throws DuplicatedUniqueField, EntIdBadImplementation, IllegalArgumentException, IllegalAccessException{
+    default boolean save() throws Exception {
         return IO.save(this);
     }
     
@@ -118,11 +115,11 @@ public interface Entity extends Serializable, Cloneable{
      * Loads an entity from the database based on its ID.
      * Carrega uma entidade do banco de dados a partir do seu ID.
      * @param <T> Entity to search for by its type. <br>
- Entity para se buscar pelo seu tipo.
+     * Entity para se buscar pelo seu tipo.
      * @param id of the entity to be fetched.<br>
      * Da entidade a ser buscada.
      * @return Entity found in the database. Null for not found.<br>
- Entity encontrada no banco de dados. Nulo para não encontrada.
+     * Entity encontrada no banco de dados. Nulo para não encontrada.
      */
     default <T extends Entity> T load(long id){
         return (T) IO.load(this, id);
@@ -255,17 +252,20 @@ public interface Entity extends Serializable, Cloneable{
         List<Field> bf = FieldsManager.getFields(obj);
         if(af.size() == bf.size()){
             for(Field f : af){
-                f.setAccessible(true);
                 try {
-                    if(f.get(this).equals(f.get(obj))){
-                        return true;
+                    f.setAccessible(true);
+                    if(!f.get(this).equals(f.get(obj))){
+                        return false;
                     }
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     Logger.getLogger(Entity.class.getName()).log(Level.SEVERE, null, ex);
+                    return false;
                 }
             }
+        } else {
+            return false;
         }
-        return false;
+        return true;
     }
     
     /**

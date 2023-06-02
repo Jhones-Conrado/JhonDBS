@@ -50,57 +50,118 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * <h2>ENGLISH</h2>
+ * Responsible for encapsulating objects, transforming them into a String with all
+ * the information of its variables.
+ * Encapsulation has a recursive call that keeps all entities separate from each other,
+ * forming branches within the database.
+ * Not all native Java classes (that are in bootstrap) are supported, however all
+ * classes created in your project are supported.
+ * Among the native Java classes that are supported for wrapping in the current version are:
+ * - byte - boolean - shorts - int - long - float - double - String - Date - calendar - map
+ * - List - Set - Properties - BigInteger - BigDecimal
+ * and there is also support for the arrays of the mentioned classes.
+ * Support for other classes will be added in future releases.
+ * <br><br>
+ * <h2>PORTUGUÊS</h2>
+ * Responsável pelo encapsulamento de objetos, transformando-os em uma String com
+ * todas as informações de suas variáveis.
+ * O encapsulamento possui chamada recursiva que mantém todas as entidades separadas
+ * umas das outras, formando ramificações dentro do banco de dados.
+ * Nem todas as classes nativas do Java (que estejam no bootstrap) são suportadas,
+ * porém todas as classes criadas em seu projeto são suportadas.
+ * Dentre as classes nativas do Java que são suportadas para encapsulamento na
+ * versão atual estão:
+ * - byte - boolean - short - int - long - float - double - String - Date - Calendar
+ * - Map - List - Set - Properties - BigInteger - BigDecimal
+ * e há também o suporte para os arrays das classes citadas.
+ * O suporte para outras classes será adicionado em futuras versões.
+ * 
  * @author jhonessales
  */
 public class Capsule {
     
+    /**
+     * Holds references to supported classes.
+     */
     private static Properties dictionary;
+    
+    /**
+     * Capsule that holds object information.
+     */
     private StringBuilder capsule;
     
+    /**
+     * Object that will be encapsulated.
+     */
     private transient Object object;
+    
+    /**
+     * List of entities that went through the encapsulation process.
+     * It is used at the end of the encapsulation to identify which files should
+     * be renamed or deleted, which guarantees that any updates to the database
+     * occur atomically.
+     */
     private transient List<Entity> entities;
+    
+    /**
+     * Maintains encapsulation state. If any part of the wrapper returns an error,
+     * the value of the letter is changed to false, preventing incomplete
+     * informationfrom being saved to the database.
+     */
     private transient BooleanLetter succes;
-
+    
+    /**
+     * Creates a new capsule and prepares an object to be encapsulated.
+     * @param obj to be encapsulated.
+     */
     public Capsule(Object obj) {
         if(obj != null){
             this.succes = new BooleanLetter(true);
             this.entities = new ArrayList<>();
             this.object = obj;
             this.capsule = new StringBuilder();
+            try {
+                startDictionary();
+            } catch (Exception e) {
+            }
         }
     }
     
-    private Capsule(String str){
+    /**
+     * Creates a new capsule from a String usually extracted from the database,
+     * allowing the process of extracting objects from texts.
+     * @param str Object encapsulated in text format.
+     */
+    public Capsule(String str){
         this.capsule = new StringBuilder();
         this.capsule.append(str);
+        try {
+            startDictionary();
+        } catch (Exception e) {
+        }
     }
     
+    /**
+     * Starts the object encapsulation process.
+     * @return True if the wrapping operation succeeds. False for any other error.
+     * @throws Exception Generic exception for any error during the encapsulation process.
+     */
     public boolean make() throws Exception{
         make(entities, succes);
         if(succes.isBool()){
             entities.forEach(ente -> {
-                File old = new File("db/"+ente.getClass().getName()
-                        .replaceAll(".class", "")
-                        .replaceAll("[.]", "/")
-                        +"/"+String.valueOf(ente.getEnteId()));
-                File neu = new File("db/"+ente.getClass().getName()
-                        .replaceAll(".class", "")
-                        .replaceAll("[.]", "/")
+                File old = new File(IO.getDBFolderWithID(ente));
+                File neu = new File(IO.getDBFolder(ente)
                         +"/new"+String.valueOf(ente.getEnteId()));
                 if(neu.exists()){
                     fullDelete();
-//                    if(old.exists()){
-//                        old.delete();
-//                    }
                     neu.renameTo(old);
                 }
             });
         } else {
             entities.forEach(ente -> {
-                File neu = new File(ente.getClass().getName()
-                        .replaceAll(".class", "")
-                        .replaceAll("[.]", "/")
+                File neu = new File(IO.getDBFolder(ente)
                         +"/new"+String.valueOf(ente.getEnteId()));
                 if(neu.exists()){
                     neu.delete();
@@ -110,6 +171,13 @@ public class Capsule {
         return this.succes.isBool();
     }
     
+    /**
+     * Recursive function of the "make" method.
+     * @param entities
+     * @param succes
+     * @return
+     * @throws Exception 
+     */
     private boolean make(List<Entity> entities, BooleanLetter succes) throws Exception{
         startDictionary();
         if(this.object != null){
@@ -144,12 +212,16 @@ public class Capsule {
         return this.succes.isBool();
     }
     
+    /**
+     * Saves the encapsulated text to a file in the database.
+     * @return Status of the saving process.
+     */
     private boolean save(){
         if(Reflection.isInstance(this.object.getClass(), Entity.class)){
-            File folder = new File("db/"+this.object.getClass().getName().replaceAll(".class", "").replaceAll("[.]", "/"));
+            File folder = new File(IO.getDBFolder(object));
             folder.mkdirs();
             if(folder.exists()){
-                File newEntity = new File(folder.getPath()+"/new"+String.valueOf(((Entity) this.object).getEnteId()));
+                File newEntity = new File(IO.getDBFolderWithID((Entity) this.object));
                 try(BufferedWriter w = Files.newBufferedWriter(Paths.get(newEntity.getPath()), StandardCharsets.UTF_8)) {
                     w.write(toString());
                     w.flush();
@@ -161,18 +233,40 @@ public class Capsule {
         return false;
     }
     
+    /**
+     * Prepare a list for the encapsulation process.
+     * @param list List to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleList(Object list, List<Entity> entities, BooleanLetter succes){
         capsule.append("l");
         encapsuleMultiples((List) list, entities, succes);
     }
     
+    /**
+     * Prepare a set for the encapsulation process.
+     * @param set Set to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleSet(Object set, List<Entity> entities, BooleanLetter succes){
         capsule.append("s");
         encapsuleMultiples(((Set) set).stream().toList(), entities, succes);
     }
     
+    /**
+     * Encapsulates an array.
+     * @param arr Array of objects to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleArray(Object arr, List<Entity> entities, BooleanLetter succes){
-        // Any other approach here will not work!
+        /**
+         * Do not change how array type checking happens.
+         * Despite seeming inefficient and difficult to maintain,
+         * this was the only way that worked as expected.
+         */
         capsule.append("[");
         List oblist = new ArrayList();
         try {
@@ -218,18 +312,24 @@ public class Capsule {
                 }
             }
         } catch (Exception e) {
-            // Trate a exceção, se necessário
             Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, e);
+            succes.setBool(false);
         }
         encapsuleMultiples(oblist, entities, succes);
     }
     
+    /**
+     * Performs the encapsulation of multiple objects through a list.
+     * @param list List to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleMultiples(List list, List<Entity> entities, BooleanLetter succes){
-        // ADICIONA TODOS OS ITENS EXTRAÍDOS À CAPSULA.
         capsule.append("[");
         list.forEach(o -> {
             capsule.append("{");
             if(Reflection.isInstance(o.getClass(), Entity.class)){
+                // If it is an entity.
                 Entity e = (Entity) o;
                 Capsule cap = new Capsule(e);
                 try {
@@ -250,6 +350,7 @@ public class Capsule {
                     capsule.append(cap.toString());
                 } catch (Exception ex) {
                     Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    succes.setBool(false);
                 }
             }
             capsule.append("}");
@@ -257,6 +358,12 @@ public class Capsule {
         capsule.append("]");
     }
     
+    /**
+     * Prepare a map for the encapsulation process.
+     * @param map Map to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleMap(Map map, List<Entity> entities, BooleanLetter succes){
         map.keySet().forEach(key -> {
             try {
@@ -271,10 +378,17 @@ public class Capsule {
                 capsule.append(")");
             } catch (Exception ex) {
                 Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                succes.setBool(false);
             }
         });
     }
     
+    /**
+     * Prepare a properties for the encapsulation process.
+     * @param prop Properties to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleProperties(Properties prop, List<Entity> entities, BooleanLetter succes){
         capsule.append("p");
         Map<String, String> map = new HashMap<>();
@@ -285,24 +399,39 @@ public class Capsule {
         encapsuleMap(map, entities, succes);
     }
     
+    /**
+     * Attempts to encapsulate a special case.
+     * @param obj Object to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     */
     private void encapsuleSpecialCase(Object obj, List<Entity> entities, BooleanLetter succes){
-        // VERIFICA SE É UM PRIMITIVO OU NÚMERO.
+        // CHECK IF IT IS A PRIMITIVE OR NUMBER.
         if(Reflection.isPrimitive(obj) || Reflection.isInstance(obj.getClass(), Number.class)){
             capsule.append(dictionary.get(obj.getClass().getName())).append(":");
             capsule.append(obj.toString());
-        // VERIFICA SE É UMA DATA.
+        // CHECK IF IT IS A DATE.
         } else if(Reflection.isInstance(obj.getClass(), Date.class)){
             capsule.append(dictionary.get(Date.class.getName())).append(":");
             capsule.append(((Date) obj).toGMTString());
+        // CHECK IF IT IS A CALENDAR.
         } else if(Reflection.isInstance(obj.getClass(), Calendar.class)){
             capsule.append(dictionary.get(Calendar.class.getName())).append(":");
             capsule.append(((Calendar) obj).getTime().toGMTString());
         } else {
             System.out.println("Special case error: Unsupported class.");
             System.out.println(obj.getClass());
+            succes.setBool(false);
         }
     }
     
+    /**
+     * Performs the encapsulation process of a complex object.
+     * @param obj Object to be encapsulated.
+     * @param entities List that keeps the reference of entities saved during the process.
+     * @param succes Letter that maintains the success state of the encapsulation.
+     * @throws Exception Generic exception for any error that may happen.
+     */
     private void encapsuleObject(Object obj, List<Entity> entities, BooleanLetter succes) throws Exception{
         capsule.append(dictionary.get(obj.getClass().getName())).append(":");
         List<Field> fields = FieldsManager.getAllFields(obj);
@@ -332,6 +461,12 @@ public class Capsule {
         }
     }
     
+    /**
+     * Starts the process of extracting an object.
+     * @param <T> Type of object to extract.
+     * @return Extracted object.
+     * @throws ClassNotFoundException 
+     */
     public <T> T extract() throws ClassNotFoundException{
         String str = toString();
         if(str.startsWith("e")){
@@ -351,6 +486,11 @@ public class Capsule {
         }
     }
     
+    /**
+     * Starts the process of extracting an list.
+     * @param <T> Type of object to extract.
+     * @return Extracted list.
+     */
     private <T> T extractList(){
         List back = new ArrayList();
         List<String> strs = parseArrayString(toString());
@@ -380,6 +520,8 @@ public class Capsule {
                     }
                 }
                 if(unique){
+                    // Please don't change that part of checks,
+                    // it was the only way that worked as expected.
                     Object o = back.get(0);
                     if(o instanceof Byte){
                         byte[] ar = new byte[back.size()];
@@ -431,6 +573,11 @@ public class Capsule {
         }
     }
     
+    /**
+     * Starts the process of extracting an map.
+     * @param <T> Type of object to extract.
+     * @return Extracted map.
+     */
     private <T> T extractMap(){
         List<String> refil = new ArrayList<>();
         getSub(refil, toString(), '(', ')');
@@ -455,6 +602,12 @@ public class Capsule {
         return (T) map;
     }
     
+    /**
+     * Starts the process of extracting an primitive.
+     * @param <T> Type of object to extract.
+     * @return Extracted primitive.
+     * @throws ClassNotFoundException 
+     */
     private <T> T extractPrimitive() throws ClassNotFoundException{
         String str = toString();
         String index = str.substring(0, str.indexOf(":"));
@@ -474,6 +627,11 @@ public class Capsule {
         return null;
     }
     
+    /**
+     * Starts the process of extracting an entity.
+     * @param <T> Type of object to extract.
+     * @return Extracted entity.
+     */
     private <T extends Entity> T extractEntity(){
         String str = toString().substring(1);
         String index = str.substring(0, str.indexOf(":"));
@@ -496,6 +654,11 @@ public class Capsule {
         return null;
     }
     
+    /**
+     * Starts the process of extracting an object.
+     * @param <T> Type of object to extract.
+     * @return Extracted object.
+     */
     private <T> T extractObject(){
         try {
             String str = toString();
@@ -534,6 +697,11 @@ public class Capsule {
         return null;
     }
     
+    /**
+     * Starts the process of extracting an special object case.
+     * @param <T> Type of object to extract.
+     * @return Extracted object.
+     */
     private <T> T extractSpecialCase(){
         try {
             T t = extractPrimitive();
@@ -557,6 +725,11 @@ public class Capsule {
         return null;
     }
     
+    /**
+     * Separates the built-in objects from a list.
+     * @param str 
+     * @return 
+     */
     private List<String> parseArrayString(String str){
         List<String> back = new ArrayList<>();
         str = str.substring(2, str.length() -1);
@@ -564,6 +737,15 @@ public class Capsule {
         return back;
     }
     
+    /**
+     * It receives a text and the identification of an opening and closing character
+     * of the block and then divides the String into identified blocks, allocating
+     * them in a list of Strings.
+     * @param refil List that will receive the divided blocks.
+     * @param str String with the blocks to be separated.
+     * @param openKey Block opening character.
+     * @param closeKey Block closing character.
+     */
     private void getSub(List<String> refil, String str, char openKey, char closeKey){
         if(str.contains(new String(new char[]{openKey})) && str.contains(new String(new char[]{closeKey}))){
             int opens = 1;
@@ -587,22 +769,51 @@ public class Capsule {
         }
     }
     
-    private void fullDelete(){
+    /**
+     * Method that will completely delete the object's branch.
+     * Including all sub entities of the branch.
+     */
+    public void fullDelete(){
         try {
             Entity entity = (Entity) this.object;
-            try(BufferedReader r = Files.newBufferedReader(Paths.get(new File("db/"+entity.getClass().getName()
-                        .replaceAll(".class", "")
-                        .replaceAll("[.]", "/")
-                        +"/"+String.valueOf(entity.getEnteId())).getPath()))) {
+            try(BufferedReader r = Files.newBufferedReader(Paths.get(new File(IO.getDBFolderWithID(entity)).getPath()))) {
                 String line = r.readLine();
                 Capsule capsule = new Capsule(line);
                 fullDelete(capsule.extract());
             }
+        } catch (ClassCastException e){
+            fullDeleteObj(object);
         } catch (Exception e) {
-            List<Field> fields = FieldsManager.getAllFields(object);
         }
     }
     
+    /**
+     * Method that will completely delete the object's branch.
+     * Including all sub entities of the branch.
+     */
+    private void fullDeleteObj(Object object){
+        List<Field> fields = FieldsManager.getAllFields(object);
+        fields.forEach(field -> {
+            try {
+                if(!Reflection.isPrimitive(field.getType())){
+                    field.setAccessible(true);
+                    Object value = field.get(object);
+                    if(Reflection.isInstance(value.getClass(), Entity.class)){
+                        fullDelete((Entity) value);
+                    } else {
+                        fullDeleteObj(value);
+                    }
+                }
+            } catch (Exception ex) {
+            }
+        });
+    }
+    
+    /**
+     * Method that will completely delete the object's branch.
+     * Including all sub entities of the branch.
+     * @param entity Entity that opens the branch to be deleted.
+     */
     private void fullDelete(Entity entity){
         List<Field> fields = FieldsManager.getAllFields(entity);
         fields.forEach(field -> {
@@ -656,10 +867,7 @@ public class Capsule {
                 }
             }
         });
-        File ente = new File("db/"+entity.getClass().getName()
-            .replaceAll(".class", "")
-            .replaceAll("[.]", "/")
-            +"/"+String.valueOf(entity.getEnteId()));
+        File ente = new File(IO.getDBFolderWithID(entity));
         if(ente.exists()){
             ente.delete();
         }
@@ -674,6 +882,10 @@ public class Capsule {
         this.object = object;
     }
     
+    /**
+     * Initializes the database class dictionary if it does not already exist.
+     * @throws IOException 
+     */
     private void startDictionary() throws IOException{
         if(dictionary == null){
             File dic = new File("db/dictionary.dic");
