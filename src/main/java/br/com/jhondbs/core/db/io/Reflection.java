@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -36,7 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -80,12 +80,12 @@ public final class Reflection {
      */
     public List<String> reflect() throws URISyntaxException, IOException{
         if(array == null){
-            String name = Reflection.class.getName();
-            String init = name.substring(0, name.indexOf("."));
             List<String> classList = new ArrayList<>();
-            URI uri = Reflection.class.getResource("/").toURI();
+            String r1 = Reflection.class.getResource("/").getPath();
+            File f1 = new File(r1).getParentFile();
+            URI uri = f1.toURI();
             Path myPath;
-            if (uri.getScheme().equals("jar")) {
+            if (Reflection.class.getResource("/").toURI().getScheme().equals("jar")) {
                 FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
                 myPath = fileSystem.getPath("/");
                 Stream<Path> walk = Files.walk(myPath, 100);
@@ -98,11 +98,30 @@ public final class Reflection {
             }
             List<String> pronta = new ArrayList<>();
             classList.forEach(p -> {
-                pronta.add(p.substring(p.indexOf("/"+init)+1));
+                Class s = makeClass(p);
+                if(s != null){
+                    pronta.add(s.getName());
+                }
             });
             array = pronta;
         }
         return array;
+    }
+    
+    private Class makeClass(String str){
+        str = str.replaceAll(".class", "").replaceAll("/", ".");
+        while(!str.isBlank()){
+            try {
+                return Class.forName(str);
+            } catch (Exception e) {
+                if(str.contains(".")){
+                    str = str.substring(str.indexOf(".")+1);
+                } else {
+                    str = "";
+                }
+            }
+        }
+        return null;
     }
     
     /**
@@ -146,27 +165,16 @@ public final class Reflection {
         List<String> retorno = new ArrayList<>();
         try {
             List<String> reflexo = reflect();
-            for(String s : reflexo){
-                Class tempClass = StringToClass(s);
-                if(tempClass != null){
-                    while(tempClass != null && tempClass != Object.class){
-                        if(isInstance(tempClass, classe) || 
-                                Arrays.asList(tempClass.getInterfaces()).contains(classe)){
-                            retorno.add(s);
-                            break;
-                        }
-                        Arrays.asList(tempClass.getAnnotations()).forEach(annotation -> {
-                            if(annotation.annotationType() == classe){
-                                retorno.add(s);
-                            }
-                        });
-                        tempClass = tempClass.getSuperclass();
-                    }
+            return reflexo.stream().filter(path -> {
+                try {
+                    return isInstance(makeClass(path), classe);
+                } catch (Exception ex) {
+//                    Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            }
+                return false;
+            })
+                    .toList();
         } catch (URISyntaxException | IOException ex) {
-            Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (Exception ex) {
             Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
         }
         return retorno;
@@ -188,19 +196,14 @@ public final class Reflection {
      * @return 
      */
     public List<String> allImplementsNotAbstract(Class classe){
-        List<String> retorno = new ArrayList<>();
-        allImplements(classe).forEach(className -> {
+        return allImplements(classe).stream().filter(clName -> {
             try {
-                if(getNewInstance(className) != null){
-                    retorno.add(className);
-                }
-            } catch (URISyntaxException | IOException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-                Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
+                return !Modifier.isAbstract(makeClass(clName).getModifiers());
             } catch (Exception ex) {
                 Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
             }
-        });
-        return retorno;
+            return false;
+        }).toList();
     }
     
     /**
@@ -220,34 +223,8 @@ public final class Reflection {
      * @throws IllegalAccessException 
      */
     public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
-        while(className.endsWith("/")){
-            className = className.substring(0, className.length()-1);
-        }
         if(!className.isBlank()){
-            if(className.contains("/")){
-                className = className.substring(className.lastIndexOf("/")+1);
-            }
-            String name = className.replaceAll(".class", "");
-            String path = reflect()
-                    .stream()
-                    .filter(f -> f.contains(name))
-                    .collect(Collectors.toList())
-                    .get(0)
-                    .replaceAll("/", ".").replaceAll(".class", "");
-            //Chamada recursiva que vai limpar o caminho da classe.
-            while(true){
-                try {
-                    Class.forName(path);
-                    break;
-                } catch (ClassNotFoundException classNotFoundException) {
-                    if(path.contains(".")){
-                        path = path.substring(path.indexOf(".")+1);
-                    } else {
-                        break;
-                    }
-                }
-            }
-            return getNewInstance(Class.forName(path));
+            return getNewInstance(makeClass(className));
         }
         throw new ClassNotFoundException("Blank path");
     }
@@ -293,40 +270,6 @@ public final class Reflection {
     }
     
     /**
-     * Returns a Class object from a String path reference to the class.
-     * <br><br>
-     * Retorna um objeto Class a partir de uma String de referência de caminho para
-     * a classe.
-     * @param path Caminho para a classe.
-     * @return Objeto de classe.
-     */
-    private Class StringToClass(String path) throws Exception{
-        if(path.endsWith(".class")){
-            try {
-                String root = Reflection.class.getName();
-                root = root.substring(0, root.indexOf("."));
-                String tempPath = path;
-
-                try {
-                    tempPath = tempPath.substring(tempPath.indexOf("/" + root));
-                } catch (Exception e) {
-                }
-
-                String className = tempPath.substring(path.lastIndexOf("/")+1);
-                return Class.forName(reflect()
-                        .stream()
-                        .filter(filtered -> filtered.contains(className))
-                        .collect(Collectors.toList())
-                        .get(0)
-                        .replaceAll("/", ".").replaceAll(".class", "")
-                );
-            } catch (URISyntaxException | IOException | ClassNotFoundException ex) {
-            }
-        }
-        throw new Exception("The path does not refer to a class.");
-    }
-    
-    /**
      * Checks from within a class to see if it is an instance of some other superclass.
      * <br><br>
      * Faz uma verificação a partir de uma classe para identificar se é uma instância
@@ -337,21 +280,23 @@ public final class Reflection {
      */
     public static boolean isInstance(Class son, Class dad){
         if(son != null && dad != null){
-            while(son != Object.class){
-                if(Arrays.asList(son.getInterfaces()).contains(dad)){
-                    return true;
-                } else if(Arrays.asList(son.getAnnotations())
-                            .stream()
-                            .filter(an -> (an.annotationType() == dad))
-                            .count() > 0){
-                    return true;
-                }
-                if(son == dad){
-                    return true;
-                }
-                son = son.getSuperclass();
-                if(son == null){
-                    break;
+            if(!son.getClass().getName().startsWith("[")){
+                while(son != null){
+                    if(Arrays.asList(son.getInterfaces()).contains(dad)){
+                        return true;
+                    } else if(Arrays.asList(son.getAnnotations())
+                                .stream()
+                                .filter(an -> (an.annotationType() == dad))
+                                .count() > 0){
+                        return true;
+                    }
+                    if(son == dad){
+                        return true;
+                    }
+                    son = son.getSuperclass();
+                    if(son == null){
+                        break;
+                    }
                 }
             }
         }
@@ -364,22 +309,25 @@ public final class Reflection {
      * @return 
      */
     public static boolean isPrimitive(Object object){
-        Class<? extends Object> aClass = object.getClass();
-        return  isInstance(aClass, Byte.class) ||
-                isInstance(aClass, Short.class) ||
-                isInstance(aClass, Integer.class) ||
-                isInstance(aClass, Long.class) ||
-                isInstance(aClass, Float.class) ||
-                isInstance(aClass, Double.class) ||
-                isInstance(aClass, Boolean.class) ||
-                isInstance(aClass, String.class) ||
-                isInstance(aClass, byte.class) ||
-                isInstance(aClass, short.class) ||
-                isInstance(aClass, int.class) ||
-                isInstance(aClass, long.class) ||
-                isInstance(aClass, float.class) ||
-                isInstance(aClass, double.class) ||
-                isInstance(aClass, boolean.class);
+        return  isPrimitive(object.getClass());
+    }
+    
+    public static boolean isPrimitive(Class clazz){
+        return  isInstance(clazz, Byte.class) ||
+                isInstance(clazz, Short.class) ||
+                isInstance(clazz, Integer.class) ||
+                isInstance(clazz, Long.class) ||
+                isInstance(clazz, Float.class) ||
+                isInstance(clazz, Double.class) ||
+                isInstance(clazz, Boolean.class) ||
+                isInstance(clazz, String.class) ||
+                isInstance(clazz, byte.class) ||
+                isInstance(clazz, short.class) ||
+                isInstance(clazz, int.class) ||
+                isInstance(clazz, long.class) ||
+                isInstance(clazz, float.class) ||
+                isInstance(clazz, double.class) ||
+                isInstance(clazz, boolean.class);
     }
     
     public static boolean isTinyNumerical(Object object){

@@ -4,8 +4,8 @@
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/ItemFilter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/errors/EntIdBadImplementation.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/DBServer.java
-/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Represent.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/DBAPI.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/Represent.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/NumberFilter.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/IO.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/Filter.java
@@ -13,9 +13,10 @@
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/InterpretadorParticular.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/Serializator.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/filter/BooleanFilter.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/Capsule.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/interpretador/Interpretador.java
-/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/Conexão.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/Inicializador.java
+/home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/servidor/Conexão.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/base/padrao/DefaultEntity.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/io/Reflection.java
 /home/jhonessales/git/JhonDBS/src/main/java/br/com/jhondbs/core/db/errors/AttributeNotFind.java

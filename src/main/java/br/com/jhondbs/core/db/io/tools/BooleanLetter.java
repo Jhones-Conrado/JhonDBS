@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 jhonessales
+ * Copyright (C) 2023 jhonessales
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,44 +14,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package tests.objects;
+package br.com.jhondbs.core.db.io.tools;
 
-import br.com.jhondbs.core.db.base.Entity;
+import java.io.Serializable;
 
 /**
  *
  * @author jhonessales
  */
-public class EnteTeste implements Entity{
+public class BooleanLetter implements Serializable, Cloneable{
     
-    public long enteId;
-    
-    public int idade;
-    public String nome;
-    public boolean rico;
+    private boolean bool;
 
-    public EnteTeste() {
-        this.enteId = -1l;
-        this.idade = 27;
-        this.nome = "Jhones";
-        this.rico = true;
-    }
-    
-    public EnteTeste(int idade, String nome, boolean rico) {
-        this.enteId = -1l;
-        this.idade = idade;
-        this.nome = nome;
-        this.rico = rico;
-    }
-    
-    @Override
-    public long getEnteId() {
-        return this.enteId;
+    public BooleanLetter(boolean bool) {
+        this.bool = bool;
     }
 
-    @Override
-    public void onSetId(long id) {
-        this.enteId = id;
+    /**
+     * @return the bool
+     */
+    public boolean isBool() {
+        return bool;
     }
+
+    /**
+     * @param bool the bool to set
+     */
+    public void setBool(boolean bool) {
+        this.bool = bool;
+    }
+    
+    
     
 }
