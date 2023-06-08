@@ -195,7 +195,7 @@ public class DBAPITest {
              * banco de dados, filtrados para somente os que o nome contém a letra
              * 'a'.
              */
-            List<Entity> byf = DBAPI.getByFilter("EnteTeste tpi nome a");
+            List<Entity> byf = DBAPI.getByFilter("EnteTeste tpi nome ar");
             assert byf.size() == 2;
         } catch (Exception ex) {
             Logger.getLogger(DBAPITest.class.getName()).log(Level.SEVERE, null, ex);

@@ -16,6 +16,7 @@
  */
 package br.com.jhondbs.core.db.base;
 
+import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.db.io.IO;
 import java.io.Serializable;
@@ -98,6 +99,7 @@ public interface Entity extends Serializable, Cloneable{
      * ENGLISH<br>
      * Save this entity to the database, ensuring that no values annotated with 
      * @throws java.lang.Exception
+     * @throws br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException
      * @unique are duplicated.
      * <br><br>
      * PORTUGUÊS<br>
@@ -107,7 +109,7 @@ public interface Entity extends Serializable, Cloneable{
      * False if there were errors.
      * the getId and onSetId methods.
      */
-    default boolean save() throws Exception {
+    default boolean save() throws Exception, DuplicatedUniqueFieldException {
         return IO.save(this);
     }
     

@@ -16,11 +16,8 @@
  */
 package br.com.jhondbs.core.db.io;
 
-import br.com.jhondbs.core.db.DBAPITest;
 import br.com.jhondbs.core.db.base.Entity;
-import br.com.jhondbs.core.db.errors.DuplicatedUniqueField;
-import br.com.jhondbs.core.db.errors.EntIdBadImplementation;
-import java.io.IOException;
+import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.After;
@@ -29,6 +26,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import tests.objects.EnteTeste;
+import tests.objects.EnteUniqueName;
 import tests.objects.OFDDad;
 import tests.objects.OFDSon;
 
@@ -172,6 +170,7 @@ public class IOTest <T> {
      */
     @Test
     public void testFullDelete(){
+        System.out.println("fullDelete");
         OFDDad obj = new OFDDad();
         long prevId = obj.getEnteId();
         long prevSonId = obj.son.getEnteId();
@@ -264,5 +263,25 @@ public class IOTest <T> {
 //        // TODO review the generated test code and remove the default call to fail.
 //        fail("The test case is a prototype.");
 //    }
+    
+    @Test
+    public void testUnique(){
+        System.out.println("uniqueFieldValue");
+        
+        EnteUniqueName a = new EnteUniqueName("jhones");
+        EnteUniqueName b = new EnteUniqueName("jhones");
+        
+        try {
+            assert a.save();
+            assert !b.save();
+        } catch (DuplicatedUniqueFieldException e){
+            System.out.println("Erro duplicado: "+e);
+            assert true;
+        } catch (Exception e) {
+            System.out.println(e);
+            assert false;
+        } 
+        
+    }
     
 }

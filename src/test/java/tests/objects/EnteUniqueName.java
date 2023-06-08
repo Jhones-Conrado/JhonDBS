@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 jhonesconrado
+ * Copyright (C) 2023 jhonessales
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,23 +14,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.db.errors;
+package tests.objects;
+
+import br.com.jhondbs.core.db.base.Unique;
+import br.com.jhondbs.core.db.base.padrao.DefaultEntity;
 
 /**
- * Error thrown if trying to save an entity that has a variable value that has
- * already been used by another that is saved in the database.<br><br>
- * Erro lançado caso tente salvar uma entidade que possui um valor de varíavel
- * que já tenha sido usada por outra que está salva no banco de dados.
- * @author jhonesconrado
+ *
+ * @author jhonessales
  */
-public class DuplicatedUniqueField extends Exception{
+public class EnteUniqueName extends DefaultEntity{
+    
+    @Unique
+    private String name;
 
-    public DuplicatedUniqueField() {
+    public EnteUniqueName(String name) {
+        this.name = name;
     }
-    
-    public DuplicatedUniqueField(String msg) {
-        super(msg);
-    }
-    
     
 }

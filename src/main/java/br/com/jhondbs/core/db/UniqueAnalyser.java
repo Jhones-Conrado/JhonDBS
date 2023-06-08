@@ -21,6 +21,7 @@ import br.com.jhondbs.core.db.io.IO;
 import java.lang.reflect.Field;
 import java.util.List;
 import br.com.jhondbs.core.db.base.Entity;
+import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 
 /**
  * Analisa se uma entidade está apta para ser salva. Ou seja, se não possui
@@ -34,14 +35,14 @@ public class UniqueAnalyser {
     
     /**
      * Analyzes if the entity has any field annotated as Unique where the value
-     * has already been used by another entity of the same type.
-     * <br><br>
+     * has already been used by another entity of the same type.<br><br>
      * Analisa se a entidade possui algum campo anotado como Unique onde o valor
      * já tenha sido usado por outra entidade de mesmo tipo.
      * @param entity
      * @return True se estiver apto a ser salvo, False se estiver com um campo já usado.
+     * @throws br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException
      */
-    public boolean analise(Entity entity){
+    public boolean analise(Entity entity) throws DuplicatedUniqueFieldException{
         List<Field> unicos = FieldsManager.getFieldsUnique(entity);
         if(!unicos.isEmpty()){
             for(Long l : IO.loadAllOnlyIds(entity)){
@@ -54,7 +55,7 @@ public class UniqueAnalyser {
                                 return true;
                             }
                             if(f.get(entity).equals(f.get(load))){
-                                return false;
+                                throw new DuplicatedUniqueFieldException(f.getName());
                             }
                         } catch (IllegalArgumentException | IllegalAccessException ex) {
                             return false;

@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.base.Entity;
+import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 
 /**
  * Responsible for saving, deleting and loading database entities.<br><br>
@@ -48,9 +49,10 @@ public class IO {
      * o bom funcionamento do sistema.Como verificar se os valores unicos estão disponíveis.
      * @param entity Entity a ser salva no banco de dados.
      * @return Verdadeiro para caso a entidade tenha sido salva. Falso em caso de erro.
+     * @throws br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException
      * @throws java.lang.Exception
      */
-    public static boolean save(Entity entity) throws Exception {
+    public static boolean save(Entity entity) throws Exception, DuplicatedUniqueFieldException {
         if(new UniqueAnalyser().analise(entity)){ //Precisa passar no teste de campos únicos.
             Capsule capsule = new Capsule(entity);
             return capsule.make();
