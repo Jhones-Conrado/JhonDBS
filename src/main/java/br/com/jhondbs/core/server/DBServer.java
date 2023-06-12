@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.servidor;
+package br.com.jhondbs.core.server;
 
 import java.io.IOException;
 import java.io.PrintWriter;

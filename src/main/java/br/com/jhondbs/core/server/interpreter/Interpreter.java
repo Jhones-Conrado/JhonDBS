@@ -14,16 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.servidor.interpretador;
+package br.com.jhondbs.core.server.interpreter;
 
-import br.com.jhondbs.core.servidor.Conexão;
+import br.com.jhondbs.core.server.Connection;
 
 /**
  * Responsável por analisar se uma mensagem começa com uma chave específica.</br>
  * Se sim, então interpreta a mensagem.
  * @author jhonesconrado
  */
-public abstract class Interpretador {
+public abstract class Interpreter {
     
     /**
      * Chave de comando que o interpretador usará para saber se uma determinada
@@ -38,17 +38,17 @@ public abstract class Interpretador {
      * Cria um novo interpretador com uma chave de comando.
      * @param comando Chave de comando.
      */
-    public Interpretador(String comando) {
+    public Interpreter(String comando) {
         this.comando = comando;
     }
     
     /**
      * Verifica se a mensagem pertence a este interpretador, se pertencer, realiza
      * a sua função programada.
-     * @param conexão Conexão que solicitou a interpretaçaõ.
+     * @param conexão Connection que solicitou a interpretaçaõ.
      * @param msg Mensagem a ser interpretada.
      */
-    public void interpretar(Conexão conexão, String msg){
+    public void interpretar(Connection conexão, String msg){
         if(msg.startsWith(comando)){
             try {
                 onInterpretar(conexão, msg.substring(comando.length()));
@@ -60,10 +60,10 @@ public abstract class Interpretador {
     
     /**
      * Implementação do interpretador, responsável por toda a sua lógica de comando.
-     * @param conexão Conexão que chamou o interpretador.
+     * @param conexão Connection que chamou o interpretador.
      * @param msg Mensagem da interpretação subtraída a chave inicial.
      */
-    protected abstract void onInterpretar(Conexão conexão, String msg);
+    protected abstract void onInterpretar(Connection conexão, String msg);
     
     /**
      * Converte uma String em um array de bytes, bastante útil quando se quer enviar

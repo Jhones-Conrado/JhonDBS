@@ -14,23 +14,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.servidor.interpretador;
+package br.com.jhondbs.core.server.interpreter;
 
 /**
- * Semelhante ao interpretador global, porém deve ser usado de modo particular, utilizando
- * uma nova instância para cada conexão.</br>
- * Pensado nas necessidades de uma classe que gerencie uma sessão de login ou o
- * personagem de um jogo online, por exemplo.
+ * Um interpretador de uso global que receberá mensagens de todas as conexões,
+ * interpretando-as e caso necessário, retornando respostas para as conexões.</br>
+ * pensado para funções como CRUD e similares.</br>
+ * CUIDADO! Todas as implementações dessa classe PRECISAM ter um construtor SEM
+ * argumentos!
  * @author jhonesconrado
  */
-public abstract class InterpretadorParticular extends Interpretador {
+public abstract class GlobalInterpreter extends Interpreter{
     
     /**
-     * Para instanciar um novo interpretador particular, uma chave deverá ser passada
+     * Para instanciar um novo interpretador global, uma chave deverá ser passada
      * como parâmetro, caso contrário o sistema dará erro.
      * @param comando Chave de comando do interpretador.
      */
-    public InterpretadorParticular(String comando) {
+    public GlobalInterpreter(String comando) {
         super(comando);
     }
     

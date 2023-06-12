@@ -17,8 +17,8 @@
 package br.com.jhondbs.core;
 
 import br.com.jhondbs.core.db.io.Reflection;
-import br.com.jhondbs.core.servidor.interpretador.InterpretadorGlobal;
-import br.com.jhondbs.core.servidor.interpretador.ListaInterpretador;
+import br.com.jhondbs.core.server.interpreter.GlobalInterpreter;
+import br.com.jhondbs.core.server.interpreter.InterpreterBottle;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
@@ -28,7 +28,9 @@ import java.util.logging.Logger;
  * Inicializadores de funções cruciais como carregar os interpretadores globais do projeto.
  * @author jhonesconrado
  */
-public class Inicializador {
+public class Starter {
+    
+    private static boolean namePrinted = false;
     
     /**
      * Indica se os interpretadores já foram carregados.
@@ -38,42 +40,42 @@ public class Inicializador {
     /**
      * Imprime na saída do sistema o nome da biblioteca, versão e autor.
      */
-    public static void imprimeNome(){
-        System.out.println(
-                "************************************************************************\n" +
-                "\n" +
-                "@@@@@@@@ @@    @@    @@@@    @@@    @@     @@@@@@    @@@@@@@    @@@@@@@\n" +
-                "   @@    @@    @@  @@    @@  @@@@   @@     @@   @@@  @@   @@@  @@@\n" +
-                "   @@    @@@@@@@@  @@    @@  @@ @@  @@     @@    @@  @@@@@@     @@@@@\n" +
-                "@@ @@    @@    @@  @@    @@  @@  @@ @@     @@   @@@  @@   @@@       @@@\n" +
-                " @@@     @@    @@    @@@@    @@   @@@@     @@@@@@    @@@@@@    @@@@@@\n" +
-                " \n" +
-                " ***********************************************************************\n" +
-                " Version: 1.0\n" +
-                " Author: Jhones Sales Conrado\n");
+    public static void printName(){
+        if(!namePrinted){
+            System.out.println(
+            "************************************************************************\n" +
+            "@@@@@@@@ @@    @@    @@@@    @@@    @@     @@@@@@    @@@@@@@    @@@@@@@\n" +
+            "   @@    @@    @@  @@    @@  @@@@   @@     @@   @@@  @@   @@@  @@@\n" +
+            "   @@    @@@@@@@@  @@    @@  @@ @@  @@     @@    @@  @@@@@@     @@@@@\n" +
+            "@@ @@    @@    @@  @@    @@  @@  @@ @@     @@   @@@  @@   @@@       @@@\n" +
+            " @@@     @@    @@    @@@@    @@   @@@@     @@@@@@    @@@@@@    @@@@@@\n" +
+            "************************************************************************\n" +
+            " Version: 2.1\n" +
+            " Author: Jhones Sales Conrado\n\n");
+        }
     }
     
     /**
-     * Busca todas as classes que extendem InterpretadorGlobal, tenta criar uma
+     * Busca todas as classes que extendem GlobalInterpreter, tenta criar uma
      * instância das classes achadas e as coloca em funcionamento para ouvir as 
      * mensagens recebidas a partir de todas as conexões.
      * @throws IOException
      */
     public static void startInterpretadores() throws IOException{
         if(!interpretadoresCarregados){
-            imprimeNome();
+            printName();
             Reflection r = new Reflection();
-            r.allImplementsNotAbstract(InterpretadorGlobal.class).forEach(i -> {
+            r.allImplementsNotAbstract(GlobalInterpreter.class).forEach(i -> {
                 try {
-                    ListaInterpretador.addInterpretador(r.getNewInstance(i));
+                    InterpreterBottle.addInterpretador(r.getNewInstance(i));
                 } catch (URISyntaxException | IOException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-                    Logger.getLogger(Inicializador.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(Starter.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (Exception ex) {
-                    Logger.getLogger(Inicializador.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(Starter.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
             interpretadoresCarregados = true;
-            System.out.println("Interpreters: "+ListaInterpretador.getInterpretadorCount());
+            System.out.println("Interpreters: "+InterpreterBottle.getInterpretersCount());
         }
     }
     

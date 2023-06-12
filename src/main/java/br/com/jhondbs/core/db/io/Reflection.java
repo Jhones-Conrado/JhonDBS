@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.math.BigDecimal;
@@ -112,8 +113,10 @@ public final class Reflection {
         str = str.replaceAll(".class", "").replaceAll("/", ".");
         while(!str.isBlank()){
             try {
-                return Class.forName(str);
-            } catch (Exception e) {
+                ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                return cl.loadClass(str);
+//                return Class.forName(str);
+            } catch (ClassNotFoundException e) {
                 if(str.contains(".")){
                     str = str.substring(str.indexOf(".")+1);
                 } else {
@@ -224,6 +227,7 @@ public final class Reflection {
      */
     public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
         if(!className.isBlank()){
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
             String path = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).iterator().next();
             if(path != null){
                 return getNewInstance(makeClass(path));
@@ -348,6 +352,15 @@ public final class Reflection {
                 isInstance(clazz, long.class) ||
                 isInstance(clazz, float.class) ||
                 isInstance(clazz, double.class);
+    }
+    
+    public static Method getMethod(String name, Class clazz) throws NoSuchMethodException{
+        for(Method method : clazz.getMethods()){
+            if(method.getName().toUpperCase().equals(name.toUpperCase())){
+                return method;
+            }
+        }
+        throw new NoSuchMethodException(name);
     }
     
 }

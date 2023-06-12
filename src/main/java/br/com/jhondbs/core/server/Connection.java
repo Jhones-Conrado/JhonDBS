@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.servidor;
+package br.com.jhondbs.core.server;
 
-import br.com.jhondbs.core.Inicializador;
-import br.com.jhondbs.core.servidor.errors.InvalidHash;
-import br.com.jhondbs.core.servidor.interpretador.InterpretadorParticular;
-import br.com.jhondbs.core.servidor.interpretador.ListaInterpretador;
+import br.com.jhondbs.core.Starter;
+import br.com.jhondbs.core.server.errors.InvalidHash;
+import br.com.jhondbs.core.server.interpreter.ParticularInterpreter;
+import br.com.jhondbs.core.server.interpreter.InterpreterBottle;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -32,7 +32,7 @@ import java.util.Scanner;
  * A conexão pode ser iniciada como cliente ou servidor.
  * @author jhonesconrado
  */
-public class Conexão {
+public class Connection {
     
     private Socket socket;
     private Scanner reader;
@@ -43,7 +43,7 @@ public class Conexão {
     private final long start_time;
     private boolean started;
     
-    private final List<InterpretadorParticular> interpretadores;
+    private final List<ParticularInterpreter> interpretadores;
     
     /**
      * Armazena temporariamente as respostas de perguntas feitas na conexão.
@@ -54,7 +54,7 @@ public class Conexão {
      * Nova instância de conexão que deverá ser iniciada.
      * @param hash Senha de verificação de autenticidade entre as conexões.
      */
-    public Conexão(String hash) {
+    public Connection(String hash) {
         this.interpretadores = new ArrayList<>();
         this.start_time = System.nanoTime();
         this.started = false;
@@ -89,7 +89,7 @@ public class Conexão {
      * @throws ClassNotFoundException 
      */
     public void startAsClient(String ip, int port) throws IOException, ClassNotFoundException, InvalidHash{
-        Inicializador.startInterpretadores();
+        Starter.startInterpretadores();
         this.socket = new Socket(ip, port);
         initIO();
         falar(hash);
@@ -113,7 +113,7 @@ public class Conexão {
      * @throws ClassNotFoundException 
      */
     public void startAsServer(Socket socket) throws IOException, ClassNotFoundException{
-        Inicializador.startInterpretadores();
+        Starter.startInterpretadores();
         this.socket = socket;
         initIO();
         if(reader.hasNextLine()){
@@ -150,7 +150,7 @@ public class Conexão {
      * sessão específica.
      * @param interpretador 
      */
-    public void addInterpretador(InterpretadorParticular interpretador){
+    public void addInterpretador(ParticularInterpreter interpretador){
         synchronized (interpretadores) {
             if(!interpretadores.contains(interpretador)){
                 interpretadores.add(interpretador);
@@ -166,7 +166,7 @@ public class Conexão {
      * sessão específica.
      * @param interpretador 
      */
-    public void removeInterpretrador(InterpretadorParticular interpretador){
+    public void removeInterpretrador(ParticularInterpreter interpretador){
         synchronized (interpretadores) {
             if(interpretadores.contains(interpretador)){
                 interpretadores.remove(interpretador);
@@ -217,7 +217,7 @@ public class Conexão {
             try {
                 Thread.sleep(5);
             } catch (InterruptedException ex) {
-//                Logger.getLogger(Conexão.class.getName()).log(Level.SEVERE, null, ex);
+//                Logger.getLogger(Connection.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         String temp = resposta;
@@ -231,9 +231,9 @@ public class Conexão {
      * @param msg A ser interpretada.
      */
     public void ouvir(String msg){
-        ListaInterpretador.interpretar(this, msg);
+        InterpreterBottle.interpretar(this, msg);
         synchronized (interpretadores) {
-            for(InterpretadorParticular i : interpretadores){
+            for(ParticularInterpreter i : interpretadores){
                 try {
                     i.interpretar(this, msg);
                 } catch (Exception e) {

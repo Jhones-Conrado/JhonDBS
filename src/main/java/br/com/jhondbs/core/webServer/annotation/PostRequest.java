@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 jhonessales
+ * Copyright (C) 2023 jhonessales
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,30 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com;
-
-import br.com.jhondbs.core.webServer.WebServer;
-import br.com.jhondbs.core.webServer.functions.DoMethod;
-import br.com.jhondbs.core.webServer.handlers.HandlerBottle;
-import java.io.IOException;
+package br.com.jhondbs.core.webServer.annotation;
 
 /**
  *
  * @author jhonessales
  */
-public class JDBS {
-    
-    public JDBS() {
-        
-    }
-    
-    public String metodoteste(String arg1){
-        return "DEU CERTO -> "+arg1;
-    }
-    
-    public static void main(String[] args) throws IOException, NoSuchMethodException {
-        HandlerBottle.add("/", "GET", new DoMethod(new JDBS(), "metodoteste"));
-        WebServer server = new WebServer();
-    }
-    
+public @interface PostRequest {
+    public String path() default "";
 }

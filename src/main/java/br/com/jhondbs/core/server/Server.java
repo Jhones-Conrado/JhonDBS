@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.servidor;
+package br.com.jhondbs.core.server;
 
-import br.com.jhondbs.core.Inicializador;
+import br.com.jhondbs.core.Starter;
 import java.io.IOException;
 import java.net.ServerSocket;
 
@@ -24,7 +24,7 @@ import java.net.ServerSocket;
  * Cria um servidor básico que ficará ouvindo requisições de novas conexões.
  * @author jhonesconrado
  */
-public class Servidor {
+public class Server {
     
     private final String hash;
     private static boolean ativo = false;
@@ -36,9 +36,9 @@ public class Servidor {
      * com os clientes. Caso o cliente envie um hash diferente, a conexão será
      * fechada imediatamente. 
      */
-    public Servidor(String hash) {
+    public Server(String hash) {
         this.hash = hash;
-        Inicializador.imprimeNome();
+        Starter.printName();
     }
     
     /**
@@ -76,7 +76,7 @@ public class Servidor {
             System.out.println("Server started.");
             while(ativo){
                 try {
-                    new Conexão(hash).startAsServer(server.accept());
+                    new Connection(hash).startAsServer(server.accept());
                 } catch (IOException | ClassNotFoundException e) {
                 }
             }

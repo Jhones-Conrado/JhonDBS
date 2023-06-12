@@ -16,6 +16,8 @@
  */
 package br;
 
+import br.com.jhondbs.core.webServer.WebServer;
+import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,7 +50,7 @@ public class SporadicTests {
     }
 
     @Test
-    public void hello() {
+    public void hello() throws IOException {
         System.out.println("sporadic test");
         assert true;
     }

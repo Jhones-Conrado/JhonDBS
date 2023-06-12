@@ -14,9 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.servidor.interpretador;
+package br.com.jhondbs.core.server.interpreter;
 
-import br.com.jhondbs.core.servidor.Conexão;
+import br.com.jhondbs.core.server.Connection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,12 +26,12 @@ import java.util.List;
  * as implementações de interpretadores globais que foram criadas.
  * @author jhonesconrado
  */
-public class ListaInterpretador {
+public class InterpreterBottle {
     
-    private static ListaInterpretador instancia;
-    private List<Interpretador> interpretadores;
+    private static InterpreterBottle instancia;
+    private List<Interpreter> interpretadores;
     
-    private ListaInterpretador(){
+    private InterpreterBottle(){
         this.interpretadores = new ArrayList<>();
     }
     
@@ -39,7 +39,7 @@ public class ListaInterpretador {
      * Adiciona um interpretador global ao sistema.
      * @param interpretador 
      */
-    public static void addInterpretador(Interpretador interpretador){
+    public static void addInterpretador(Interpreter interpretador){
         if(!get().interpretadores.contains(interpretador)){
             get().interpretadores.add(interpretador);
         }
@@ -49,7 +49,7 @@ public class ListaInterpretador {
      * Remove um interpretador global do sistema.
      * @param interpretador 
      */
-    public static void removeInterpretador(Interpretador interpretador){
+    public static void removeInterpretador(Interpreter interpretador){
         if(get().interpretadores.contains(interpretador)){
             get().interpretadores.remove(interpretador);
         }
@@ -57,11 +57,11 @@ public class ListaInterpretador {
     
     /**
      * Encaminha uma mensagem à todos os interpretadores.
-     * @param conexão Conexão que requisitou a interpretação.
+     * @param conexão Connection que requisitou a interpretação.
      * @param msg Mensagem a ser interpretada.
      */
-    public static void interpretar(Conexão conexão, String msg){
-        for(Interpretador i : get().interpretadores){
+    public static void interpretar(Connection conexão, String msg){
+        for(Interpreter i : get().interpretadores){
             i.interpretar(conexão, msg);
         }
     }
@@ -70,17 +70,17 @@ public class ListaInterpretador {
      * Faz uma contagem de quantos interpretadores globais existem no sistema.
      * @return Quantidade de interpretadores globais.
      */
-    public static int getInterpretadorCount(){
+    public static int getInterpretersCount(){
         return get().interpretadores.size();
     }
     
     /**
      * Retorna a instância universal da Lista de Interpretadores Globais.
-     * @return Instância da ListaInterpretador.
+     * @return Instância da InterpreterBottle.
      */
-    private static ListaInterpretador get(){
+    private static InterpreterBottle get(){
         if(instancia == null){
-            instancia = new ListaInterpretador();
+            instancia = new InterpreterBottle();
         }
         return instancia;
     }
