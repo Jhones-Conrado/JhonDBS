@@ -18,11 +18,14 @@ package br;
 
 import br.com.jhondbs.core.webServer.WebServer;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tests.objects.EnteComRepresent;
 
 /**
  *
@@ -52,6 +55,15 @@ public class SporadicTests {
     @Test
     public void hello() throws IOException {
         System.out.println("sporadic test");
-        assert true;
+        
+        EnteComRepresent e = new EnteComRepresent();
+        try {
+            e.setOwner(e);
+            e.save();
+            assert true;
+        } catch (Exception ex) {
+            Logger.getLogger(SporadicTests.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
+        }
     }
 }

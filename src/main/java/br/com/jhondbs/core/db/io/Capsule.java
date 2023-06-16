@@ -203,7 +203,7 @@ public class Capsule {
                 encapsuleObject(this.object, entities, succes);
             } else if(dictionary.containsKey(this.object.getClass().getName())){
                 // Supported special class.
-                encapsuleSpecialCase(this.object, succes);
+                encapsuleSpecialCase(this.object, entities, succes);
             } else {
                 throw new Exception("Class not supported: "+this.object.getClass().getName());
             }
@@ -406,7 +406,7 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleSpecialCase(Object obj, BooleanLetter succes){
+    private void encapsuleSpecialCase(Object obj, List<Entity> entities, BooleanLetter succes) throws Exception{
         // CHECK IF IT IS A PRIMITIVE OR NUMBER.
         if(Reflection.isPrimitive(obj) || Reflection.isInstance(obj.getClass(), Number.class)){
             capsule.append(dictionary.get(obj.getClass().getName())).append(":");
@@ -419,6 +419,8 @@ public class Capsule {
         } else if(Reflection.isInstance(obj.getClass(), Calendar.class)){
             capsule.append(dictionary.get(Calendar.class.getName())).append(":");
             capsule.append(((Calendar) obj).getTime().toGMTString());
+        } else if(Reflection.isInstance(obj.getClass(), Represent.class)){
+            encapsuleObject(obj, entities, succes);
         } else {
             System.out.println("Special case error: Unsupported class.");
             System.out.println(obj.getClass());
