@@ -16,6 +16,7 @@
  */
 package br.com.jhondbs.core.db.io;
 
+import br.com.jhondbs.core.db.base.Represent;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -228,9 +229,14 @@ public final class Reflection {
     public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
         if(!className.isBlank()){
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            String path = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).iterator().next();
-            if(path != null){
+            List<String> list = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).toList();
+            if(list.size() > 0){
+                String path = list.get(0);
                 return getNewInstance(makeClass(path));
+            } else {
+                if(className.endsWith(Represent.class.getSimpleName())){
+                    return (T) cl.loadClass(Represent.class.getName()).newInstance();
+                }
             }
         }
         throw new ClassNotFoundException("Blank path");
