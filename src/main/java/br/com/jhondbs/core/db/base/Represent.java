@@ -50,7 +50,7 @@ public class Represent implements Serializable{
         this.enteId = entity.getEnteId();
     }
     
-    public Entity get() throws IOException, URISyntaxException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
+    public <T extends Entity> T get() throws IOException, URISyntaxException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
         if(classPath != null){
             return ((Entity) new Reflection().getNewInstance(classPath)).load(enteId);
         }

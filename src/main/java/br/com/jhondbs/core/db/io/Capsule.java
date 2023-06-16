@@ -19,6 +19,7 @@ package br.com.jhondbs.core.db.io;
 import br.com.jhondbs.core.db.Keys;
 import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.base.FieldsManager;
+import br.com.jhondbs.core.db.base.Represent;
 import br.com.jhondbs.core.db.io.tools.BooleanLetter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -123,7 +124,7 @@ public class Capsule {
             this.capsule = new StringBuilder();
             try {
                 startDictionary();
-            } catch (Exception e) {
+            } catch (IOException e) {
             }
         }
     }
@@ -138,7 +139,7 @@ public class Capsule {
         this.capsule.append(str);
         try {
             startDictionary();
-        } catch (Exception e) {
+        } catch (IOException e) {
         }
     }
     
@@ -202,7 +203,7 @@ public class Capsule {
                 encapsuleObject(this.object, entities, succes);
             } else if(dictionary.containsKey(this.object.getClass().getName())){
                 // Supported special class.
-                encapsuleSpecialCase(this.object, entities, succes);
+                encapsuleSpecialCase(this.object, succes);
             } else {
                 throw new Exception("Class not supported: "+this.object.getClass().getName());
             }
@@ -405,7 +406,7 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleSpecialCase(Object obj, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleSpecialCase(Object obj, BooleanLetter succes){
         // CHECK IF IT IS A PRIMITIVE OR NUMBER.
         if(Reflection.isPrimitive(obj) || Reflection.isInstance(obj.getClass(), Number.class)){
             capsule.append(dictionary.get(obj.getClass().getName())).append(":");
@@ -588,7 +589,7 @@ public class Capsule {
             String value = str.substring(separator+1);
             try {
                 map.put(new Capsule(key).extract(), new Capsule(value).extract());
-            } catch (Exception e) {
+            } catch (ClassNotFoundException e) {
                 Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, e);
             }
         });
@@ -649,7 +650,7 @@ public class Capsule {
                     r.close();
                     return cap.extract();
                 }
-            } catch (Exception ex) {
+            } catch (IOException | ClassNotFoundException ex) {
                 Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         } catch (NumberFormatException numberFormatException) {
@@ -786,7 +787,7 @@ public class Capsule {
             }
         } catch (ClassCastException e){
             fullDeleteObj(object);
-        } catch (Exception e) {
+        } catch (IOException | ClassNotFoundException e) {
         }
     }
     
@@ -807,7 +808,7 @@ public class Capsule {
                         fullDeleteObj(value);
                     }
                 }
-            } catch (Exception ex) {
+            } catch (IllegalAccessException | IllegalArgumentException ex) {
             }
         });
     }
@@ -827,7 +828,7 @@ public class Capsule {
                     if(e != null){
                         fullDelete(e);
                     }
-                } catch(Exception e){
+                } catch(IllegalAccessException | IllegalArgumentException e){
                 }
             } else if(Reflection.isInstance(field.getType(), List.class)){
                 try {
@@ -840,7 +841,7 @@ public class Capsule {
                             }
                         });
                     }
-                } catch(Exception e){
+                } catch(IllegalAccessException | IllegalArgumentException e){
                 }
             } else if(Reflection.isInstance(field.getType(), Map.class)){
                 try {
@@ -853,7 +854,7 @@ public class Capsule {
                             }
                         });
                     }
-                } catch(Exception e){
+                } catch(IllegalAccessException | IllegalArgumentException e){
                 }
             } else if(field.getType().getClass().getName().startsWith("[")){
                 try {
@@ -866,7 +867,7 @@ public class Capsule {
                             }
                         });
                     }
-                } catch(Exception e){
+                } catch(IllegalAccessException | IllegalArgumentException e){
                 }
             }
         });
@@ -913,6 +914,7 @@ public class Capsule {
                 dictionary.put(Set.class.getName(), String.valueOf(dictionary.size()));
                 dictionary.put(Properties.class.getName(), String.valueOf(dictionary.size()));
                 dictionary.put(Calendar.class.getName(), String.valueOf(dictionary.size()));
+                dictionary.put(Represent.class.getName(), String.valueOf(dictionary.size()));
             }
             List<String> all = new Reflection().allImplementsNotAbstract(Object.class);
             all.forEach(cl -> {
