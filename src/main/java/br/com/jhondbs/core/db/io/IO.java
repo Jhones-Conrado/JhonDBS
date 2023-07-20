@@ -78,8 +78,8 @@ public class IO {
         //Método antigo utilizando JSON
         if(file.exists()){
             try {
-                try (BufferedReader r = Files.newBufferedReader(Paths.get(file.getPath()))) {
-                    Capsule capsule = new Capsule(r.readLine());
+                try {
+                    Capsule capsule = new Capsule(String.join("\n", Files.readAllLines(Paths.get(file.getPath()))));
                     return capsule.extract();
                 } catch (ClassNotFoundException ex) {
                     Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
