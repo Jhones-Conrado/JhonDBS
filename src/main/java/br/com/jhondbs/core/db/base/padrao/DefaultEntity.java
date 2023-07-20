@@ -73,5 +73,14 @@ public abstract class DefaultEntity implements Entity {
     public DefaultEntity clone() throws CloneNotSupportedException {
         return (DefaultEntity) super.clone();
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj.getClass() == this.getClass()){
+            Entity e = (Entity) obj;
+            return e.getEnteId() == getEnteId();
+        }
+        return false;
+    }
     
 }
