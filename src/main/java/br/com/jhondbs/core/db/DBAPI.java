@@ -154,7 +154,7 @@ public class DBAPI {
                 default:
                     break;
             }
-        } else if(split[0].startsWith("i")){ //Caso de filtro de número
+        } else if(split[0].startsWith("n")){ //Caso de filtro de número
             switch (split[0]) {
                 case "ni":
                     return new NumberFilter(split[1], NumberFilter.IGUAL, Double.parseDouble(split[2]));
