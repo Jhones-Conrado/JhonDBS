@@ -100,7 +100,7 @@ public class Keys {
      * e a entidade não modifique o resultado do método getId. Ou seja, a classe
      * implementou de forma errada a interface Entity.
      */
-    public synchronized void gerarIdLocal(Entity e) throws EntIdBadImplementation{
+    public synchronized void gerarIdLocal(Entity e) throws EntIdBadImplementation, Exception{
         if(e.getEnteId() < 0){
             if(keys.containsKey(e.getClass().getName())){
                 analiseId(e);
@@ -121,7 +121,7 @@ public class Keys {
      * @param e Que receberá o novo ID.
      * @throws EntIdBadImplementation 
      */
-    private void analiseId(Entity e) throws EntIdBadImplementation{
+    private void analiseId(Entity e) throws EntIdBadImplementation, Exception{
         e.setEnteId(keys.get(e.getClass().getName()));
         if(e.getEnteId() < 0){
             throw new EntIdBadImplementation();
@@ -140,7 +140,7 @@ public class Keys {
      * e a entidade não modifique o resultado do método getId. Ou seja, a classe
      * implementou de forma errada a interface Entity.
      */
-    public static void gerarId(Entity e) throws EntIdBadImplementation{
+    public static void gerarId(Entity e) throws EntIdBadImplementation, Exception{
         new Keys().gerarIdLocal(e);
     }
     

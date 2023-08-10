@@ -17,6 +17,8 @@
 package br.com.jhondbs.core.db.base.padrao;
 
 import br.com.jhondbs.core.db.base.Entity;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ENGLISH <br>
@@ -38,29 +40,6 @@ public abstract class DefaultEntity implements Entity {
     private long enteId = -1l;
     
     /**
-     * The entity id of the class responsible for its identification in the database.
-     * O id de entidade da classe responsável por sua identificação no banco de
-     * dados.
-     * @return ID de entidade.
-     */
-    @Override
-    public long getEnteId() {
-        return enteId;
-    }
-    
-    /**
-     * The entity id of the class responsible for its identification in the database.
-     * O id de entidade da classe responsável por sua identificação no banco de
-     * dados.
-     * @param id ID Number for be saved in the database.
-     * de dados.
-     */
-    @Override
-    public void onSetId(long id) {
-        this.enteId = id;
-    }
-    
-    /**
      * ENGLISH<br>
      * Creates a clone of the current object.
      * <br><br>
@@ -78,9 +57,20 @@ public abstract class DefaultEntity implements Entity {
     public boolean equals(Object obj) {
         if(obj.getClass() == this.getClass()){
             Entity e = (Entity) obj;
-            return e.getEnteId() == getEnteId();
+            try {
+                return e.getEnteId() == getEnteId();
+            } catch (Exception ex) {
+                Logger.getLogger(DefaultEntity.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 59 * hash + (int) (this.enteId ^ (this.enteId >>> 32));
+        return hash;
     }
     
 }

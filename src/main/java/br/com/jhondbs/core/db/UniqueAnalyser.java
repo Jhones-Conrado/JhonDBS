@@ -42,7 +42,7 @@ public class UniqueAnalyser {
      * @return True se estiver apto a ser salvo, False se estiver com um campo já usado.
      * @throws br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException
      */
-    public boolean analise(Entity entity) throws DuplicatedUniqueFieldException{
+    public boolean analise(Entity entity) throws DuplicatedUniqueFieldException, Exception{
         List<Field> unicos = FieldsManager.getFieldsUnique(entity);
         if(!unicos.isEmpty()){
             for(Long l : IO.loadAllOnlyIds(entity)){

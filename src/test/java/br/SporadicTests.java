@@ -53,17 +53,27 @@ public class SporadicTests {
     }
 
     @Test
-    public void hello() throws IOException {
+    public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
         EnteComRepresent e = new EnteComRepresent();
-        try {
-            e.setOwner(e);
-            e.save();
-            assert true;
-        } catch (Exception ex) {
-            Logger.getLogger(SporadicTests.class.getName()).log(Level.SEVERE, null, ex);
-            assert false;
-        }
+        
+        System.out.println("######### ID");
+        System.out.println("- "+e.getEnteId());
+        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        e.setEnteId(5);
+        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        System.out.println("- new "+e.getEnteId());
+        
+        assert e.getEnteId() == 5l;
+        
+//        try {
+//            e.setOwner(e);
+//            e.save();
+//            assert true;
+//        } catch (Exception ex) {
+//            Logger.getLogger(SporadicTests.class.getName()).log(Level.SEVERE, null, ex);
+//            assert false;
+//        }
     }
 }

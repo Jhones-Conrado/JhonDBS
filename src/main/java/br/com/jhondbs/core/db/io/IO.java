@@ -18,7 +18,6 @@ package br.com.jhondbs.core.db.io;
 
 import br.com.jhondbs.core.db.UniqueAnalyser;
 import br.com.jhondbs.core.db.filter.Filter;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -166,7 +165,7 @@ public class IO {
      * @param entity Entity a ser deletada.
      * @return 
      */
-    public static boolean delete(Entity entity){
+    public static boolean delete(Entity entity) throws Exception{
         File ente = new File(getDBFolderWithID(entity));
         if(ente.exists()){
             return ente.delete();
@@ -180,7 +179,13 @@ public class IO {
      * @param entities Lista de entidades a serem apagadas.
      */
     public static void delete(List<Entity> entities){
-        entities.forEach(e -> IO.delete(e));
+        entities.forEach(e -> {
+            try {
+                IO.delete(e);
+            } catch (Exception ex) {
+                Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
     }
     
     /**
@@ -214,10 +219,21 @@ public class IO {
     public static void deleteInverse(List<Entity> entidades){
         if(!entidades.isEmpty()){ //Verifica se há entidades no filtro.
             List<Long> all = entidades.get(0).loadAllOnlyIds();
-            List<Long> collect = entidades.stream().map((t) -> t.getEnteId()).collect(Collectors.toList());
+            List<Long> collect = entidades.stream().map((t) -> {
+                try {
+                    return t.getEnteId();
+                } catch (Exception ex) {
+                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
+                    return -1l;
+                }
+            }).collect(Collectors.toList());
             List<Long> toDelete = all.stream().filter((t) -> !collect.contains(t)).collect(Collectors.toList());
             toDelete.forEach(l -> {
-                entidades.get(0).load(l).delete();
+                try {
+                    entidades.get(0).load(l).delete();
+                } catch (Exception ex) {
+                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
+                }
             });
         }
     }
@@ -252,7 +268,7 @@ public class IO {
                 .replaceAll("[.]", "/");
     }
 
-    public static String getDBFolderWithID(Entity entity){
+    public static String getDBFolderWithID(Entity entity) throws Exception{
         return getDBFolder(entity)+"/"+String.valueOf(entity.getEnteId());
     }
     

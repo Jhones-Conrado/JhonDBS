@@ -170,60 +170,65 @@ public class IOTest <T> {
      */
     @Test
     public void testFullDelete(){
-        System.out.println("fullDelete");
-        OFDDad obj = new OFDDad();
-        long prevId = obj.getEnteId();
-        long prevSonId = obj.son.getEnteId();
-        
         try {
-            obj.save();
+            System.out.println("fullDelete");
+            OFDDad obj = new OFDDad();
+            long prevId = obj.getEnteId();
+            long prevSonId = obj.son.getEnteId();
             
-            if(obj.getEnteId() == prevId || obj.son.getEnteId() == prevSonId){
-                assert false;
-            } else {
-                prevId = obj.getEnteId();
-                prevSonId = obj.son.getEnteId();
+            try {
+                obj.save();
                 
-                OFDSon son = new OFDSon().load(prevSonId);
-                if(son != null){
+                if(obj.getEnteId() == prevId || obj.son.getEnteId() == prevSonId){
+                    assert false;
+                } else {
+                    prevId = obj.getEnteId();
+                    prevSonId = obj.son.getEnteId();
                     
-                    long enteId = obj.sonlist.iterator().next().getEnteId();
-                    
-                    obj.fullDelete();
-                    son = new OFDSon().load(prevSonId);
-                    OFDSon ofdson = new OFDSon().load(enteId);
-                    if(son == null && ofdson == null){
-                        assert true;
+                    OFDSon son = new OFDSon().load(prevSonId);
+                    if(son != null){
+                        
+                        long enteId = obj.sonlist.iterator().next().getEnteId();
+                        
+                        obj.fullDelete();
+                        son = new OFDSon().load(prevSonId);
+                        OFDSon ofdson = new OFDSon().load(enteId);
+                        if(son == null && ofdson == null){
+                            assert true;
+                        } else {
+                            assert false;
+                        }
                     } else {
                         assert false;
                     }
+                }
+                
+            } catch (Exception ex) {
+                assert false;
+                Logger.getLogger(IOTest.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+            OFDDad dad = new OFDDad();
+            try {
+                dad.save();
+                long sonId = dad.son.getEnteId();
+                
+                dad.delete();
+                
+                OFDSon son2 = new OFDSon().load(sonId);
+                if(son2 != null){
+                    assert true;
                 } else {
                     assert false;
                 }
-            }
-            
-        } catch (Exception ex) {
-            assert false;
-            Logger.getLogger(IOTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        OFDDad dad = new OFDDad();
-        try {
-            dad.save();
-            long sonId = dad.son.getEnteId();
-            
-            dad.delete();
-            
-            OFDSon son2 = new OFDSon().load(sonId);
-            if(son2 != null){
-                assert true;
-            } else {
+                
+            } catch (Exception ex) {
                 assert false;
+                Logger.getLogger(IOTest.class.getName()).log(Level.SEVERE, null, ex);
             }
-            
         } catch (Exception ex) {
-            assert false;
             Logger.getLogger(IOTest.class.getName()).log(Level.SEVERE, null, ex);
+            assert false;
         }
     }
     

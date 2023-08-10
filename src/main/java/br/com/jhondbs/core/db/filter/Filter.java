@@ -129,15 +129,15 @@ public class Filter implements Entity{
         return approved;
     }
     
-    @Override
-    public long getEnteId() {
-        return id;
-    }
-
-    @Override
-    public void onSetId(long id) {
-        this.id = id;
-    }
+//    @Override
+//    public long getEnteId() {
+//        return id;
+//    }
+//
+//    @Override
+//    public void onSetId(long id) {
+//        this.id = id;
+//    }
     
     /**
      * Returns the number of tests in the filter.<br>

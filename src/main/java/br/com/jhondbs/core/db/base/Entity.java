@@ -61,25 +61,29 @@ public interface Entity extends Serializable, Cloneable{
      * It should be implemented in order to retrieve the entity ID from some variable.<br><br>
      * Deverá ser implementado de forma a resgatar de alguma variável o ID da entidade.
      * @return ID da entidade.
+     * @throws java.lang.Exception
      */
-    long getEnteId();
+    default long getEnteId() throws Exception{
+        return infunction.getid(this);
+    }
     
     /**
      * ENGLISH<br>
-     * Applies the ID to the entity.</br> 
+     * Applies the ID to the entity.<br> 
      * An entity should only be able to have its ID changed if it is equal to -1l!
-     * That is, after an entity receives an ID, it should no longer be exchangeable.
-     * <br><br>
+     * That is, after an entity receives an ID, it should no longer be exchangeable.<br><br>
      * PORTUGUÊS<br>
-     * Aplica o ID para a entidade.</br>
+     * Aplica o ID para a entidade.<br>
      * Uma entidade só deverá poder ter o seu ID alterado caso este seja igual a
      * -1l! Ou seja, após uma entidade receber um ID, este não deverá mais poder
      * ser trocado.
      * @param enteId Novo ID para a entidade.
+     * @throws java.lang.Exception
      */
-    default void setEnteId(long enteId){
+    default void setEnteId(long enteId) throws Exception{
         if(getEnteId() == -1l){
-            onSetId(enteId);
+            System.out.println("mudando");
+            infunction.setid(this, enteId);
         }
     }
     
@@ -93,7 +97,7 @@ public interface Entity extends Serializable, Cloneable{
      * Deve ser implementado de forma a armazenar o valor em uma variável de ID.
      * @param id Novo ID.
      */
-    void onSetId(long id);
+//    void onSetId(long id);
     
     /**
      * ENGLISH<br>
@@ -195,8 +199,9 @@ public interface Entity extends Serializable, Cloneable{
      * que outras entidades possam usar os valores.
      * @return True for successfully deleted.<br>
      * Verdadeiro para deletado com sucesso.
+     * @throws java.lang.Exception
      */
-    default boolean delete(){
+    default boolean delete() throws Exception{
         return IO.delete(this);
     }
     
@@ -323,6 +328,136 @@ public interface Entity extends Serializable, Cloneable{
             clazz = clazz.getSuperclass();
         }
         return null;
+    }
+    
+    class infunction {
+        
+        /**
+         * It will look for all variables of type "long" and among these, it 
+         * will look for those that have either the word "ent" or that are equal 
+         * to "id".
+         * The ID value will preferably be from the "enteid" variable, secondarily 
+         * from the "id" variable if the first one is not found and thirdly from 
+         * the first long type variable with the word "id" in the name, if the 
+         * first two are not found.
+         * @param entity
+         * @param id
+         * @throws Exception 
+         */
+        private static void setid(Entity entity, long id) throws Exception{
+            if(entity != null){
+                List<Field> ids = FieldsManager.getAllFields(entity).parallelStream()
+                        .filter(field -> (field.getGenericType() == Long.TYPE))
+                        .filter(field -> (field.getName().toUpperCase().contains("ID")))
+                        .toList();
+                if(!ids.isEmpty()){
+                    Field selected = null;
+                    List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
+                            .toList();
+                    if(toList.size() == 1){
+                        selected = toList.get(0);
+                    } else {
+                        toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
+                            .toList();
+                        if(toList.size() == 1){
+                            selected = toList.get(0);
+                        } else {
+                            selected = ids.get(0);
+                        }
+                    }
+                    if(selected != null){
+                        selected.setAccessible(true);
+                        try {
+                            Class clazz = entity.getClass();
+                            Field fin = null;
+                            while(true){
+                                try {
+                                    fin = clazz.getDeclaredField(selected.getName());
+                                    Object cast = clazz.cast(entity);
+                                    fin.setAccessible(true);
+                                    fin.setLong(cast, id);
+                                    break;
+                                } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+                                    clazz = clazz.getSuperclass();
+                                    if(clazz == Object.class){
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (IllegalArgumentException illegalArgumentException) {
+                            System.out.println(illegalArgumentException);
+                        }
+                    } else {
+                        throw new Exception("The entity does not have a long type variable for the ID.");
+                    }
+                }
+            }
+        }
+        
+        /**
+         * It will look for all variables of type "long" and among these, it 
+         * will look for those that have either the word "ent" or that are equal 
+         * to "id".
+         * The ID value will preferably be from the "enteid" variable, secondarily 
+         * from the "id" variable if the first one is not found and thirdly from 
+         * the first long type variable with the word "id" in the name, if the 
+         * first two are not found.
+         * The value "-1l" will be returned by default if no ID variable is found.
+         * @param entity
+         * @return
+         * @throws Exception 
+         */
+        private static long getid(Entity entity) throws Exception{
+            if(entity != null){
+                List<Field> ids = FieldsManager.getAllFields(entity).parallelStream()
+                        .filter(field -> (field.getGenericType() == Long.TYPE))
+                        .filter(field -> (field.getName().toUpperCase().contains("ID")))
+                        .toList();
+                if(!ids.isEmpty()){
+                    Field selected = null;
+                    List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
+                            .toList();
+                    if(toList.size() == 1){
+                        selected = toList.get(0);
+                    } else {
+                        toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
+                            .toList();
+                        if(toList.size() == 1){
+                            selected = toList.get(0);
+                        } else {
+                            selected = ids.get(0);
+                        }
+                    }
+                    if(selected != null){
+                        selected.setAccessible(true);
+                        try {
+                            Class clazz = entity.getClass();
+                            Field fin = null;
+                            while(true){
+                                try {
+                                    fin = clazz.getDeclaredField(selected.getName());
+                                    Object cast = clazz.cast(entity);
+                                    fin.setAccessible(true);
+                                    return fin.getLong(cast);
+                                } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+                                    clazz = clazz.getSuperclass();
+                                    if(clazz == Object.class){
+                                        break;
+                                    }
+                                }
+                            }
+                        } catch (IllegalArgumentException illegalArgumentException) {
+                            System.out.println(illegalArgumentException);
+                        }
+                        selected.getLong(entity);
+                    } else {
+                        throw new Exception("The entity does not have a long type variable for the ID.");
+                    }
+                }
+            }
+            return -1l;
+        }
+        
     }
     
 }

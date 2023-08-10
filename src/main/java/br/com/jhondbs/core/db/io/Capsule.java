@@ -152,20 +152,28 @@ public class Capsule {
         make(entities, succes);
         if(succes.isBool()){
             entities.forEach(ente -> {
-                File old = new File(IO.getDBFolderWithID(ente));
-                File neu = new File(IO.getDBFolder(ente)
-                        +"/new"+String.valueOf(ente.getEnteId()));
-                if(neu.exists()){
-                    fullDelete();
-                    neu.renameTo(old);
+                try {
+                    File old = new File(IO.getDBFolderWithID(ente));
+                    File neu = new File(IO.getDBFolder(ente)
+                            +"/new"+String.valueOf(ente.getEnteId()));
+                    if(neu.exists()){
+                        fullDelete();
+                        neu.renameTo(old);
+                    }
+                } catch (Exception ex) {
+                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
         } else {
             entities.forEach(ente -> {
-                File neu = new File(IO.getDBFolder(ente)
-                        +"/new"+String.valueOf(ente.getEnteId()));
-                if(neu.exists()){
-                    neu.delete();
+                try {
+                    File neu = new File(IO.getDBFolder(ente)
+                            +"/new"+String.valueOf(ente.getEnteId()));
+                    if(neu.exists()){
+                        neu.delete();
+                    }
+                } catch (Exception ex) {
+                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
         }
@@ -217,7 +225,7 @@ public class Capsule {
      * Saves the encapsulated text to a file in the database.
      * @return Status of the saving process.
      */
-    private boolean save(){
+    private boolean save() throws Exception{
         if(Reflection.isInstance(this.object.getClass(), Entity.class)){
             File folder = new File(IO.getDBFolder(object));
             folder.mkdirs();
@@ -786,10 +794,11 @@ public class Capsule {
                 String line = r.readLine();
                 Capsule capsule = new Capsule(line);
                 fullDelete(capsule.extract());
+            } catch (Exception ex) {
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         } catch (ClassCastException e){
             fullDeleteObj(object);
-        } catch (IOException | ClassNotFoundException e) {
         }
     }
     
@@ -811,6 +820,8 @@ public class Capsule {
                     }
                 }
             } catch (IllegalAccessException | IllegalArgumentException ex) {
+            } catch (Exception ex) {
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
     }
@@ -820,7 +831,7 @@ public class Capsule {
      * Including all sub entities of the branch.
      * @param entity Entity that opens the branch to be deleted.
      */
-    private void fullDelete(Entity entity){
+    private void fullDelete(Entity entity) throws Exception{
         List<Field> fields = FieldsManager.getAllFields(entity);
         fields.forEach(field -> {
             if(Reflection.isInstance(field.getType(), Entity.class)){
@@ -831,6 +842,8 @@ public class Capsule {
                         fullDelete(e);
                     }
                 } catch(IllegalAccessException | IllegalArgumentException e){
+                } catch (Exception ex) {
+                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             } else if(Reflection.isInstance(field.getType(), List.class)){
                 try {
@@ -839,7 +852,11 @@ public class Capsule {
                     if(list != null){
                         list.forEach(obj -> {
                             if(Reflection.isInstance(obj.getClass(), Entity.class)){
-                                fullDelete(((Entity) obj));
+                                try {
+                                    fullDelete(((Entity) obj));
+                                } catch (Exception ex) {
+                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                                }
                             }
                         });
                     }
@@ -852,7 +869,11 @@ public class Capsule {
                     if(map != null){
                         map.keySet().forEach(key -> {
                             if(Reflection.isInstance(map.get(key).getClass(), Entity.class)){
-                                fullDelete(((Entity) map.get(key)));
+                                try {
+                                    fullDelete(((Entity) map.get(key)));
+                                } catch (Exception ex) {
+                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                                }
                             }
                         });
                     }
@@ -865,7 +886,11 @@ public class Capsule {
                     if(array != null){
                         Arrays.asList(array).forEach(obj -> {
                             if(Reflection.isInstance(obj.getClass(), Entity.class)){
-                                fullDelete(((Entity) obj));
+                                try {
+                                    fullDelete(((Entity) obj));
+                                } catch (Exception ex) {
+                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                                }
                             }
                         });
                     }

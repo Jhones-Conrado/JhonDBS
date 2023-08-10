@@ -49,9 +49,9 @@ public class EnteTeste implements Entity{
         return this.enteId;
     }
 
-    @Override
-    public void onSetId(long id) {
-        this.enteId = id;
-    }
+//    @Override
+//    public void onSetId(long id) {
+//        this.enteId = id;
+//    }
     
 }
