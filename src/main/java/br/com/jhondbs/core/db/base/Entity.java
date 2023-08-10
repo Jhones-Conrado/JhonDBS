@@ -455,7 +455,8 @@ public interface Entity extends Serializable, Cloneable{
                     }
                 }
             }
-            return -1l;
+            throw new Exception("The entity does not have a long type variable for the ID.");
+//            return -1l;
         }
         
     }
