@@ -80,7 +80,7 @@ public final class Reflection {
      * @throws URISyntaxException
      * @throws IOException 
      */
-    public List<String> reflect() throws URISyntaxException, IOException{
+    public static List<String> reflect() throws URISyntaxException, IOException{
         if(array == null){
             List<String> classList = new ArrayList<>();
             String r1 = Reflection.class.getResource("/").getPath();
@@ -110,13 +110,15 @@ public final class Reflection {
         return array;
     }
     
-    private Class makeClass(String str){
+    private static Class makeClass(String str){
         str = str.replaceAll(".class", "").replaceAll("/", ".");
         while(!str.isBlank()){
             try {
                 ClassLoader cl = Thread.currentThread().getContextClassLoader();
-                return cl.loadClass(str);
-//                return Class.forName(str);
+                Class c = cl.loadClass(str);
+                if(c != null){
+                    return c;
+                }
             } catch (ClassNotFoundException e) {
                 if(str.contains(".")){
                     str = str.substring(str.indexOf(".")+1);
@@ -140,7 +142,7 @@ public final class Reflection {
      * @param folder Folder to be scanned.<br>
      * Pasta que será varrida.
      */
-    private void getFiles(List<String> container, File folder){
+    private static void getFiles(List<String> container, File folder){
         for(File f : folder.listFiles()){
             if(f.isFile()){
                 container.add(f.getPath());
@@ -165,7 +167,7 @@ public final class Reflection {
      * @param classe A ser pesquisada por implementações ou extensões.
      * @return Lista de extensões e implementações.
      */
-    public List<String> allImplements(Class classe){
+    public static List<String> allImplements(Class classe){
         List<String> retorno = new ArrayList<>();
         try {
             List<String> reflexo = reflect();
@@ -199,7 +201,7 @@ public final class Reflection {
      * @param classe
      * @return 
      */
-    public List<String> allImplementsNotAbstract(Class classe){
+    public static List<String> allImplementsNotAbstract(Class classe){
         return allImplements(classe).stream().filter(clName -> {
             try {
                 return !Modifier.isAbstract(makeClass(clName).getModifiers());
@@ -226,23 +228,33 @@ public final class Reflection {
      * @throws InstantiationException
      * @throws IllegalAccessException 
      */
-    public <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
+    public static <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
         if(!className.isBlank()){
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            List<String> list = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).toList();
-            if(list.size() > 0){
-                String path = list.get(0);
-                return getNewInstance(makeClass(path));
-            } else {
-                if(className.endsWith(Represent.class.getSimpleName())){
-                    return (T) cl.loadClass(Represent.class.getName()).newInstance();
+            try {
+                return (T) cl.loadClass(className).newInstance();
+            } catch (Exception e) {
+                System.out.println("-> error 1º");
+                try {
+                    return (T) Class.forName(className).newInstance();
+                } catch (Exception ex) {
+                    System.out.println("-> error 2º");
+                    List<String> list = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).toList();
+                    if(list.size() > 0){
+                        String path = list.get(0);
+                        return getNewInstance(makeClass(path));
+                    } else {
+                        if(className.endsWith(Represent.class.getSimpleName())){
+                            return (T) cl.loadClass(Represent.class.getName()).newInstance();
+                        }
+                    }
                 }
             }
         }
-        throw new ClassNotFoundException("Blank path");
+        throw new ClassNotFoundException("Blank path or not found.");
     }
     
-    public <T extends Object> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
+    public static <T extends Object> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
         Constructor[] constructors = clazz.getDeclaredConstructors();
 
         Constructor a = null;
@@ -294,16 +306,15 @@ public final class Reflection {
     public static boolean isInstance(Class son, Class dad){
         if(son != null && dad != null){
             if(!son.getClass().getName().startsWith("[")){
+                
                 while(son != null){
-                    if(Arrays.asList(son.getInterfaces()).contains(dad)){
-                        return true;
-                    } else if(Arrays.asList(son.getAnnotations())
-                                .stream()
-                                .filter(an -> (an.annotationType() == dad))
-                                .count() > 0){
+                    
+                    if(son == dad){
                         return true;
                     }
-                    if(son == dad){
+                    if(Arrays.asList(son.getInterfaces()).contains(dad)){
+                        return true;
+                    } else if(Arrays.asList(son.getAnnotations()).contains(dad)){
                         return true;
                     }
                     son = son.getSuperclass();
@@ -311,6 +322,7 @@ public final class Reflection {
                         break;
                     }
                 }
+                
             }
         }
         return false;
@@ -333,8 +345,10 @@ public final class Reflection {
                 isInstance(clazz, Float.class) ||
                 isInstance(clazz, Double.class) ||
                 isInstance(clazz, Boolean.class) ||
+                isInstance(clazz, Character.class) ||
                 isInstance(clazz, String.class) ||
                 isInstance(clazz, byte.class) ||
+                isInstance(clazz, char.class) ||
                 isInstance(clazz, short.class) ||
                 isInstance(clazz, int.class) ||
                 isInstance(clazz, long.class) ||
@@ -358,6 +372,10 @@ public final class Reflection {
                 isInstance(clazz, long.class) ||
                 isInstance(clazz, float.class) ||
                 isInstance(clazz, double.class);
+    }
+    
+    public static boolean isNumerical(Class clazz){
+        return isInstance(clazz, Number.class);
     }
     
     public static Method getMethod(String name, Class clazz) throws NoSuchMethodException{

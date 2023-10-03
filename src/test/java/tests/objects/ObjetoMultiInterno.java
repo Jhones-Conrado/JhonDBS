@@ -16,21 +16,13 @@
  */
 package tests.objects;
 
-import br.com.jhondbs.core.db.base.padrao.DefaultEntity;
-
 /**
  *
  * @author jhonessales
  */
-public class EnteA extends DefaultEntity{
+public class ObjetoMultiInterno {
     
-    public String name;
-
-    public EnteA() {
-    }
-
-    public EnteA(String name) {
-        this.name = name;
-    }
+    public String name = "Interno";
+    private int idade = 18;
     
 }

@@ -14,36 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.db.io.tools;
-
-import java.io.Serializable;
+package br.com.jhondbs.core.db.io.letters;
 
 /**
  *
  * @author jhonessales
  */
-public class BooleanLetter implements Serializable, Cloneable{
+public class DecimalLetter {
     
-    private boolean bool;
+    private double decimal;
 
-    public BooleanLetter(boolean bool) {
-        this.bool = bool;
+    public DecimalLetter(double decimal) {
+        this.decimal = decimal;
     }
 
     /**
-     * @return the bool
+     * @return the decimal
      */
-    public boolean isBool() {
-        return bool;
+    public double getDecimal() {
+        return decimal;
     }
 
     /**
-     * @param bool the bool to set
+     * @param decimal the decimal to set
      */
-    public void setBool(boolean bool) {
-        this.bool = bool;
+    public void setDecimal(double decimal) {
+        this.decimal = decimal;
     }
-    
-    
     
 }

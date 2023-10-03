@@ -82,7 +82,6 @@ public interface Entity extends Serializable, Cloneable{
      */
     default void setEnteId(long enteId) throws Exception{
         if(getEnteId() == -1l){
-            System.out.println("mudando");
             infunction.setid(this, enteId);
         }
     }
@@ -275,6 +274,14 @@ public interface Entity extends Serializable, Cloneable{
         return true;
     }
     
+    default void setSuperente(Entity superente) throws NoSuchFieldError{
+        infunction.setSuperEnte(this, superente);
+    }
+    
+    default Represent getSuperente() throws  NoSuchFieldError{
+        return infunction.getSuperEnte(this);
+    }
+    
     /**
      * Checks if another object is equal to this one.<br>
      * Verifica se um outro objeto é igual a este.
@@ -456,7 +463,84 @@ public interface Entity extends Serializable, Cloneable{
                 }
             }
             throw new Exception("The entity does not have a long type variable for the ID.");
-//            return -1l;
+        }
+        
+        private static void setSuperEnte(Entity son, Entity superente) throws NoSuchFieldError{
+            if(son != null && superente != null){
+                List<Field> fieldlist = FieldsManager.getAllFields(son).parallelStream()
+                        .filter(field -> (field.getGenericType() == Represent.class))
+                        .filter(field -> (field.getName().equalsIgnoreCase("superente")))
+                        .toList();
+                if(fieldlist.size() == 1){
+                    Field selected = fieldlist.get(0);
+                    selected.setAccessible(true);
+                    try {
+                        Class clazz = son.getClass();
+                        Field fin = null;
+                        while(true){
+                            try {
+                                fin = clazz.getDeclaredField(selected.getName());
+                                Object cast = clazz.cast(son);
+                                fin.setAccessible(true);
+                                fin.set(cast, new Represent(superente));
+                                break;
+                            } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+                                if(clazz == Object.class){
+                                    break;
+                                }
+                                clazz = clazz.getSuperclass();
+                                if(clazz == Object.class){
+                                    break;
+                                }
+                            } catch (Exception ex) {
+                                Logger.getLogger(Entity.class.getName()).log(Level.SEVERE, null, ex);
+                            }
+                        }
+                    } catch (IllegalArgumentException illegalArgumentException) {
+                        System.out.println(illegalArgumentException);
+                    }
+                } else {
+                    throw new NoSuchFieldError("Field not exists.");
+                }
+            }
+        }
+        
+        private static Represent getSuperEnte(Entity son) throws NoSuchFieldError{
+            if(son != null){
+                List<Field> fieldlist = FieldsManager.getAllFields(son).parallelStream()
+                        .filter(field -> (field.getGenericType() == Represent.class))
+                        .filter(field -> (field.getName().equalsIgnoreCase("superente")))
+                        .toList();
+                if(fieldlist.size() == 1){
+                    Field selected = fieldlist.get(0);
+                    try {
+                        Class clazz = son.getClass();
+                        Field fin = null;
+                        while(true){
+                            try {
+                                fin = clazz.getDeclaredField(selected.getName());
+                                Object cast = clazz.cast(son);
+                                fin.setAccessible(true);
+                                fin.get(cast);
+                                break;
+                            } catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+                                if(clazz == Object.class){
+                                    break;
+                                }
+                                clazz = clazz.getSuperclass();
+                                if(clazz == Object.class){
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (IllegalArgumentException illegalArgumentException) {
+                        System.out.println(illegalArgumentException);
+                    }
+                } else {
+                    throw new NoSuchFieldError();
+                }
+            }
+            return null;
         }
         
     }

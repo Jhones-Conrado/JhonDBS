@@ -14,32 +14,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.db.io.tools;
+package br.com.jhondbs.core.db.io.letters;
+
+import java.io.Serializable;
 
 /**
  *
  * @author jhonessales
  */
-public class NumberLetter {
+public class BooleanLetter implements Serializable, Cloneable{
     
-    private long number;
+    private boolean bool;
 
-    public NumberLetter(long number) {
-        this.number = number;
+    public BooleanLetter(boolean bool) {
+        this.bool = bool;
     }
 
     /**
-     * @return the number
+     * @return the bool
      */
-    public long getNumber() {
-        return number;
+    public boolean isBool() {
+        return bool;
     }
 
     /**
-     * @param number the number to set
+     * @param bool the bool to set
      */
-    public void setNumber(long number) {
-        this.number = number;
+    public void setBool(boolean bool) {
+        this.bool = bool;
     }
+    
+    
     
 }

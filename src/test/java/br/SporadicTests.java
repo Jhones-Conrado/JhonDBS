@@ -16,16 +16,15 @@
  */
 package br;
 
-import br.com.jhondbs.core.webServer.WebServer;
+import br.com.jhondbs.core.db.io.capsule.Capsule;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tests.objects.EnteComRepresent;
+import tests.objects.EnteA;
+import tests.objects.ObjetoMulti;
 
 /**
  *
@@ -56,24 +55,13 @@ public class SporadicTests {
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
-        EnteComRepresent e = new EnteComRepresent();
+        ObjetoMulti o = new ObjetoMulti();
+        o.save();
         
-        System.out.println("######### ID");
-        System.out.println("- "+e.getEnteId());
-        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        e.setEnteId(5);
-        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        System.out.println("- new "+e.getEnteId());
+        EnteA a = new EnteA().load(2);
+        a.save();
         
-        assert e.getEnteId() == 5l;
+        a = new EnteA().load(2);
         
-//        try {
-//            e.setOwner(e);
-//            e.save();
-//            assert true;
-//        } catch (Exception ex) {
-//            Logger.getLogger(SporadicTests.class.getName()).log(Level.SEVERE, null, ex);
-//            assert false;
-//        }
     }
 }

@@ -20,7 +20,7 @@ import br.com.jhondbs.core.db.Keys;
 import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.base.FieldsManager;
 import br.com.jhondbs.core.db.base.Represent;
-import br.com.jhondbs.core.db.io.tools.BooleanLetter;
+import br.com.jhondbs.core.db.io.letters.BooleanLetter;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -80,7 +80,7 @@ import java.util.logging.Logger;
  * 
  * @author jhonessales
  */
-public class Capsule {
+public class OldCapsule {
     
     /**
      * Holds references to supported classes.
@@ -88,7 +88,7 @@ public class Capsule {
     private static Properties dictionary;
     
     /**
-     * Capsule that holds object information.
+     * OldCapsule that holds object information.
      */
     private StringBuilder capsule;
     
@@ -116,7 +116,7 @@ public class Capsule {
      * Creates a new capsule and prepares an object to be encapsulated.
      * @param obj to be encapsulated.
      */
-    public Capsule(Object obj) {
+    public OldCapsule(Object obj) {
         if(obj != null){
             this.succes = new BooleanLetter(true);
             this.entities = new ArrayList<>();
@@ -134,7 +134,7 @@ public class Capsule {
      * allowing the process of extracting objects from texts.
      * @param str Object encapsulated in text format.
      */
-    public Capsule(String str){
+    public OldCapsule(String str){
         this.capsule = new StringBuilder();
         this.capsule.append(str);
         try {
@@ -149,7 +149,7 @@ public class Capsule {
      * @throws Exception Generic exception for any error during the encapsulation process.
      */
     public boolean make() throws Exception{
-        make(entities, succes);
+        make(entities, succes, null);
         if(succes.isBool()){
             entities.forEach(ente -> {
                 try {
@@ -161,7 +161,7 @@ public class Capsule {
                         neu.renameTo(old);
                     }
                 } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
         } else {
@@ -173,7 +173,7 @@ public class Capsule {
                         neu.delete();
                     }
                 } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             });
         }
@@ -187,31 +187,31 @@ public class Capsule {
      * @return
      * @throws Exception 
      */
-    private boolean make(List<Entity> entities, BooleanLetter succes) throws Exception{
+    private boolean make(List<Entity> entities, BooleanLetter succes, Entity superente) throws Exception{
         startDictionary();
         if(this.object != null){
             if(Reflection.isInstance(this.object.getClass(), Entity.class)){
                 Keys.gerarId((Entity) this.object);
-                encapsuleObject(this.object, entities, succes);
+                encapsuleObject(this.object, entities, succes, superente);
                 if(save()){
                     entities.add((Entity) this.object);
                 }
             } else if(this.object.getClass().getName().startsWith("[")){
-                encapsuleArray(this.object, entities, succes);
+                encapsuleArray(this.object, entities, succes, superente);
             } else if(Reflection.isInstance(this.object.getClass(), List.class)){
-                encapsuleList(this.object, entities, succes);
+                encapsuleList(this.object, entities, succes, superente);
             } else if(Reflection.isInstance(this.object.getClass(), Set.class)){
-                encapsuleSet(this.object, entities, succes);
+                encapsuleSet(this.object, entities, succes, superente);
             } else if(Reflection.isInstance(this.object.getClass(), Properties.class)){
-                encapsuleProperties((Properties) this.object, entities, succes);
+                encapsuleProperties((Properties) this.object, entities, succes, superente);
             } else if(Reflection.isInstance(this.object.getClass(), Map.class)){
-                encapsuleMap((Map) this.object, entities, succes);
+                encapsuleMap((Map) this.object, entities, succes, superente);
             } else if(new Reflection().reflect().contains(this.object.getClass().getName())){
                 // Project classes.
-                encapsuleObject(this.object, entities, succes);
+                encapsuleObject(this.object, entities, succes, superente);
             } else if(dictionary.containsKey(this.object.getClass().getName())){
                 // Supported special class.
-                encapsuleSpecialCase(this.object, entities, succes);
+                encapsuleSpecialCase(this.object, entities, succes, superente);
             } else {
                 throw new Exception("Class not supported: "+this.object.getClass().getName());
             }
@@ -248,9 +248,9 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleList(Object list, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleList(Object list, List<Entity> entities, BooleanLetter succes, Entity superente){
         capsule.append("l");
-        encapsuleMultiples((List) list, entities, succes);
+        encapsuleMultiples((List) list, entities, succes, superente);
     }
     
     /**
@@ -259,9 +259,9 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleSet(Object set, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleSet(Object set, List<Entity> entities, BooleanLetter succes, Entity superente){
         capsule.append("s");
-        encapsuleMultiples(((Set) set).stream().toList(), entities, succes);
+        encapsuleMultiples(((Set) set).stream().toList(), entities, succes, superente);
     }
     
     /**
@@ -270,7 +270,7 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleArray(Object arr, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleArray(Object arr, List<Entity> entities, BooleanLetter succes, Entity superente){
         /**
          * Do not change how array type checking happens.
          * Despite seeming inefficient and difficult to maintain,
@@ -321,10 +321,10 @@ public class Capsule {
                 }
             }
         } catch (Exception e) {
-            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, e);
+            Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, e);
             succes.setBool(false);
         }
-        encapsuleMultiples(oblist, entities, succes);
+        encapsuleMultiples(oblist, entities, succes, superente);
     }
     
     /**
@@ -333,32 +333,32 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleMultiples(List list, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleMultiples(List list, List<Entity> entities, BooleanLetter succes, Entity superente){
         capsule.append("[");
         list.forEach(o -> {
             capsule.append("{");
             if(Reflection.isInstance(o.getClass(), Entity.class)){
                 // If it is an entity.
                 Entity e = (Entity) o;
-                Capsule cap = new Capsule(e);
+                OldCapsule cap = new OldCapsule(e);
                 try {
                     capsule.append("e");
-                    cap.make(entities, succes);
+                    cap.make(entities, succes, superente);
                     capsule.append(dictionary.getProperty(o.getClass().getName()));
                     capsule.append(":");
                     capsule.append(String.valueOf(e.getEnteId()));
                 } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                     entities.add(e);
                     succes.setBool(false);
                 }
             } else {
                 try {
-                    Capsule cap = new Capsule(o);
-                    cap.make(entities, succes);
+                    OldCapsule cap = new OldCapsule(o);
+                    cap.make(entities, succes, superente);
                     capsule.append(cap.toString());
                 } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                     succes.setBool(false);
                 }
             }
@@ -373,20 +373,20 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleMap(Map map, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleMap(Map map, List<Entity> entities, BooleanLetter succes, Entity superente){
         map.keySet().forEach(key -> {
             try {
                 capsule.append("(");
-                Capsule cap = new Capsule(key);
+                OldCapsule cap = new OldCapsule(key);
                 cap.make();
                 capsule.append(cap.toString());
                 capsule.append(";");
-                Capsule capValue = new Capsule(map.get(key));
-                capValue.make(entities, succes);
+                OldCapsule capValue = new OldCapsule(map.get(key));
+                capValue.make(entities, succes, superente);
                 capsule.append(capValue.toString());
                 capsule.append(")");
             } catch (Exception ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                 succes.setBool(false);
             }
         });
@@ -398,14 +398,14 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleProperties(Properties prop, List<Entity> entities, BooleanLetter succes){
+    private void encapsuleProperties(Properties prop, List<Entity> entities, BooleanLetter succes, Entity superente){
         capsule.append("p");
         Map<String, String> map = new HashMap<>();
         Properties p = (Properties) prop;
         p.keySet().forEach(key -> {
             map.put((String) key, p.getProperty((String) key));
         });
-        encapsuleMap(map, entities, succes);
+        encapsuleMap(map, entities, succes, superente);
     }
     
     /**
@@ -414,7 +414,7 @@ public class Capsule {
      * @param entities List that keeps the reference of entities saved during the process.
      * @param succes Letter that maintains the success state of the encapsulation.
      */
-    private void encapsuleSpecialCase(Object obj, List<Entity> entities, BooleanLetter succes) throws Exception{
+    private void encapsuleSpecialCase(Object obj, List<Entity> entities, BooleanLetter succes, Entity superente) throws Exception{
         // CHECK IF IT IS A PRIMITIVE OR NUMBER.
         if(Reflection.isPrimitive(obj) || Reflection.isInstance(obj.getClass(), Number.class)){
             capsule.append(dictionary.get(obj.getClass().getName())).append(":");
@@ -428,7 +428,7 @@ public class Capsule {
             capsule.append(dictionary.get(Calendar.class.getName())).append(":");
             capsule.append(((Calendar) obj).getTime().toGMTString());
         } else if(Reflection.isInstance(obj.getClass(), Represent.class)){
-            encapsuleObject(obj, entities, succes);
+            encapsuleObject(obj, entities, succes, null);
         } else {
             System.out.println("Special case error: Unsupported class.");
             System.out.println(obj.getClass());
@@ -443,32 +443,74 @@ public class Capsule {
      * @param succes Letter that maintains the success state of the encapsulation.
      * @throws Exception Generic exception for any error that may happen.
      */
-    private void encapsuleObject(Object obj, List<Entity> entities, BooleanLetter succes) throws Exception{
+    private void encapsuleObject(Object obj, List<Entity> entities, BooleanLetter succes, Entity superente) throws Exception{
         capsule.append(dictionary.get(obj.getClass().getName())).append(":");
         List<Field> fields = FieldsManager.getAllFields(obj);
+        
+//        VERIFICAR SE EXISTE UM ARQUIVO ANTIGO SALVO, POSSUIDOR DE ALGUM SUPERENTE.
+        if(Reflection.isInstance(this.object.getClass(), Entity.class)){
+            System.out.println("Inner entity");
+            String path = IO.getDBFolderWithID((Entity) this.object);
+            System.out.println(path);
+            File f = new File(path);
+            if(superente == null){
+                System.out.println("super nulo");
+                if(f.exists()){
+                    System.out.println("arquivo existe");
+                    try(BufferedReader r = Files.newBufferedReader(Paths.get(path))) {
+                        String line = r.readLine();
+                        if(line.toUpperCase().contains("SUPERENTE")){
+                            System.out.println("contém o superente");
+                            int indexOf = line.toUpperCase().indexOf("SUPERENTE");
+                            int classpathindex = line.indexOf("classPath", indexOf);
+                            classpathindex += 12;
+                            String classpath = line.substring(classpathindex, line.indexOf("}", classpathindex));
+                            int enteidindex = line.indexOf("enteId", indexOf);
+                            enteidindex += 9;
+                            String enteid = line.substring(enteidindex, line.indexOf("}", enteidindex));
+                            System.out.println(classpath);
+                            System.out.println(enteid);
+                        }
+                    } catch (Exception e) {
+                    }
+                }
+            }
+        }
+        
+        
+        boolean superentefilled = false;
         for(Field field : fields){
             if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
                 field.setAccessible(true);
                 if(field.get(obj) != null){
                     capsule.append("{");
                     capsule.append(field.getName());
+                    if(field.getName().equalsIgnoreCase("superente")){
+                        superentefilled = true;
+                    }
                     capsule.append(":");
                     if(Reflection.isInstance(field.getType(), Entity.class)){
                         Entity inner = (Entity) field.get(obj);
-                        Capsule cap = new Capsule(inner);
-                        cap.make(entities, succes);
+                        OldCapsule cap = new OldCapsule(inner);
+                        cap.make(entities, succes, superente);
                         capsule.append("e");
                         capsule.append(dictionary.get(inner.getClass().getName()));
                         capsule.append(":");
                         capsule.append(String.valueOf(inner.getEnteId()));
                     } else {
-                        Capsule cap = new Capsule(field.get(obj));
-                        cap.make(entities, succes);
+                        OldCapsule cap = new OldCapsule(field.get(obj));
+                        cap.make(entities, succes, superente);
                         capsule.append(cap.toString());
                     }
                     capsule.append("}");
                 }
             }
+        }
+        if(!superentefilled && superente != null){
+            capsule.append("{");
+            capsule.append("superente:");
+            OldCapsule cap = new OldCapsule(new Represent(superente));
+            cap.make(entities, succes, superente);
         }
     }
     
@@ -507,9 +549,9 @@ public class Capsule {
         List<String> strs = parseArrayString(toString());
         strs.forEach(str -> {
             try {
-                back.add(new Capsule(str).extract());
+                back.add(new OldCapsule(str).extract());
             } catch (ClassNotFoundException ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
         
@@ -598,9 +640,9 @@ public class Capsule {
             String key = str.substring(0, separator);
             String value = str.substring(separator+1);
             try {
-                map.put(new Capsule(key).extract(), new Capsule(value).extract());
+                map.put(new OldCapsule(key).extract(), new OldCapsule(value).extract());
             } catch (ClassNotFoundException e) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, e);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, e);
             }
         });
         if(toString().startsWith("p")){
@@ -632,7 +674,7 @@ public class Capsule {
                 Constructor<?> con = cl.getConstructor(String.class);
                 return (T) con.newInstance(value);
             } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return null;
@@ -656,12 +698,12 @@ public class Capsule {
                         + "/" + String.valueOf(id));
                 try (BufferedReader r = Files.newBufferedReader(Paths.get(entity.getPath()))) {
                     String line = r.readLine();
-                    Capsule cap = new Capsule(line);
+                    OldCapsule cap = new OldCapsule(line);
                     r.close();
                     return cap.extract();
                 }
             } catch (IOException | ClassNotFoundException ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         } catch (NumberFormatException numberFormatException) {
         }
@@ -681,11 +723,11 @@ public class Capsule {
             Object ins = new Reflection().getNewInstance(clName);
             List<String> refil = new ArrayList<>();
             getSub(refil, str, '{', '}');
-            Map<String, Capsule> values = new HashMap<>();
+            Map<String, OldCapsule> values = new HashMap<>();
             refil.forEach(field -> {
                 String fieldName = field.substring(0, field.indexOf(":"));
                 String capsuleString = field.substring(field.indexOf(":")+1, field.length());
-                Capsule cap = new Capsule(capsuleString);
+                OldCapsule cap = new OldCapsule(capsuleString);
                 values.put(fieldName, cap);
             });
             
@@ -696,17 +738,17 @@ public class Capsule {
                     try {
                         field.set(ins, values.get(field.getName()).extract());
                     } catch (ClassNotFoundException | IllegalArgumentException | IllegalAccessException ex) {
-                        Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                        Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                     }
                 }
             });
             return (T) ins;
         } catch (IOException ex) {
-            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
-            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
         } catch (Exception ex) {
-            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
@@ -734,7 +776,7 @@ public class Capsule {
                 return t;
             }
         } catch (ClassNotFoundException ex) {
-            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
@@ -792,10 +834,10 @@ public class Capsule {
             Entity entity = (Entity) this.object;
             try(BufferedReader r = Files.newBufferedReader(Paths.get(new File(IO.getDBFolderWithID(entity)).getPath()))) {
                 String line = r.readLine();
-                Capsule capsule = new Capsule(line);
+                OldCapsule capsule = new OldCapsule(line);
                 fullDelete(capsule.extract());
             } catch (Exception ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         } catch (ClassCastException e){
             fullDeleteObj(object);
@@ -821,7 +863,7 @@ public class Capsule {
                 }
             } catch (IllegalAccessException | IllegalArgumentException ex) {
             } catch (Exception ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
     }
@@ -843,7 +885,7 @@ public class Capsule {
                     }
                 } catch(IllegalAccessException | IllegalArgumentException e){
                 } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             } else if(Reflection.isInstance(field.getType(), List.class)){
                 try {
@@ -855,7 +897,7 @@ public class Capsule {
                                 try {
                                     fullDelete(((Entity) obj));
                                 } catch (Exception ex) {
-                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         });
@@ -872,7 +914,7 @@ public class Capsule {
                                 try {
                                     fullDelete(((Entity) map.get(key)));
                                 } catch (Exception ex) {
-                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         });
@@ -889,7 +931,7 @@ public class Capsule {
                                 try {
                                     fullDelete(((Entity) obj));
                                 } catch (Exception ex) {
-                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         });

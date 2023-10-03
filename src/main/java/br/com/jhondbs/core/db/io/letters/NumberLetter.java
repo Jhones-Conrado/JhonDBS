@@ -14,32 +14,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package br.com.jhondbs.core.db.io.tools;
+package br.com.jhondbs.core.db.io.letters;
 
 /**
  *
  * @author jhonessales
  */
-public class DecimalLetter {
+public class NumberLetter {
     
-    private double decimal;
+    private long number;
 
-    public DecimalLetter(double decimal) {
-        this.decimal = decimal;
+    public NumberLetter(long number) {
+        this.number = number;
     }
 
     /**
-     * @return the decimal
+     * @return the number
      */
-    public double getDecimal() {
-        return decimal;
+    public long getNumber() {
+        return number;
     }
 
     /**
-     * @param decimal the decimal to set
+     * @param number the number to set
      */
-    public void setDecimal(double decimal) {
-        this.decimal = decimal;
+    public void setNumber(long number) {
+        this.number = number;
     }
     
 }

@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import br.com.jhondbs.core.db.filter.ItemFilter;
 import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
+import br.com.jhondbs.core.db.io.capsule.Capsule;
 
 /**
  * Responsible for saving, deleting and loading database entities.<br><br>
@@ -54,7 +55,8 @@ public class IO {
     public static boolean save(Entity entity) throws Exception, DuplicatedUniqueFieldException {
         if(new UniqueAnalyser().analise(entity)){ //Precisa passar no teste de campos únicos.
             Capsule capsule = new Capsule(entity);
-            return capsule.make();
+            capsule.make();
+            return true;
         }
         return false;
     }
@@ -77,12 +79,8 @@ public class IO {
         //Método antigo utilizando JSON
         if(file.exists()){
             try {
-                try {
-                    Capsule capsule = new Capsule(String.join("\n", Files.readAllLines(Paths.get(file.getPath()))));
-                    return capsule.extract();
-                } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
-                }
+                Capsule capsule = new Capsule(String.join("\n", Files.readAllLines(Paths.get(file.getPath()))));
+                return capsule.extract();
             } catch (IOException ex) {
                 Logger.getLogger(IO.class.getName()).log(Level.SEVERE, null, ex);
             }

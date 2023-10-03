@@ -17,6 +17,7 @@
 package br.com.jhondbs.core.db.base;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,6 +62,13 @@ public class FieldsManager {
             clazz = clazz.getSuperclass();
         }
         return fields;
+    }
+    
+    public static List<Field> getSerializableFields(Object obj){
+        return getAllFields(obj).stream()
+                .filter(field -> (!Modifier.isStatic(field.getModifiers())
+                        && !Modifier.isTransient(field.getModifiers())))
+                .toList();
     }
     
     /**

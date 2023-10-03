@@ -27,8 +27,10 @@ import br.com.jhondbs.core.db.base.padrao.DefaultEntity;
 public class EnteComRepresent extends DefaultEntity {
     
     private Represent owner;
+    public EnteA a;
 
     public EnteComRepresent() {
+        this.a = new EnteA();
     }
     
     public void setOwner(Entity e) throws Exception{
