@@ -16,8 +16,12 @@
  */
 package br;
 
+import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.io.capsule.Capsule;
 import java.io.IOException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,10 +62,10 @@ public class SporadicTests {
         ObjetoMulti o = new ObjetoMulti();
         o.save();
         
-        EnteA a = new EnteA().load(2);
-        a.save();
-        
-        a = new EnteA().load(2);
+        ObjetoMulti o2 = o.load(o.getEnteId());
+        System.out.println(o2.getEnteId());
+
+        o.fullDelete();
         
     }
 }

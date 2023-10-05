@@ -234,11 +234,9 @@ public final class Reflection {
             try {
                 return (T) cl.loadClass(className).newInstance();
             } catch (Exception e) {
-                System.out.println("-> error 1º");
                 try {
                     return (T) Class.forName(className).newInstance();
                 } catch (Exception ex) {
-                    System.out.println("-> error 2º");
                     List<String> list = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).toList();
                     if(list.size() > 0){
                         String path = list.get(0);

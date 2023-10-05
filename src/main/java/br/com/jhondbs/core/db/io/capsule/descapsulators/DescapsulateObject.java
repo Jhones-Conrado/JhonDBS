@@ -48,7 +48,7 @@ public class DescapsulateObject {
         if(msg.startsWith("{") && msg.endsWith("}") && msg.contains(":")){
             int pontos = msg.indexOf(":");
             String index = msg.substring(1, pontos);
-            if(index.matches("\\d+")){
+            if(StringTools.isNumericalString(index)){
                 Class clazz = ClassDictionary.fromIndex(Integer.parseInt(index));
                 if(Reflection.isNumerical(clazz)){
                     return (T) extractNumber(clazz, msg);
@@ -176,6 +176,17 @@ public class DescapsulateObject {
     }
     
     private static Object extractObject(Class clazz, String msg){
+        int point = msg.indexOf(":");
+        try {
+            String nextPoint = msg.substring(point+1, point+2);
+            if(StringTools.isNumericalString(nextPoint)){
+                Entity et = (Entity) clazz.newInstance();
+                long id = Long.parseLong(msg.substring(point+1, msg.length()-1));
+                return et.load(id);
+            }
+        } catch (Exception e) {
+        }
+        
         try {
             Object ins = Reflection.getNewInstance(clazz);
             
@@ -191,40 +202,45 @@ public class DescapsulateObject {
             
             List<Field> fields = FieldsManager.getAllFields(ins);
             
-            for(Field f : fields){
-                String fname = f.getName();
+            for(Field field : fields){
+                String fname = field.getName();
                 if(fieldMap.containsKey(fname)){
-                    f.setAccessible(true);
+                    field.setAccessible(true);
                     
                     String strValue = fieldMap.get(fname);
-                    if(f.getType().isArray()){
+                    if(field.getType().isArray()){
                         List value = new Capsule(strValue).extract();
-                        f.set(ins, value.toArray());
-                    } else if(Reflection.isInstance(f.getType(), Set.class)){
+                        field.set(ins, value.toArray());
+                    } else if(Reflection.isInstance(field.getType(), Set.class)){
                         List value = new Capsule(strValue).extract();
-                        f.set(ins, new HashSet<>(value));
-                    } else if(Reflection.isInstance(f.getType(), Properties.class)){
+                        field.set(ins, new HashSet<>(value));
+                    } else if(Reflection.isInstance(field.getType(), Properties.class)){
                         Map value = new Capsule(strValue).extract();
                         Properties p = new Properties();
                         p.putAll(value);
-                        f.set(ins, p);
+                        field.set(ins, p);
                     } else {
                         String index = strValue.substring(1, strValue.indexOf(":"));
-                        Class cl = ClassDictionary.fromIndex(Integer.parseInt(index));
-                        if(Reflection.isInstance(cl, Entity.class)){
-                            String content = strValue.substring(strValue.indexOf(":")+1);
-                            if(content.startsWith("{")){
-                                Capsule cap = new Capsule(content);
-                                f.set(ins, cap.extract());
+                        if(StringTools.isNumericalString(index)){
+                            Class cl = ClassDictionary.fromIndex(Integer.parseInt(index));
+                            if(Reflection.isInstance(cl, Entity.class)){
+                                String content = strValue.substring(strValue.indexOf(":")+1);
+                                if(content.startsWith("{")){
+                                    Capsule cap = new Capsule(content);
+                                    field.set(ins, cap.extract());
+                                } else {
+                                    content = content.substring(0, content.length()-1);
+                                    Entity entity = (Entity) cl.newInstance();
+                                    Entity loaded = entity.load(Integer.parseInt(content));
+                                    field.set(ins, loaded);
+                                }
                             } else {
-                                content = content.substring(0, content.length()-1);
-                                Entity entity = (Entity) cl.newInstance();
-                                Entity loaded = entity.load(Integer.parseInt(content));
-                                f.set(ins, loaded);
+                                Capsule cap = new Capsule(strValue);
+                                field.set(ins, cap.extract());
                             }
                         } else {
                             Capsule cap = new Capsule(strValue);
-                            f.set(ins, cap.extract());
+                            field.set(ins, cap.extract());
                         }
                     }
                 }

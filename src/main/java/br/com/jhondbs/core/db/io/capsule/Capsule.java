@@ -22,7 +22,6 @@ import br.com.jhondbs.core.db.Keys;
 import br.com.jhondbs.core.db.base.Entity;
 import br.com.jhondbs.core.db.base.FieldsManager;
 import br.com.jhondbs.core.db.io.IO;
-import br.com.jhondbs.core.db.io.OldCapsule;
 import br.com.jhondbs.core.db.io.Reflection;
 import br.com.jhondbs.core.db.io.capsule.descapsulators.DescapsulateObject;
 import br.com.jhondbs.core.db.io.letters.BooleanLetter;
@@ -229,12 +228,12 @@ public class Capsule {
     public void fullDelete(){
         try {
             Entity entity = (Entity) this.object;
-            try(BufferedReader r = Files.newBufferedReader(Paths.get(new File(IO.getDBFolderWithID(entity)).getPath()))) {
-                String line = r.readLine();
-                OldCapsule capsule = new OldCapsule(line);
+            try {
+                String line = String.join("\n", Files.readAllLines(Paths.get(IO.getDBFolderWithID(entity))));
+                Capsule capsule = new Capsule(line);
                 fullDelete(capsule.extract());
             } catch (Exception ex) {
-                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         } catch (ClassCastException e){
             fullDeleteObj(object);
@@ -260,7 +259,7 @@ public class Capsule {
                 }
             } catch (IllegalAccessException | IllegalArgumentException ex) {
             } catch (Exception ex) {
-                Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
             }
         });
     }
@@ -281,8 +280,9 @@ public class Capsule {
                         fullDelete(e);
                     }
                 } catch(IllegalAccessException | IllegalArgumentException e){
+                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, e);
                 } catch (Exception ex) {
-                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                 }
             } else if(Reflection.isInstance(field.getType(), List.class)){
                 try {
@@ -294,7 +294,7 @@ public class Capsule {
                                 try {
                                     fullDelete(((Entity) obj));
                                 } catch (Exception ex) {
-                                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         });
@@ -311,7 +311,7 @@ public class Capsule {
                                 try {
                                     fullDelete(((Entity) map.get(key)));
                                 } catch (Exception ex) {
-                                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         });
@@ -328,7 +328,7 @@ public class Capsule {
                                 try {
                                     fullDelete(((Entity) obj));
                                 } catch (Exception ex) {
-                                    Logger.getLogger(OldCapsule.class.getName()).log(Level.SEVERE, null, ex);
+                                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                                 }
                             }
                         });

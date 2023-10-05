@@ -53,7 +53,7 @@ public class ObjetoMulti extends DefaultEntity {
     
     EnteA ente = new EnteA();
     
-    List<Entity> entities = new ArrayList<>();
+    public List<Entity> entities = new ArrayList<>();
 
     public ObjetoMulti() {
         this.objetos.add(new ObjetoMultiInterno());

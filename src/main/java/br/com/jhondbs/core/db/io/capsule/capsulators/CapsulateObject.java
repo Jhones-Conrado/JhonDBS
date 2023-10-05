@@ -27,6 +27,7 @@ import br.com.jhondbs.core.db.io.letters.BooleanLetter;
 import br.com.jhondbs.core.tools.StringTools;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -308,8 +309,8 @@ public class CapsulateObject {
             String path = IO.getDBFolderWithID(entity);
             File file = new File(path);
             if(file.exists()){
-                try(BufferedReader r = Files.newBufferedReader(Paths.get(path))) {
-                    String line = r.readLine();
+                try {
+                    String line = String.join("\n", Files.readAllLines(Paths.get(path)));
                     if(line.toLowerCase().contains("superente:")){
                         int init = line.toLowerCase().indexOf("superente:");
                         init--;
@@ -328,7 +329,7 @@ public class CapsulateObject {
                         }
                         return line.substring(init, end);
                     }
-                } catch (Exception e) {
+                } catch (IOException e) {
                 }
             }
         } catch (Exception ex) {

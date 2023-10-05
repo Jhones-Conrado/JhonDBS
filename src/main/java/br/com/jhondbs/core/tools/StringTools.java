@@ -17,6 +17,8 @@
 package br.com.jhondbs.core.tools;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -47,6 +49,20 @@ public class StringTools {
             msg = msg.substring(end);
         }
         
+    }
+    
+    public static boolean isNumericalString(String index) {
+        // Define uma expressão regular para encontrar apenas números
+        String regex = "^[0-9]+$";
+        
+        // Compila a expressão regular em um padrão
+        Pattern pattern = Pattern.compile(regex);
+        
+        // Cria um Matcher para a string de entrada
+        Matcher matcher = pattern.matcher(index);
+        
+        // Verifica se a string corresponde ao padrão (contém apenas números)
+        return matcher.matches();
     }
     
 }
