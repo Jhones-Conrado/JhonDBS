@@ -180,7 +180,7 @@ public class DescapsulateObject {
         try {
             String nextPoint = msg.substring(point+1, point+2);
             if(StringTools.isNumericalString(nextPoint)){
-                Entity et = (Entity) clazz.newInstance();
+                Entity et = (Entity) Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).newInstance();
                 long id = Long.parseLong(msg.substring(point+1, msg.length()-1));
                 return et.load(id);
             }
@@ -208,45 +208,51 @@ public class DescapsulateObject {
                     field.setAccessible(true);
                     
                     String strValue = fieldMap.get(fname);
-                    if(field.getType().isArray()){
-                        List value = new Capsule(strValue).extract();
-                        field.set(ins, value.toArray());
-                    } else if(Reflection.isInstance(field.getType(), Set.class)){
-                        List value = new Capsule(strValue).extract();
-                        field.set(ins, new HashSet<>(value));
-                    } else if(Reflection.isInstance(field.getType(), Properties.class)){
-                        Map value = new Capsule(strValue).extract();
-                        Properties p = new Properties();
-                        p.putAll(value);
-                        field.set(ins, p);
+                    if(strValue.equals("{}")){
+                        field.set(ins, null);
                     } else {
-                        String index = strValue.substring(1, strValue.indexOf(":"));
-                        if(StringTools.isNumericalString(index)){
-                            Class cl = ClassDictionary.fromIndex(Integer.parseInt(index));
-                            if(Reflection.isInstance(cl, Entity.class)){
-                                String content = strValue.substring(strValue.indexOf(":")+1);
-                                if(content.startsWith("{")){
-                                    Capsule cap = new Capsule(content);
-                                    field.set(ins, cap.extract());
+                        if(field.getType().isArray()){
+                            List value = new Capsule(strValue).extract();
+                            field.set(ins, value.toArray());
+                        } else if(Reflection.isInstance(field.getType(), Set.class)){
+                            List value = new Capsule(strValue).extract();
+                            field.set(ins, new HashSet<>(value));
+                        } else if(Reflection.isInstance(field.getType(), Properties.class)){
+                            Map value = new Capsule(strValue).extract();
+                            Properties p = new Properties();
+                            p.putAll(value);
+                            field.set(ins, p);
+                        } else {
+                            String index = strValue.substring(1, strValue.indexOf(":"));
+                            if(StringTools.isNumericalString(index)){
+                                Class cl = ClassDictionary.fromIndex(Integer.parseInt(index));
+                                if(Reflection.isInstance(cl, Entity.class)){
+                                    String content = strValue.substring(strValue.indexOf(":")+1);
+                                    if(content.startsWith("{")){
+                                        Capsule cap = new Capsule(content);
+                                        field.set(ins, cap.extract());
+                                    } else {
+                                        content = content.substring(0, content.length()-1);
+                                        Entity entity = (Entity) cl.newInstance();
+                                        Entity loaded = entity.load(Integer.parseInt(content));
+                                        field.set(ins, loaded);
+                                    }
                                 } else {
-                                    content = content.substring(0, content.length()-1);
-                                    Entity entity = (Entity) cl.newInstance();
-                                    Entity loaded = entity.load(Integer.parseInt(content));
-                                    field.set(ins, loaded);
+                                    Capsule cap = new Capsule(strValue);
+                                    field.set(ins, cap.extract());
                                 }
                             } else {
                                 Capsule cap = new Capsule(strValue);
                                 field.set(ins, cap.extract());
                             }
-                        } else {
-                            Capsule cap = new Capsule(strValue);
-                            field.set(ins, cap.extract());
                         }
                     }
                 }
             }
             return ins;
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+            Logger.getLogger(DescapsulateObject.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ClassNotFoundException ex) {
             Logger.getLogger(DescapsulateObject.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;

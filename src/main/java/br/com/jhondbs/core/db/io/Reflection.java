@@ -88,15 +88,17 @@ public final class Reflection {
             URI uri = f1.toURI();
             Path myPath;
             if (Reflection.class.getResource("/").toURI().getScheme().equals("jar")) {
-                FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap());
-                myPath = fileSystem.getPath("/");
-                Stream<Path> walk = Files.walk(myPath, 100);
-                walk.forEach( t -> {
-                    classList.add(t.toString());
-                });
+                uri = Reflection.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+                try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
+                    myPath = fileSystem.getPath("/");
+                    Stream<Path> walk = Files.walk(myPath, 100);
+                    walk.forEach( t -> {
+                        classList.add(t.toString());
+                    });
+                }
             } else {
                 myPath = Paths.get(uri);
-                getFiles(classList, new File(myPath.toString()));
+                getFiles(classList, new File(myPath.toString().replaceAll("%20", " ")));
             }
             List<String> pronta = new ArrayList<>();
             classList.forEach(p -> {
@@ -252,8 +254,8 @@ public final class Reflection {
         throw new ClassNotFoundException("Blank path or not found.");
     }
     
-    public static <T extends Object> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException{
-        Constructor[] constructors = clazz.getDeclaredConstructors();
+    public static <T extends Object> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException{
+        Constructor[] constructors = Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).getDeclaredConstructors();
 
         Constructor a = null;
         for(Constructor c : constructors){
@@ -269,7 +271,7 @@ public final class Reflection {
         Parameter[] parameters = a.getParameters();
 
         if(parameters.length == 0){
-            return (T) clazz.newInstance();
+            return (T) Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).newInstance();
         }
 
         for(Parameter p : parameters){

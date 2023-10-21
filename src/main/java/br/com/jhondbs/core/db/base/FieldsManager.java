@@ -55,8 +55,19 @@ public class FieldsManager {
      * lista com todos os campos do objeto.
      */
     public static List<Field> getAllFields(Object obj){
+        return getAllFields(obj.getClass());
+    }
+    
+    /**
+     * Ensures that all fields of the class and its superclasses are returned.
+     * Garante que todos os campos da classe e suas superclasses sejam retornados.
+     * @param obj Which will have its fields extracted<br>
+     * Que terá seus campos extraídos.
+     * @return list with all fields of the object.<br>
+     * lista com todos os campos do objeto.
+     */
+    public static List<Field> getAllFields(Class clazz){
         List<Field> fields = new ArrayList<>();
-        Class clazz = obj.getClass();
         while(clazz != null){
             fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
             clazz = clazz.getSuperclass();
@@ -215,6 +226,11 @@ public class FieldsManager {
             field.getType() != Double.TYPE &&
             field.getType() != Boolean.TYPE &&
             field.getType() != String.class);
+    }
+    
+    public static boolean isFieldPresent(Class clazz, String fieldname){
+        return getAllFields(clazz).stream().filter(field -> (field.getName().equalsIgnoreCase(fieldname)))
+                .count() == 1;
     }
     
 }

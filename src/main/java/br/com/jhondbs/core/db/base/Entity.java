@@ -337,6 +337,22 @@ public interface Entity extends Serializable, Cloneable{
         return null;
     }
     
+    default <T> T findByFieldValue(String fieldname, Object value){
+        if(FieldsManager.isFieldPresent(this.getClass(), fieldname)){
+            for(Long id : loadAllOnlyIds()){
+                Entity e = load(id);
+                try {
+                    if(e.getValueFrom(fieldname).equals(value)){
+                        return (T) e;
+                    }
+                } catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException ex) {
+                    Logger.getLogger(Entity.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        }
+        return null;
+    }
+    
     class infunction {
         
         /**

@@ -112,7 +112,7 @@ public class ClassDictionary {
                 dictionary.put(Calendar.class.getName(), String.valueOf(dictionary.size()));
                 dictionary.put(Represent.class.getName(), String.valueOf(dictionary.size()));
             }
-            List<String> all = new Reflection().allImplementsNotAbstract(Object.class);
+            List<String> all = Reflection.allImplementsNotAbstract(Object.class);
             all.forEach(cl -> {
                 if(!dictionary.containsKey(cl)){
                     dictionary.put(cl, String.valueOf(dictionary.size()));

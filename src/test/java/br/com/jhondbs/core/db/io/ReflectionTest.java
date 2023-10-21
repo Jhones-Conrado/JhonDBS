@@ -60,6 +60,8 @@ public class ReflectionTest {
         } catch (IOException | IllegalAccessException | IllegalArgumentException | InstantiationException | InvocationTargetException ex) {
             Logger.getLogger(ReflectionTest.class.getName()).log(Level.SEVERE, null, ex);
             assert false;
+        } catch (ClassNotFoundException ex) {
+            Logger.getLogger(ReflectionTest.class.getName()).log(Level.SEVERE, null, ex);
         }
      }
 }

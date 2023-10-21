@@ -177,13 +177,17 @@ public class CapsulateObject {
                 
                 sb.append(fieldName).append(":");
                 Object value = field.get(object);
-                Capsule cap = null;
-                if(Reflection.isInstance(object.getClass(), Entity.class)){
-                    cap = new Capsule(value, entities, letter, (Entity) object, root);
+                if(value != null){
+                    Capsule cap = null;
+                    if(Reflection.isInstance(object.getClass(), Entity.class)){
+                        cap = new Capsule(value, entities, letter, (Entity) object, root);
+                    } else {
+                        cap = new Capsule(value, entities, letter, superente, root);
+                    }
+                    sb.append(cap.make());
                 } else {
-                    cap = new Capsule(value, entities, letter, superente, root);
+                    sb.append("{}");
                 }
-                sb.append(cap.make());
             } catch (IllegalArgumentException | IllegalAccessException ex) {
                 Logger.getLogger(CapsulateObject.class.getName()).log(Level.SEVERE, null, ex);
             }
