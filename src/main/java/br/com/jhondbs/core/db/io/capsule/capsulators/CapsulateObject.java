@@ -25,10 +25,10 @@ import br.com.jhondbs.core.db.io.capsule.Capsule;
 import br.com.jhondbs.core.db.io.capsule.ClassDictionary;
 import br.com.jhondbs.core.db.io.letters.BooleanLetter;
 import br.com.jhondbs.core.tools.StringTools;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -162,34 +162,36 @@ public class CapsulateObject {
         sb.append(":");
         List<Field> fields = FieldsManager.getAllFields(object);
         for(Field field : fields){
-            field.setAccessible(true);
-            sb.append("{");
-            try {
-                String fieldName = field.getName();
-                
-                if(Reflection.isInstance(field.getType(), Represent.class)){
-                    if(fieldName.equalsIgnoreCase("superente")){
-                        hassuperente = true;
-                    } else if(fieldName.equalsIgnoreCase("root")){
-                        hasroot = true;
+            if(!Modifier.isFinal(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
+                field.setAccessible(true);
+                sb.append("{");
+                try {
+                    String fieldName = field.getName();
+
+                    if(Reflection.isInstance(field.getType(), Represent.class)){
+                        if(fieldName.equalsIgnoreCase("superente")){
+                            hassuperente = true;
+                        } else if(fieldName.equalsIgnoreCase("root")){
+                            hasroot = true;
+                        }
                     }
-                }
-                
-                sb.append(fieldName).append(":");
-                Object value = field.get(object);
-                if(value != null){
-                    Capsule cap = null;
-                    if(Reflection.isInstance(object.getClass(), Entity.class)){
-                        cap = new Capsule(value, entities, letter, (Entity) object, root);
+
+                    sb.append(fieldName).append(":");
+                    Object value = field.get(object);
+                    if(value != null){
+                        Capsule cap = null;
+                        if(Reflection.isInstance(object.getClass(), Entity.class)){
+                            cap = new Capsule(value, entities, letter, (Entity) object, root);
+                        } else {
+                            cap = new Capsule(value, entities, letter, superente, root);
+                        }
+                        sb.append(cap.make());
                     } else {
-                        cap = new Capsule(value, entities, letter, superente, root);
+                        sb.append("{}");
                     }
-                    sb.append(cap.make());
-                } else {
-                    sb.append("{}");
+                } catch (IllegalArgumentException | IllegalAccessException ex) {
+                    Logger.getLogger(CapsulateObject.class.getName()).log(Level.SEVERE, null, ex);
                 }
-            } catch (IllegalArgumentException | IllegalAccessException ex) {
-                Logger.getLogger(CapsulateObject.class.getName()).log(Level.SEVERE, null, ex);
             }
             sb.append("}");
         }
