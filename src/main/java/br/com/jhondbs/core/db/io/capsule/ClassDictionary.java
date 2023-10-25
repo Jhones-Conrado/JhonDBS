@@ -52,7 +52,7 @@ public class ClassDictionary {
     public static Class fromIndex(int index){
         Set<Object> keySet = get().keySet();
         for(Object key : keySet){
-            int i = new Integer(get().getProperty((String) key).toString());
+            int i = Integer.parseInt(get().getProperty((String) key).toString());
             if(i == index){
                 try {
                     try {

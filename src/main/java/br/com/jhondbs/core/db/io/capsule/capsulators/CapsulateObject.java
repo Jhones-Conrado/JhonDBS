@@ -162,8 +162,8 @@ public class CapsulateObject {
         sb.append(":");
         List<Field> fields = FieldsManager.getAllFields(object);
         for(Field field : fields){
-            sb.append("{");
             if(!Modifier.isFinal(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
+                sb.append("{");
                 field.setAccessible(true);
                 try {
                     String fieldName = field.getName();
@@ -192,8 +192,8 @@ public class CapsulateObject {
                 } catch (IllegalArgumentException | IllegalAccessException ex) {
                     Logger.getLogger(CapsulateObject.class.getName()).log(Level.SEVERE, null, ex);
                 }
+                sb.append("}");
             }
-            sb.append("}");
         }
         
         
@@ -232,7 +232,6 @@ public class CapsulateObject {
                 }
             }
         }
-        
         sb.append("}");
         return sb.toString();
     }

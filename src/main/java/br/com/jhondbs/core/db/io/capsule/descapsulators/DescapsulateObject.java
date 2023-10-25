@@ -81,25 +81,25 @@ public class DescapsulateObject {
             if(number.contains(".")){
                 number = number.substring(0, number.indexOf("."));
             }
-            short s = new Short(number);
+            short s = Short.parseShort(number);
             return s;
         } else if(Reflection.isInstance(clazz, int.class) || Reflection.isInstance(clazz, Integer.class)){
             if(number.contains(".")){
                 number = number.substring(0, number.indexOf("."));
             }
-            int i = new Integer(number);
+            int i = Integer.parseInt(number);
             return i;
         } else if(Reflection.isInstance(clazz, long.class) || Reflection.isInstance(clazz, Long.class)){
             if(number.contains(".")){
                 number = number.substring(0, number.indexOf("."));
             }
-            long l = new Long(number);
+            long l = Long.parseLong(number);
             return l;
         } else if(Reflection.isInstance(clazz, float.class) || Reflection.isInstance(clazz, Float.class)){
-            float f = new Float(number);
+            float f = Float.parseFloat(number);
             return f;
         } else if(Reflection.isInstance(clazz, double.class) || Reflection.isInstance(clazz, Double.class)){
-            double d = new Double(number);
+            double d = Double.parseDouble(number);
             return d;
         } else if(Reflection.isInstance(clazz, BigInteger.class)){
             if(number.contains(".")){
@@ -116,12 +116,12 @@ public class DescapsulateObject {
     
     private static Object extractBoolean(String msg){
         String value = msg.substring(msg.indexOf(":")+1, msg.length()-1);
-        return new Boolean(value);
+        return Boolean.valueOf(value);
     }
     
     private static Object extractByte(String msg){
         String value = msg.substring(msg.indexOf(":")+1, msg.length()-1);
-        return new Byte(value);
+        return Byte.valueOf(value);
     }
     
     private static Object extractDate(Class clazz, String msg){
