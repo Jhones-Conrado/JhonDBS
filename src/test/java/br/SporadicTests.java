@@ -17,6 +17,10 @@
 package br;
 
 import br.com.jhondbs.core.db.capsule.Capsule;
+import br.com.jhondbs.core.db.filter.BooleanFilter;
+import br.com.jhondbs.core.db.filter.Filter;
+import br.com.jhondbs.core.db.filter.NumberFilter;
+import br.com.jhondbs.core.db.filter.StringFilter;
 import br.com.jhondbs.core.tools.FieldsManager;
 import java.io.IOException;
 import org.junit.After;
@@ -73,10 +77,19 @@ public class SporadicTests {
         ente.enteb = new EnteB("Carro");
         ente.enteb.dono = ente;
         
-        Capsule capsule = new Capsule(ente);
-        String start = capsule.start();
+        ente.save();
         
-        capsule.flush();
+        Filter filter = new Filter(true);
+        StringFilter stringFilter = new StringFilter("name", "Jhones");
+        NumberFilter numberFilter = new NumberFilter("age", NumberFilter.GREATER, 17);
+        BooleanFilter booleanFilter = new BooleanFilter("client", true);
+        
+        filter.addCondition(stringFilter);
+        filter.addCondition(numberFilter);
+        filter.addCondition(booleanFilter);
+        
+        ente.loadAll(filter);
+        
         
         System.out.println("NOME: "+FieldsManager.getValueFrom("name", ente));
         
