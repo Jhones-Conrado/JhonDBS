@@ -43,7 +43,7 @@ public class EnteA implements Entity{
     private String id;
     
     @Unique
-    public String name;
+    public final String name;
     
     public MeuEnum em;
     
@@ -77,6 +77,7 @@ public class EnteA implements Entity{
     public EnteB enteb;
     
     public EnteA() {
+        this.name = null;
     }
 
     public EnteA(String name) {

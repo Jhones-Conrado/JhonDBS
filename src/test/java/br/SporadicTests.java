@@ -17,11 +17,6 @@
 package br;
 
 import br.com.jhondbs.core.db.capsule.Capsule;
-import br.com.jhondbs.core.db.filter.BooleanFilter;
-import br.com.jhondbs.core.db.filter.Filter;
-import br.com.jhondbs.core.db.filter.NumberFilter;
-import br.com.jhondbs.core.db.filter.StringFilter;
-import br.com.jhondbs.core.tools.FieldsManager;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -87,7 +82,7 @@ public class SporadicTests {
         
         Capsule cap2 = new Capsule(capsule.getCapsule());
         EnteA ee = cap2.recover();
-        System.out.println(ee.em);
+        System.out.println(ee.em);;
         
 //        ente.save();
         

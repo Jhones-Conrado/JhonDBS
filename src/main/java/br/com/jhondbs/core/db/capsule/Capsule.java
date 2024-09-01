@@ -306,25 +306,28 @@ public class Capsule {
                             .append(field.getName())
                             .append(":");
                     
-                    if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
-                        sb.append(encapsulePrimitive(value));
-                    } else if(Reflection.isArrayMap(field.getType())) {
-                        sb.append(encapsuleArray(value));
-                    } else if(Reflection.isInstance(field.getType(), Entity.class)) {
-                        Entity ente = (Entity) value;
-                        if(!serializados.contains(ente)) {
-                            Capsule capsule = new Capsule(ente, serializados, capsules);
-                            try {
-                                capsule.start();
-                            } catch (Exception ex) {
-                                throw ex;
-                            }
-                        }
-                        sb.append(encapsuleId(ente));
+                    if(value.getClass().isEnum()) {
+                        sb.append(encapsuleEnum((Enum) value));
                     } else {
-                        sb.append(encapsuleObject(value));
+                        if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                            sb.append(encapsulePrimitive(value));
+                        } else if(Reflection.isArrayMap(field.getType())) {
+                            sb.append(encapsuleArray(value));
+                        } else if(Reflection.isInstance(field.getType(), Entity.class)) {
+                            Entity ente = (Entity) value;
+                            if(!serializados.contains(ente)) {
+                                Capsule capsule = new Capsule(ente, serializados, capsules);
+                                try {
+                                    capsule.start();
+                                } catch (Exception ex) {
+                                    throw ex;
+                                }
+                            }
+                            sb.append(encapsuleId(ente));
+                        } else {
+                            sb.append(encapsuleObject(value));
+                        }
                     }
-
                     sb.append("}");
                 }
             }
@@ -333,6 +336,16 @@ public class Capsule {
         sb.append("}");
         str = sb.toString();
         return entity.getId();
+    }
+    
+    private String encapsuleEnum(Enum e) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{")
+                .append(String.valueOf(ClassDictionary.getIndex(e.getClass())))
+                .append(":")
+                .append(e.toString())
+                .append("}");
+        return sb.toString();
     }
     
     /**
@@ -364,39 +377,32 @@ public class Capsule {
                 .append(String.valueOf(ClassDictionary.getIndex(object.getClass())))
                 .append(":");
         
-        if(object.getClass().isEnum()) {
-            Enum cast = Enum.class.cast(object);
-            sb.append(cast.toString());
-        } else {
-            
             List<Field> fields = FieldsManager.getAllFields(object.getClass());
-            for(Field field : fields) {
-                if(!Modifier.isFinal(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
-                    field.setAccessible(true);
-                    Object value = FieldsManager.getValue(field, object);
+            
+        for(Field field : fields) {
+            if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
+                field.setAccessible(true);
+                Object value = FieldsManager.getValue(field, object);
+                if(value != null) {
+                    sb.append("{")
+                            .append(field.getName())
+                            .append(":");
 
-                    if(value != null) {
-                        sb.append("{")
-                                .append(field.getName())
-                                .append(":");
-
-                        if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
-                            sb.append(encapsulePrimitive(value));
-                        } else if(Reflection.isArrayMap(field.getType())) {
-                            sb.append(encapsuleArray(value));
-                        } else if(Reflection.isInstance(field.getType(), Entity.class)) {
-                            Entity ente = (Entity) value;
-                            if(!serializados.contains(ente)) {
-                                Capsule capsule = new Capsule(ente, serializados, capsules);
-                                capsule.start();
-                            }
-                            sb.append(encapsuleId(ente));
-                        } else {
-                            sb.append(encapsuleObject(value));
+                    if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                        sb.append(encapsulePrimitive(value));
+                    } else if(Reflection.isArrayMap(field.getType())) {
+                        sb.append(encapsuleArray(value));
+                    } else if(Reflection.isInstance(field.getType(), Entity.class)) {
+                        Entity ente = (Entity) value;
+                        if(!serializados.contains(ente)) {
+                            Capsule capsule = new Capsule(ente, serializados, capsules);
+                            capsule.start();
                         }
-
-                        sb.append("}");
+                        sb.append(encapsuleId(ente));
+                    } else {
+                        sb.append(encapsuleObject(value));
                     }
+                    sb.append("}");
                 }
             }
         }
@@ -560,6 +566,8 @@ public class Capsule {
     }
     
     private <T extends Object> T recover(String str, Map<String, Entity> recovereds) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, Exception {
+        Class type = getType(str);
+        
         Entity root = Reflection.getNewInstance(getType(str));
         List<String> fields = getFields(str);
         
@@ -636,16 +644,21 @@ public class Capsule {
         String valueCapsule = recoverValueCapsule(fieldCapsule);
         
         /*
-        Valor da capsula, pronto para ser inserido no construtor.
-        */
-        String value = recoverValueCapsule(valueCapsule);
-        
-        /*
         Classe do tipo de objeto que pertence a variável.
         */
         Class type = getType(valueCapsule);
         
-        FieldsManager.setValue(name, object, recoverFromCapsule(valueCapsule, recovereds));
+        if(type.isEnum()) {
+            FieldsManager.setValue(name, object, Enum.valueOf(type, recoverValueCapsule(valueCapsule)));
+        } else {
+            /*
+            Valor da capsula, pronto para ser inserido no construtor.
+            */
+            String value = recoverValueCapsule(valueCapsule);
+
+
+            FieldsManager.setValue(name, object, recoverFromCapsule(valueCapsule, recovereds));
+        }
     }
     
     
@@ -718,6 +731,7 @@ public class Capsule {
             int init = fieldCapsule.indexOf(":") + 1;
             return fieldCapsule.substring(init, fieldCapsule.length()-1);
         }
+        System.out.println(fieldCapsule);
         throw new NullPointerException("String de capsula com erro ou nula.");
     }
     
