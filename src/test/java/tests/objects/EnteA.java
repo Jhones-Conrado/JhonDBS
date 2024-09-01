@@ -45,6 +45,8 @@ public class EnteA implements Entity{
     @Unique
     public String name;
     
+    public MeuEnum em;
+    
     public char character = 'x';
     public short curto = 5;
     public int inteiro = 9;

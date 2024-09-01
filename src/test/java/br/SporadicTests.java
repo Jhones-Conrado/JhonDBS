@@ -31,6 +31,7 @@ import org.junit.Test;
 import tests.objects.Endereco;
 import tests.objects.EnteA;
 import tests.objects.EnteB;
+import tests.objects.MeuEnum;
 import tests.objects.ObjetoA;
 
 /**
@@ -77,21 +78,32 @@ public class SporadicTests {
         ente.enteb = new EnteB("Carro");
         ente.enteb.dono = ente;
         
-        ente.save();
+        ente.em = MeuEnum.USUARIO;
         
-        Filter filter = new Filter(true);
-        StringFilter stringFilter = new StringFilter("name", "Jhones");
-        NumberFilter numberFilter = new NumberFilter("age", NumberFilter.GREATER, 17);
-        BooleanFilter booleanFilter = new BooleanFilter("client", true);
+        Capsule capsule = new Capsule(ente);
+        capsule.start();
+        capsule.flush();
+        System.out.println(capsule.getCapsule());
         
-        filter.addCondition(stringFilter);
-        filter.addCondition(numberFilter);
-        filter.addCondition(booleanFilter);
+        Capsule cap2 = new Capsule(capsule.getCapsule());
+        EnteA ee = cap2.recover();
+        System.out.println(ee.em);
         
-        ente.loadAll(filter);
+//        ente.save();
+        
+//        Filter filter = new Filter(true);
+//        StringFilter stringFilter = new StringFilter("name", "Jhones");
+//        NumberFilter numberFilter = new NumberFilter("age", NumberFilter.GREATER, 17);
+//        BooleanFilter booleanFilter = new BooleanFilter("client", true);
+//        
+//        filter.addCondition(stringFilter);
+//        filter.addCondition(numberFilter);
+//        filter.addCondition(booleanFilter);
+//        
+//        ente.loadAll(filter);
         
         
-        System.out.println("NOME: "+FieldsManager.getValueFrom("name", ente));
+//        System.out.println("NOME: "+FieldsManager.getValueFrom("name", ente));
         
 //        EnteA recovered = capsule.recover();
 //        System.out.println(recovered.name);

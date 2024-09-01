@@ -66,7 +66,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import br.com.jhondbs.core.db.filter.FilterCondition;
 
 /**
  * Responsável por transformar um objeto em texto para armazenar no banco de dados e vice-versa.
@@ -299,7 +298,7 @@ public class Capsule {
         
         List<Field> fields = FieldsManager.getAllFields(entity.getClass());
         for(Field field : fields) {
-            if(!Modifier.isFinal(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
+            if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
                 field.setAccessible(true);
                 Object value = FieldsManager.getValue(field, entity);
                 if(value != null) {
@@ -360,41 +359,44 @@ public class Capsule {
      * @return String do objeto encapsulado.
      */
     private String encapsuleObject(Object object) throws Exception {
-        if(object == null) {
-            return "{}";
-        }
         StringBuilder sb = new StringBuilder();
         sb.append("{")
                 .append(String.valueOf(ClassDictionary.getIndex(object.getClass())))
                 .append(":");
         
-        List<Field> fields = FieldsManager.getAllFields(object.getClass());
-        for(Field field : fields) {
-            if(!Modifier.isFinal(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
-                field.setAccessible(true);
-                Object value = FieldsManager.getValue(field, object);
-                
-                if(value != null) {
-                    sb.append("{")
-                            .append(field.getName())
-                            .append(":");
+        if(object.getClass().isEnum()) {
+            Enum cast = Enum.class.cast(object);
+            sb.append(cast.toString());
+        } else {
+            
+            List<Field> fields = FieldsManager.getAllFields(object.getClass());
+            for(Field field : fields) {
+                if(!Modifier.isFinal(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
+                    field.setAccessible(true);
+                    Object value = FieldsManager.getValue(field, object);
 
-                    if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
-                        sb.append(encapsulePrimitive(value));
-                    } else if(Reflection.isArrayMap(field.getType())) {
-                        sb.append(encapsuleArray(value));
-                    } else if(Reflection.isInstance(field.getType(), Entity.class)) {
-                        Entity ente = (Entity) value;
-                        if(!serializados.contains(ente)) {
-                            Capsule capsule = new Capsule(ente, serializados, capsules);
-                            capsule.start();
+                    if(value != null) {
+                        sb.append("{")
+                                .append(field.getName())
+                                .append(":");
+
+                        if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                            sb.append(encapsulePrimitive(value));
+                        } else if(Reflection.isArrayMap(field.getType())) {
+                            sb.append(encapsuleArray(value));
+                        } else if(Reflection.isInstance(field.getType(), Entity.class)) {
+                            Entity ente = (Entity) value;
+                            if(!serializados.contains(ente)) {
+                                Capsule capsule = new Capsule(ente, serializados, capsules);
+                                capsule.start();
+                            }
+                            sb.append(encapsuleId(ente));
+                        } else {
+                            sb.append(encapsuleObject(value));
                         }
-                        sb.append(encapsuleId(ente));
-                    } else {
-                        sb.append(encapsuleObject(value));
-                    }
 
-                    sb.append("}");
+                        sb.append("}");
+                    }
                 }
             }
         }
@@ -679,6 +681,10 @@ public class Capsule {
         } else if(Reflection.isInstance(type, Map.class)) {
             return (T) parseMapFromString(value, recovereds);
         } else {
+            if(type.isEnum()) {
+                return (T) Enum.valueOf(type, value);
+            }
+            
             Object o = Reflection.getNewInstance(type);
             List<String> fields = getFields(capsule);
             for(String field : fields) {
