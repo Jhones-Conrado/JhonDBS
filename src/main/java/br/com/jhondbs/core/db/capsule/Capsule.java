@@ -37,26 +37,18 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.Period;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.Temporal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -104,6 +96,8 @@ public class Capsule {
      */
     private String str;
     
+    private ClassLoader loader;
+    
     /**
      * Utilizado para serializar uma entidade.
      * @param entity Entidade a ser serializada.
@@ -120,6 +114,17 @@ public class Capsule {
      */
     public Capsule(Class entityClass, String id) throws Exception {
         this.entity = load(entityClass, id);
+    }
+    
+    /**
+     * Recupera uma entidade do banco de dados a partir de do ID.
+     * @param entityClass Tipo de entidade a ser buscado.
+     * @param id ID a ser buscado.
+     * @throws Exception 
+     */
+    public Capsule(Class entityClass, String id, ClassLoader loader) throws Exception {
+        this.loader = loader;
+        this.entity = load(entityClass, id, loader);
     }
     
     /**
@@ -573,6 +578,24 @@ public class Capsule {
             return (T) this.entity;
         }
         return (T) recover(str, recovereds, this.getClass().getClassLoader());
+    }
+    
+    /**
+     * Recupera a entidade encapsulada.
+     * @param <T>
+     * @return 
+     * @throws java.lang.InstantiationException 
+     * @throws java.lang.IllegalAccessException 
+     * @throws java.lang.reflect.InvocationTargetException 
+     * @throws java.lang.ClassNotFoundException 
+     * @throws java.lang.NoSuchMethodException 
+     * @throws java.text.ParseException 
+     */
+    public <T extends Entity> T recover(ClassLoader loader) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, NoSuchMethodException, ParseException, Exception {
+        if(this.entity != null) {
+            return (T) this.entity;
+        }
+        return (T) recover(str, recovereds, loader);
     }
     
     private <T> T recover(String str, Map<String, Entity> recovereds, ClassLoader loader) 
@@ -1213,7 +1236,15 @@ public class Capsule {
     
     public <T extends Entity> T load(Class entityClass, String id) throws Exception {
         String path = getPath(entityClass, id);
+        if(this.loader != null) {
+            return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
+        }
         return (T) recover(Files.readString(Paths.get(path)), recovereds, this.getClass().getClassLoader());
+    }
+    
+    public <T extends Entity> T load(Class entityClass, String id, ClassLoader loader) throws Exception {
+        String path = getPath(entityClass, id);
+        return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
     }
     
     /**

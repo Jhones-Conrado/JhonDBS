@@ -144,6 +144,11 @@ public interface Entity extends Serializable, Cloneable{
         return capsule.recover();
     }
     
+    default <T extends Entity> T load(String id, ClassLoader loader) throws Exception {
+        Capsule capsule = new Capsule(this.getClass(), id);
+        return capsule.recover(loader);
+    }
+    
     /**
      * ENGLISH<br>
      * Loads all entities of the current type.

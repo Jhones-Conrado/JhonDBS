@@ -312,31 +312,37 @@ public final class Reflection {
     public static <T> T getNewInstance(Class<T> clazz, ClassLoader loader) 
             throws InstantiationException, IllegalAccessException, IllegalArgumentException, 
                    InvocationTargetException, ClassNotFoundException, NoSuchMethodException {
-
+        
         // Carrega a classe usando o ClassLoader fornecido
         Class<?> loadedClass = Class.forName(clazz.getName(), true, loader);
+        
+        try {
+            return (T) loadedClass.getDeclaredConstructor().newInstance();
+        } catch (Exception e) {
+            try {
+                Constructor<?>[] constructors = loadedClass.getDeclaredConstructors();
+                Constructor<?> selectedConstructor = null;
+                for (Constructor<?> constructor : constructors) {
+                    if (selectedConstructor == null || constructor.getParameterCount() < selectedConstructor.getParameterCount()) {
+                        selectedConstructor = constructor;
+                    }
+                }
+                if (selectedConstructor == null) {
+                    throw new NoSuchMethodException("Nenhum construtor encontrado para a classe: " + clazz.getName());
+                }
+                Object[] paramObjects = prepareConstructorParameters(selectedConstructor.getParameters());
+                selectedConstructor.setAccessible(true); // Garante acesso ao construtor, mesmo que ele seja privado
+                Class<?>[] types = selectedConstructor.getParameterTypes();
+                Object ins = loadedClass.getConstructor(types).newInstance(paramObjects);
 
-        // Obtém todos os construtores declarados da classe
-        Constructor<?>[] constructors = loadedClass.getDeclaredConstructors();
-
-        // Seleciona o construtor com o menor número de parâmetros
-        Constructor<?> selectedConstructor = null;
-        for (Constructor<?> constructor : constructors) {
-            if (selectedConstructor == null || constructor.getParameterCount() < selectedConstructor.getParameterCount()) {
-                selectedConstructor = constructor;
+                return (T) ins;
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                throw new ClassCastException();
             }
         }
-
-        if (selectedConstructor == null) {
-            throw new NoSuchMethodException("Nenhum construtor encontrado para a classe: " + clazz.getName());
-        }
-
-        // Prepara os parâmetros para o construtor
-        Object[] paramObjects = prepareConstructorParameters(selectedConstructor.getParameters());
-
-        // Cria uma nova instância usando o construtor selecionado
-        return (T) selectedConstructor.newInstance(paramObjects);
     }
+
 
     private static Object[] prepareConstructorParameters(Parameter[] parameters) {
         List<Object> paramObjects = new ArrayList<>();
