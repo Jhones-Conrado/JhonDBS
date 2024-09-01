@@ -33,6 +33,7 @@ import br.com.jhondbs.core.tools.ClassDictionary;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -302,33 +303,37 @@ public class Capsule {
                 field.setAccessible(true);
                 Object value = FieldsManager.getValue(field, entity);
                 if(value != null) {
-                    sb.append("{")
-                            .append(field.getName())
-                            .append(":");
-                    
-                    if(value.getClass().isEnum()) {
-                        sb.append(encapsuleEnum((Enum) value));
-                    } else {
-                        if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
-                            sb.append(encapsulePrimitive(value));
-                        } else if(Reflection.isArrayMap(field.getType())) {
-                            sb.append(encapsuleArray(value));
-                        } else if(Reflection.isInstance(field.getType(), Entity.class)) {
-                            Entity ente = (Entity) value;
-                            if(!serializados.contains(ente)) {
-                                Capsule capsule = new Capsule(ente, serializados, capsules);
-                                try {
-                                    capsule.start();
-                                } catch (Exception ex) {
-                                    throw ex;
-                                }
-                            }
-                            sb.append(encapsuleId(ente));
+                    if(ClassDictionary.getIndex(value.getClass()) != -1) {
+                        sb.append("{")
+                                .append(field.getName())
+                                .append(":");
+
+                        if(value.getClass().isEnum()) {
+                            sb.append(encapsuleEnum((Enum) value));
                         } else {
-                            sb.append(encapsuleObject(value));
+                            if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                                sb.append(encapsulePrimitive(value));
+                            } else if(Reflection.isArrayMap(field.getType())) {
+                                sb.append(encapsuleArray(value));
+                            } else if(Reflection.isInstance(field.getType(), Entity.class)) {
+                                Entity ente = (Entity) value;
+                                if(!serializados.contains(ente)) {
+                                    Capsule capsule = new Capsule(ente, serializados, capsules);
+                                    try {
+                                        capsule.start();
+                                    } catch (Exception ex) {
+                                        throw ex;
+                                    }
+                                }
+                                sb.append(encapsuleId(ente));
+                            } else {
+                                System.out.println("OBJETO");
+                                System.out.println(value);
+                                sb.append(encapsuleObject(value));
+                            }
                         }
+                        sb.append("}");
                     }
-                    sb.append("}");
                 }
             }
         }
@@ -372,14 +377,18 @@ public class Capsule {
      * @return String do objeto encapsulado.
      */
     private String encapsuleObject(Object object) throws Exception {
+        System.out.println(object);
         StringBuilder sb = new StringBuilder();
         sb.append("{")
                 .append(String.valueOf(ClassDictionary.getIndex(object.getClass())))
                 .append(":");
         
-            List<Field> fields = FieldsManager.getAllFields(object.getClass());
+        System.out.println(sb.toString());
+        
+        List<Field> fields = FieldsManager.getAllFields(object.getClass());
             
         for(Field field : fields) {
+            System.out.println(field.getName());
             if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
                 field.setAccessible(true);
                 Object value = FieldsManager.getValue(field, object);
@@ -387,8 +396,9 @@ public class Capsule {
                     sb.append("{")
                             .append(field.getName())
                             .append(":");
-
-                    if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                    if(value.getClass().isEnum()) {
+                        sb.append(encapsuleEnum((Enum) value));
+                    }else if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
                         sb.append(encapsulePrimitive(value));
                     } else if(Reflection.isArrayMap(field.getType())) {
                         sb.append(encapsuleArray(value));
@@ -562,30 +572,41 @@ public class Capsule {
         if(this.entity != null) {
             return (T) this.entity;
         }
-        return (T) recover(str, recovereds);
+        return (T) recover(str, recovereds, this.getClass().getClassLoader());
     }
     
-    private <T extends Object> T recover(String str, Map<String, Entity> recovereds) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, Exception {
-        Class type = getType(str);
-        
-        Entity root = Reflection.getNewInstance(getType(str));
+    private <T> T recover(String str, Map<String, Entity> recovereds, ClassLoader loader) 
+            throws InstantiationException, IllegalAccessException, IllegalArgumentException, 
+            InvocationTargetException, ClassNotFoundException, Exception {
+
+        // Recupera o tipo da entidade usando o ClassLoader
+        Class<?> type = getType(str);
+
+        // Cria uma nova instância da entidade usando reflexão e o ClassLoader especificado
+        Entity root = (Entity) Reflection.getNewInstance(type, loader);
         List<String> fields = getFields(str);
-        
+
+        // Obtém o campo de ID da entidade
         Field fieldId = FieldsManager.getFieldId(root.getClass());
-        for(String field : fields) {
-            if(recoverFieldName(field).contains(fieldId.getName())) {
-                injectField(root, field, recovereds);
+
+        // Itera pelos campos para injetar valores
+        for (String field : fields) {
+            if (recoverFieldName(field).contains(fieldId.getName())) {
+                injectField(root, field, recovereds, loader);
                 fields.remove(field);
                 recovereds.put(root.getId(), root);
                 break;
             }
         }
-        
-        for(String field : fields) {
-            injectField(root, field, recovereds);
+
+        // Injeta os valores dos campos restantes
+        for (String field : fields) {
+            injectField(root, field, recovereds, loader);
         }
+
         return (T) root;
     }
+
     
     /**
      * Recupera apenas um mapa com os nomes e valores dos campos em formato de String.
@@ -632,81 +653,106 @@ public class Capsule {
         return map;
     }
     
-    private void injectField(Object object, String fieldCapsule, Map<String, Entity> recovereds) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, NoSuchMethodException, ParseException, Exception {
-        /*
-        Nome do campo de variável.
-        */
+    private void injectField(Object object, String fieldCapsule, Map<String, Entity> recovereds, ClassLoader loader) 
+            throws InstantiationException, IllegalAccessException, IllegalArgumentException, 
+            InvocationTargetException, ClassNotFoundException, NoSuchMethodException, ParseException, Exception {
+
+        // Recupera o nome do campo
         String name = recoverFieldName(fieldCapsule);
-        
-        /*
-        String capsula do valor da variável.
-        */
+
+        // Recupera a string que representa o valor encapsulado
         String valueCapsule = recoverValueCapsule(fieldCapsule);
-        
-        /*
-        Classe do tipo de objeto que pertence a variável.
-        */
-        Class type = getType(valueCapsule);
-        
-        if(type.isEnum()) {
-            FieldsManager.setValue(name, object, Enum.valueOf(type, recoverValueCapsule(valueCapsule)));
+
+        // Determina a classe do tipo de objeto ao qual o campo pertence usando o ClassLoader
+        Class<?> type = Class.forName(getType(valueCapsule).getName(), true, loader);
+
+        // Verifica se o tipo é um enum
+        if (type.isEnum()) {
+            // Recupera o valor do enum usando reflexão e o ClassLoader
+            @SuppressWarnings("unchecked")
+            Enum<?> enumValue = Enum.valueOf((Class<Enum>) type, recoverValueCapsule(valueCapsule));
+            FieldsManager.setValue(name, object, enumValue);
         } else {
-            /*
-            Valor da capsula, pronto para ser inserido no construtor.
-            */
+            // Obtém o valor a ser inserido
             String value = recoverValueCapsule(valueCapsule);
 
+            // Chama o método para recuperar o valor do campo, usando o ClassLoader
+            Object recoveredValue = recoverFromCapsule(valueCapsule, recovereds, loader);
 
-            FieldsManager.setValue(name, object, recoverFromCapsule(valueCapsule, recovereds));
+            // Define o valor do campo no objeto
+            FieldsManager.setValue(name, object, recoveredValue);
         }
     }
+
     
     
-    private <T extends Object> T recoverFromCapsule(String capsule, Map<String, Entity> recovereds) throws Exception {
-        Class type = getType(capsule);
-        /*
-        String capsula do valor da variável.
-        */
+    private <T> T recoverFromCapsule(String capsule, Map<String, Entity> recovereds, ClassLoader loader) throws Exception {
+        // Recupera a classe do tipo usando o ClassLoader especificado
+        Class<?> type = Class.forName(getType(capsule).getName(), true, loader);
+
+        // String cápsula do valor da variável
         String value = recoverValueCapsule(capsule);
-        
-        if(Reflection.isPrimitive(type) || Reflection.isNumerical(type)){
-            return (T) parsePrimitiveFromString(value, type);
-        } else if(Reflection.isDate(type)) {
-            if(Reflection.isInstance(type, Date.class)) {
+
+        // Manipulação de tipos primitivos ou numéricos
+        if (Reflection.isPrimitive(type) || Reflection.isNumerical(type)) {
+            return (T) parsePrimitiveFromString(value, type, loader);
+        } 
+        // Manipulação de tipos de data
+        else if (Reflection.isDate(type)) {
+            if (Reflection.isInstance(type, Date.class)) {
                 SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
-                return (T) formatter.parse(value);
-            } else if(Reflection.isInstance(type, Calendar.class)) {
-                return (T) parseCalendarFromString(value);
-            } else if(Reflection.isInstance(type, Temporal.class)) {
-                return (T) parseDateTimeFromString(value, type);
-            } else if(Reflection.isInstance(type, Period.class)) {
-                return (T) parsePeriodFromString(value);
+
+                // Carrega o SimpleDateFormat usando o ClassLoader
+                Class<?> formatterClass = Class.forName(formatter.getClass().getName(), true, loader);
+                Constructor<?> constructor = formatterClass.getConstructor(String.class, Locale.class);
+                SimpleDateFormat form = (SimpleDateFormat) constructor.newInstance("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
+                return (T) form.parse(value);
+            } 
+            else if (Reflection.isInstance(type, Calendar.class)) {
+                return (T) parseCalendarFromString(value, loader);
+            } 
+            else if (Reflection.isInstance(type, Temporal.class)) {
+                return (T) parseDateTimeFromString(value, type, loader);
+            } 
+            else if (Reflection.isInstance(type, Period.class)) {
+                return (T) parsePeriodFromString(value, loader);
             }
-        } else if(Reflection.isInstance(type, Entity.class)) {
-            if(recovereds.containsKey(value)) {
+        } 
+        // Manipulação de entidades
+        else if (Reflection.isInstance(type, Entity.class)) {
+            if (recovereds.containsKey(value)) {
                 return (T) recovereds.get(value);
             } else {
                 String path = getPath(type, value);
-                return (T) recover(Files.readString(Paths.get(path)), recovereds);
+                return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
             }
-        } else if(Reflection.isInstance(type, List.class)) {
-            return (T) parseListFromString(capsule, recovereds);
-        } else if(Reflection.isInstance(type, Map.class)) {
-            return (T) parseMapFromString(value, recovereds);
-        } else {
-            if(type.isEnum()) {
-                return (T) Enum.valueOf(type, value);
+        } 
+        // Manipulação de listas
+        else if (Reflection.isInstance(type, List.class)) {
+            return (T) parseListFromString(capsule, recovereds, loader);
+        } 
+        // Manipulação de mapas
+        else if (Reflection.isInstance(type, Map.class)) {
+            return (T) parseMapFromString(value, recovereds, loader);
+        } 
+        // Manipulação de enums e objetos complexos
+        else {
+            if (type.isEnum()) {
+                return (T) Enum.valueOf((Class<Enum>) type, value);
             }
-            
-            Object o = Reflection.getNewInstance(type);
+
+            // Criação de instância usando o ClassLoader
+            Object o = Reflection.getNewInstance(type, loader);
             List<String> fields = getFields(capsule);
-            for(String field : fields) {
-                injectField(o, field, recovereds);
+            for (String field : fields) {
+                injectField(o, field, recovereds, loader);
             }
             return (T) o;
         }
-    throw new Exception("Capsula não identificada.");
+
+        throw new Exception("Capsula não identificada.");
     }
+
     
     /**
      * Recebe a capsula de um Campo e retorna qual o nome da variável encapsulada.
@@ -731,7 +777,6 @@ public class Capsule {
             int init = fieldCapsule.indexOf(":") + 1;
             return fieldCapsule.substring(init, fieldCapsule.length()-1);
         }
-        System.out.println(fieldCapsule);
         throw new NullPointerException("String de capsula com erro ou nula.");
     }
     
@@ -796,12 +841,12 @@ public class Capsule {
      * @return Lista preenchida a partir das capsulas.
      * @throws Exception 
      */
-    private List parseListFromString(String str, Map<String, Entity> recovereds) throws Exception {
+    private List parseListFromString(String str, Map<String, Entity> recovereds, ClassLoader loader) throws Exception {
         List list = new ArrayList();
         List<String> fields = getFields(str);
         for(String field : fields) {
             Class type = getType(field);
-            list.add(recoverFromCapsule(field, recovereds));
+            list.add(recoverFromCapsule(field, recovereds, loader));
         }
         return list;
     }
@@ -815,15 +860,15 @@ public class Capsule {
      * @return Mapa preenchido.
      * @throws Exception 
      */
-    private Map parseMapFromString(String str, Map<String, Entity> recovereds) throws Exception {
+    private Map parseMapFromString(String str, Map<String, Entity> recovereds, ClassLoader loader) throws Exception {
         Map<Object, Object> map = new HashMap<>();
         List<String> fields = getFields(str);
         if (fields == null || fields.isEmpty()) {
             throw new IllegalArgumentException("A string fornecida não contém campos válidos.");
         }
         for (int i = 0; i < fields.size() - 1; i += 2) {
-            Object key = recoverFromCapsule(fields.get(i), recovereds);
-            Object value = recoverFromCapsule(fields.get(i + 1), recovereds);
+            Object key = recoverFromCapsule(fields.get(i), recovereds, loader);
+            Object value = recoverFromCapsule(fields.get(i + 1), recovereds, loader);
             map.put(key, value);
         }
         return map;
@@ -834,7 +879,7 @@ public class Capsule {
      * @param calendarString Capsula do calendar.
      * @return Instância de calendário com a data fornecida na capsula.
      */
-    private Calendar parseCalendarFromString(String calendarString) {
+    private Calendar parseCalendarFromString(String calendarString, ClassLoader loader) throws Exception {
         // Expressões regulares para extrair os campos relevantes
         Pattern patternYear = Pattern.compile("YEAR=(\\d+)");
         Pattern patternMonth = Pattern.compile("MONTH=(\\d+)");
@@ -846,17 +891,21 @@ public class Capsule {
         Pattern patternZone = Pattern.compile("id=\"([^\"]+)\"");
 
         // Capturando os valores
-        int year = extractValue(patternYear, calendarString);
-        int month = extractValue(patternMonth, calendarString);
-        int dayOfMonth = extractValue(patternDayOfMonth, calendarString);
-        int hour = extractValue(patternHour, calendarString);
-        int minute = extractValue(patternMinute, calendarString);
-        int second = extractValue(patternSecond, calendarString);
-        int millisecond = extractValue(patternMillisecond, calendarString);
-        String timeZoneID = extractString(patternZone, calendarString);
+        int year = extractValue(patternYear, calendarString, loader);
+        int month = extractValue(patternMonth, calendarString, loader);
+        int dayOfMonth = extractValue(patternDayOfMonth, calendarString, loader);
+        int hour = extractValue(patternHour, calendarString, loader);
+        int minute = extractValue(patternMinute, calendarString, loader);
+        int second = extractValue(patternSecond, calendarString, loader);
+        int millisecond = extractValue(patternMillisecond, calendarString, loader);
+        String timeZoneID = extractString(patternZone, calendarString, loader);
 
-        // Criando uma instância de Calendar com os valores extraídos
-        GregorianCalendar calendar = new GregorianCalendar();
+        // Carregar a classe GregorianCalendar usando o ClassLoader passado
+        Class<?> calendarClass = Class.forName("java.util.GregorianCalendar", true, loader);
+        Class<?> timeZoneClass = Class.forName("java.util.TimeZone", true, loader);
+
+        // Criar instância de GregorianCalendar usando reflexão
+        Calendar calendar = (Calendar) calendarClass.getDeclaredConstructor().newInstance();
         calendar.set(Calendar.YEAR, year);
         calendar.set(Calendar.MONTH, month);
         calendar.set(Calendar.DAY_OF_MONTH, dayOfMonth);
@@ -864,10 +913,14 @@ public class Capsule {
         calendar.set(Calendar.MINUTE, minute);
         calendar.set(Calendar.SECOND, second);
         calendar.set(Calendar.MILLISECOND, millisecond);
-        calendar.setTimeZone(java.util.TimeZone.getTimeZone(timeZoneID));
+
+        // Criar instância de TimeZone usando reflexão
+        Object timeZone = timeZoneClass.getMethod("getTimeZone", String.class).invoke(null, timeZoneID);
+        calendar.setTimeZone((java.util.TimeZone) timeZone);
 
         return calendar;
     }
+
     
     /**
      * Recebe uma capsula de data e retorna uma nova instância de acordo com o tipo
@@ -876,61 +929,82 @@ public class Capsule {
      * @param type Tipo de tempo e data.
      * @return Instância de tempo e data.
      */
-    private Object parseDateTimeFromString(String dateTimeString, Class type) {
-        if(type == LocalDate.class) {
-            try {
-                // Tentativa de parsing para LocalDate
-                return LocalDate.parse(dateTimeString);
-            } catch (DateTimeParseException e) {
-                // Ignorar e tentar o próximo tipo
+    private Object parseDateTimeFromString(String dateTimeString, Class<?> type, ClassLoader loader) throws Exception {
+        // Carrega a classe `LocalDate` usando o ClassLoader especificado
+        switch (type.getName()) {
+            case "java.time.LocalDate" -> {
+                try {
+                    Class<?> localDateClass = Class.forName("java.time.LocalDate", true, loader);
+                    return localDateClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
+                } catch (DateTimeParseException e) {
+                    // Ignorar e tentar o próximo tipo
+                }
             }
-        } else if(type == LocalTime.class) {
-            try {
-                // Tentativa de parsing para LocalTime
-                return LocalTime.parse(dateTimeString);
-            } catch (DateTimeParseException e) {
-                // Ignorar e tentar o próximo tipo
+            case "java.time.LocalTime" -> {
+                try {
+                    Class<?> localTimeClass = Class.forName("java.time.LocalTime", true, loader);
+                    return localTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
+                } catch (DateTimeParseException e) {
+                    // Ignorar e tentar o próximo tipo
+                }
             }
-        } else if(type == LocalDateTime.class) {
-            try {
-                // Tentativa de parsing para LocalDateTime
-                return LocalDateTime.parse(dateTimeString);
-            } catch (DateTimeParseException e) {
-                // Ignorar e tentar o próximo tipo
+            case "java.time.LocalDateTime" -> {
+                try {
+                    Class<?> localDateTimeClass = Class.forName("java.time.LocalDateTime", true, loader);
+                    return localDateTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
+                } catch (DateTimeParseException e) {
+                    // Ignorar e tentar o próximo tipo
+                }
             }
-        } else if(type == ZonedDateTime.class) {
-            try {
-                // Tentativa de parsing para ZonedDateTime
-                return ZonedDateTime.parse(dateTimeString);
-            } catch (DateTimeParseException e) {
-                // Ignorar e tentar o próximo tipo
+            case "java.time.ZonedDateTime" -> {
+                try {
+                    Class<?> zonedDateTimeClass = Class.forName("java.time.ZonedDateTime", true, loader);
+                    return zonedDateTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
+                } catch (DateTimeParseException e) {
+                    // Ignorar e tentar o próximo tipo
+                }
             }
-        } else if(type == Instant.class) {
-            try {
-                // Tentativa de parsing para Instant
-                return Instant.parse(dateTimeString);
-            } catch (DateTimeParseException e) {
-                // Ignorar e continuar
+            case "java.time.Instant" -> {
+                try {
+                    Class<?> instantClass = Class.forName("java.time.Instant", true, loader);
+                    return instantClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
+                } catch (DateTimeParseException e) {
+                    // Ignorar e continuar
+                }
+            }
+            default -> {
             }
         }
+
         // Se nenhum tipo foi identificado
         throw new IllegalArgumentException("Formato de data/tempo desconhecido: " + dateTimeString);
     }
+
     
     /**
      * Retorna uma nova instância de Period a partir de uma capsula.
      * @param periodString Capsula do Period.
      * @return Instância do Period fornecido na capsula.
      */
-    private Period parsePeriodFromString(String periodString) {
+    private Period parsePeriodFromString(String periodString, ClassLoader loader) {
         try {
-            // Tentativa de parsing da string para o objeto Period
-            return Period.parse(periodString);
+            // Carrega a classe Period usando o ClassLoader especificado
+            Class<?> periodClass = Class.forName("java.time.Period", true, loader);
+
+            // Obtém o método estático parse da classe Period
+            Object period = periodClass.getMethod("parse", CharSequence.class).invoke(null, periodString);
+
+            // Retorna o objeto Period
+            return (Period) period;
         } catch (DateTimeParseException e) {
             // Lança uma exceção se a string não estiver no formato ISO-8601 correto
             throw new IllegalArgumentException("Formato de período desconhecido: " + periodString, e);
+        } catch (Exception e) {
+            // Trata outras exceções relacionadas à reflexão
+            throw new RuntimeException("Erro ao tentar parsear o período: " + periodString, e);
         }
     }
+
     
     /**
      * Retorna uma nova instância primitiva a partir de uma capsula.
@@ -938,55 +1012,94 @@ public class Capsule {
      * @param type Tipo do primitivo.
      * @return Instância do primitivo.
      */
-    private Object parsePrimitiveFromString(String input, Class<?> type) {
+    private Object parsePrimitiveFromString(String input, Class<?> type, ClassLoader loader) throws Exception {
+        // Verifica se é uma String
         if (type == String.class) {
             return input; // A string já é o valor
-        } else if (type == char.class || type == Character.class) {
+        }
+
+        // Carrega classes usando o ClassLoader especificado
+        Class<?> charClass = Class.forName("java.lang.Character", true, loader);
+        Class<?> shortClass = Class.forName("java.lang.Short", true, loader);
+        Class<?> intClass = Class.forName("java.lang.Integer", true, loader);
+        Class<?> longClass = Class.forName("java.lang.Long", true, loader);
+        Class<?> floatClass = Class.forName("java.lang.Float", true, loader);
+        Class<?> doubleClass = Class.forName("java.lang.Double", true, loader);
+        Class<?> booleanClass = Class.forName("java.lang.Boolean", true, loader);
+        Class<?> byteClass = Class.forName("java.lang.Byte", true, loader);
+        Class<?> bigDecimalClass = Class.forName("java.math.BigDecimal", true, loader);
+        Class<?> bigIntegerClass = Class.forName("java.math.BigInteger", true, loader);
+
+        // Verifica tipos primitivos e suas wrappers
+        if (type == char.class || type == charClass) {
             if (input.length() == 1) {
                 return input.charAt(0); // Converte a string para char se tiver um único caractere
             } else {
                 throw new IllegalArgumentException("Formato inválido para char: " + input);
             }
-        } else if (type == short.class || type == Short.class) {
-            return Short.valueOf(input); // Converte para short
-        } else if (type == int.class || type == Integer.class) {
-            return Integer.valueOf(input); // Converte para int
-        } else if (type == long.class || type == Long.class) {
-            return Long.valueOf(input); // Converte para long
-        } else if (type == float.class || type == Float.class) {
-            return Float.valueOf(input); // Converte para float
-        } else if (type == double.class || type == Double.class) {
-            return Double.valueOf(input); // Converte para double
-        } else if (type == boolean.class || type == Boolean.class) {
-            return Boolean.valueOf(input); // Converte para boolean
-        } else if (type == byte.class || type == Byte.class) {
-            return Byte.valueOf(input); // Converte para byte
-        } else if (type == BigDecimal.class) {
-            return new BigDecimal(input);
-        } else if (type == BigInteger.class) {
-            return new BigInteger(input);
+        } else if (type == short.class || type == shortClass) {
+            return shortClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == int.class || type == intClass) {
+            return intClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == long.class || type == longClass) {
+            return longClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == float.class || type == floatClass) {
+            return floatClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == double.class || type == doubleClass) {
+            return doubleClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == boolean.class || type == booleanClass) {
+            return booleanClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == byte.class || type == byteClass) {
+            return byteClass.getMethod("valueOf", String.class).invoke(null, input);
+        } else if (type == bigDecimalClass) {
+            return bigDecimalClass.getConstructor(String.class).newInstance(input);
+        } else if (type == bigIntegerClass) {
+            return bigIntegerClass.getConstructor(String.class).newInstance(input);
         } else {
             throw new IllegalArgumentException("Tipo não suportado: " + type.getSimpleName());
         }
     }
 
+
     // Método auxiliar para extrair inteiros da string
-    private int extractValue(Pattern pattern, String text) {
+    private int extractValue(Pattern pattern, String text, ClassLoader loader) {
+        // Usa o Matcher para encontrar o valor no texto
         Matcher matcher = pattern.matcher(text);
         if (matcher.find()) {
-            return Integer.parseInt(matcher.group(1));
+            try {
+                // Carrega a classe Integer usando o ClassLoader especificado
+                Class<?> integerClass = Class.forName("java.lang.Integer", true, loader);
+
+                // Chama o método estático parseInt da classe Integer usando reflexão
+                return (int) integerClass.getMethod("parseInt", String.class).invoke(null, matcher.group(1));
+            } catch (Exception e) {
+                throw new RuntimeException("Erro ao tentar parsear o valor: " + matcher.group(1), e);
+            }
         }
         return 0; // valor padrão se o campo não for encontrado
     }
 
+
     // Método auxiliar para extrair strings (como o fuso horário)
-    private String extractString(Pattern pattern, String text) {
-        Matcher matcher = pattern.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1);
+    private String extractString(Pattern pattern, String text, ClassLoader loader) {
+        try {
+            // Carrega a classe Matcher usando o ClassLoader especificado
+            Class<?> matcherClass = Class.forName("java.util.regex.Matcher", true, loader);
+
+            // Obtém a instância de Matcher
+            Matcher matcher = pattern.matcher(text);
+
+            // Usa o Matcher para encontrar o valor no texto
+            if ((boolean) matcherClass.getMethod("find").invoke(matcher)) {
+                return (String) matcherClass.getMethod("group", int.class).invoke(matcher, 1);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao tentar extrair a string: " + text, e);
         }
+
         return "GMT"; // valor padrão se o campo não for encontrado
     }
+
     
     
     /*
@@ -1100,7 +1213,7 @@ public class Capsule {
     
     public <T extends Entity> T load(Class entityClass, String id) throws Exception {
         String path = getPath(entityClass, id);
-        return (T) recover(Files.readString(Paths.get(path)), recovereds);
+        return (T) recover(Files.readString(Paths.get(path)), recovereds, this.getClass().getClassLoader());
     }
     
     /**

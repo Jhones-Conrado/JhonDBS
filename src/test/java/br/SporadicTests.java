@@ -58,31 +58,31 @@ public class SporadicTests {
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
-        Endereco endereco = new Endereco("SDO A", 429, "Jabuti", "Itaitinga", "Ceará", "Brasil");
-        EnteA ente = new EnteA("Jhones Sales", endereco);
-        
-        for(int i = 0 ; i < 5 ; i++) {
-            ente.lista.add(new ObjetoA("Objeto"+String.valueOf(i)));
-        }
-        
-        ente.mapa.put("Maria", new ObjetoA("Maria Pessoa"));
-        ente.mapa.put("João", new ObjetoA("João Pessoa"));
-        ente.mapa.put("Ricardo", new ObjetoA("Ricardo Pessoa"));
-        ente.mapa.put("Lene", new ObjetoA("Lene Pessoa"));
-
-        ente.enteb = new EnteB("Carro");
-        ente.enteb.dono = ente;
-        
-        ente.em = MeuEnum.USUARIO;
-        
-        Capsule capsule = new Capsule(ente);
-        capsule.start();
-        capsule.flush();
-        System.out.println(capsule.getCapsule());
-        
-        Capsule cap2 = new Capsule(capsule.getCapsule());
-        EnteA ee = cap2.recover();
-        System.out.println(ee.em);;
+//        Endereco endereco = new Endereco("SDO A", 429, "Jabuti", "Itaitinga", "Ceará", "Brasil");
+//        EnteA ente = new EnteA("Jhones Sales", endereco);
+//        
+//        for(int i = 0 ; i < 5 ; i++) {
+//            ente.lista.add(new ObjetoA("Objeto"+String.valueOf(i)));
+//        }
+//        
+//        ente.mapa.put("Maria", new ObjetoA("Maria Pessoa"));
+//        ente.mapa.put("João", new ObjetoA("João Pessoa"));
+//        ente.mapa.put("Ricardo", new ObjetoA("Ricardo Pessoa"));
+//        ente.mapa.put("Lene", new ObjetoA("Lene Pessoa"));
+//
+//        ente.enteb = new EnteB("Carro");
+//        ente.enteb.dono = ente;
+//        
+//        ente.em = MeuEnum.USUARIO;
+//        
+//        Capsule capsule = new Capsule(ente);
+//        capsule.start();
+//        capsule.flush();
+//        System.out.println(capsule.getCapsule());
+//        
+//        Capsule cap2 = new Capsule(capsule.getCapsule());
+//        EnteA ee = cap2.recover();
+//        System.out.println(ee.em);
         
 //        ente.save();
         

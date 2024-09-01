@@ -42,7 +42,6 @@ public class EnteA implements Entity{
     
     private String id;
     
-    @Unique
     public final String name;
     
     public MeuEnum em;

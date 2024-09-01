@@ -27,15 +27,18 @@ public class EnteB implements Entity {
     
     private String id;
     
-    @Unique
     private String type;
 
     public EnteA dono;
     
+    private MeuEnum meu;
+    
     public EnteB() {
+        this.meu = MeuEnum.USUARIO;
     }
 
     public EnteB(String type) {
+        this.meu = MeuEnum.USUARIO;
         this.type = type;
     }
 

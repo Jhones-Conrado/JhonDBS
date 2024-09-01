@@ -309,6 +309,59 @@ public final class Reflection {
         return (T) a.newInstance(paramObjects.toArray());
     }
     
+    public static <T> T getNewInstance(Class<T> clazz, ClassLoader loader) 
+            throws InstantiationException, IllegalAccessException, IllegalArgumentException, 
+                   InvocationTargetException, ClassNotFoundException, NoSuchMethodException {
+
+        // Carrega a classe usando o ClassLoader fornecido
+        Class<?> loadedClass = Class.forName(clazz.getName(), true, loader);
+
+        // Obtém todos os construtores declarados da classe
+        Constructor<?>[] constructors = loadedClass.getDeclaredConstructors();
+
+        // Seleciona o construtor com o menor número de parâmetros
+        Constructor<?> selectedConstructor = null;
+        for (Constructor<?> constructor : constructors) {
+            if (selectedConstructor == null || constructor.getParameterCount() < selectedConstructor.getParameterCount()) {
+                selectedConstructor = constructor;
+            }
+        }
+
+        if (selectedConstructor == null) {
+            throw new NoSuchMethodException("Nenhum construtor encontrado para a classe: " + clazz.getName());
+        }
+
+        // Prepara os parâmetros para o construtor
+        Object[] paramObjects = prepareConstructorParameters(selectedConstructor.getParameters());
+
+        // Cria uma nova instância usando o construtor selecionado
+        return (T) selectedConstructor.newInstance(paramObjects);
+    }
+
+    private static Object[] prepareConstructorParameters(Parameter[] parameters) {
+        List<Object> paramObjects = new ArrayList<>();
+        for (Parameter parameter : parameters) {
+            Class<?> paramType = parameter.getType();
+            if (Reflection.isInstance(paramType, Number.class)) {
+                if (paramType.equals(BigInteger.class)) {
+                    paramObjects.add(new BigInteger("0"));
+                } else if (paramType.equals(BigDecimal.class)) {
+                    paramObjects.add(new BigDecimal("0"));
+                } else {
+                    paramObjects.add(0); // Usar Integer.valueOf(0) seria redundante aqui
+                }
+            } else if (paramType.equals(String.class)) {
+                paramObjects.add("");
+            } else if (Reflection.isTinyNumerical(paramType)) {
+                paramObjects.add((short) 0); // Usar Short.valueOf("0") é redundante
+            } else {
+                paramObjects.add(null);
+            }
+        }
+        return paramObjects.toArray();
+    }
+
+    
     /**
      * Checks from within a class to see if it is an instance of some other superclass.
      * <br><br>
