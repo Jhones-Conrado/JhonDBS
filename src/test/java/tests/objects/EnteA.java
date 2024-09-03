@@ -16,6 +16,7 @@
  */
 package tests.objects;
 
+import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
 import java.math.BigDecimal;
@@ -73,6 +74,7 @@ public class EnteA implements Entity{
     public Instant instant = Instant.now();
     public Period period = Period.between(localDate, localDate.plusMonths(4));
     
+    @Cascate
     public EnteB enteb;
     
     public EnteA() {

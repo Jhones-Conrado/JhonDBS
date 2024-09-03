@@ -23,7 +23,9 @@
  */
 package br.com.jhondbs.core.tools;
 
+import java.text.NumberFormat;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -70,6 +72,68 @@ public class StringTools {
         
         // Verifica se a string corresponde ao padrão (contém apenas números)
         return matcher.matches();
+    }
+    
+    /**
+     * Transforma uma String em um número limpo, removendo vírgulas, letras e símbolos.
+     * Preservando somente o último ponto.
+     * @param input String a ser limpa.
+     * @return 
+     */
+    public static String formatNumberString(String input) {
+        if (input == null || input.isEmpty()) {
+            return input; // Retorna a entrada como está se for nula ou vazia
+        }
+
+        // Verifica se o sinal de negativo está no início
+        boolean isNegative = input.startsWith("-");
+
+        // Passo 1: Substituir todas as vírgulas por pontos
+        String result = input.replace(',', '.');
+
+        // Passo 2: Remover todos os caracteres não numéricos, exceto pontos
+        result = result.replaceAll("[^0-9.]", "");
+
+        // Passo 3: Preservar apenas o último ponto
+        int lastIndex = result.lastIndexOf('.');
+        if (lastIndex != -1) {
+            // Remove todos os pontos antes do último ponto encontrado
+            result = result.substring(0, lastIndex).replace(".", "") + result.substring(lastIndex);
+        }
+
+        // Passo 4: Adicionar o sinal de negativo de volta, se necessário
+        if (isNegative && !result.isEmpty()) {
+            result = "-" + result;
+        }
+
+        return result;
+    }
+    
+    /**
+     * Transforma uma String numérica em formato monetário.
+     * @param numericString
+     * @return 
+     */
+    public static String formatToMoney(String numericString) {
+        if (numericString == null || numericString.isEmpty()) {
+            return numericString; // Retorna a entrada como está se for nula ou vazia
+        }
+        
+        numericString = formatNumberString(numericString);
+
+        try {
+            // Converte a string para um número decimal
+            double value = Double.parseDouble(numericString);
+
+            // Configura o formato de moeda para o Brasil
+            NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
+
+            // Formata o número no formato de moeda
+            return currencyFormat.format(value);
+
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Entrada inválida: " + numericString);
+        }
     }
     
 }

@@ -23,6 +23,7 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.FileManager;
 import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.FieldsManager;
@@ -32,6 +33,7 @@ import br.com.jhondbs.core.tools.Reflection;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -162,6 +164,15 @@ public class Capsule {
         return entity.getId();
     }
     
+    /*
+    
+           MÉTODOS DE GRAVAÇÃO NO ARMAZENAMENTO.
+    
+    
+    */
+    
+    
+    
     /**
      * Grava as entidades no banco de dados de forma atômica. Ou seja, qualquer erro
      * durante a gravação dos novos dados irá anular todas as novas alterações e será
@@ -175,21 +186,64 @@ public class Capsule {
         
         System.out.println("Inicializando a gravação no banco de dados: "+capsules.size());
         
-        Set<Entity> keys = capsules.keySet();
+        /*
+        Preparação do estado atual da entidade.
+        */
+        Entity estadoAtual = null;
+        try {
+            estadoAtual = load(this.entity.getClass(), this.entity.getId());
+        } catch (Exception e) {
+        }
+        Map<String, Entity> mapAtual;
+        if(estadoAtual != null) {
+            mapAtual = recursiveCascadeEntities(estadoAtual);
+        } else {
+            mapAtual = new HashMap<>();
+        }
+        System.out.println("Cascata em atual: "+mapAtual.size());
+        
+        
+        Map<String, Entity> mapNovo = recursiveCascadeEntities();
+        System.out.println("Cascata em novo: "+mapNovo.size());
         
         /*
-        Grava o estado novo das entidades.
+        Verifica quais entidades em cascata precisam ser deletadas.
         */
-        for(Entity entity : keys) {
-            printLine();
-            System.out.println("Iniciando gravação: "+getPath(entity));
-            if(capsules.get(entity).isBlank()) {
-                for(Entity e : keys) {
-                    clearInDB(e);
-                }
-                throw new NullPointerException("Entidade com capsula vazia -> "+entity.getClass().getName()+" -> "+entity.getId());
+        for(String id : mapNovo.keySet()) {
+            if(mapAtual.containsKey(id)) {
+                mapAtual.remove(id);
             }
-            try {
+        }
+        System.out.println("Restantes para deletar ao final: "+mapAtual.size());
+        
+        /**
+         * Lista de entidades para ser deletadas.
+         */
+        List<Entity> listToDelete = mapAtual.values().stream().toList();
+        List<String> listIdsToDelete = mapAtual.keySet().stream().toList();
+        
+        /**
+         * Lista de ids para bloquear.
+         */
+        Set<String> toLock = new HashSet<>();
+        toLock.addAll(listIdsToDelete);
+        toLock.addAll(mapNovo.keySet());
+        FileManager.getInstance().lockWrite(toLock.stream().toList());
+        
+        try {
+            Set<Entity> keys = capsules.keySet();
+            /*
+            Grava o estado novo das entidades.
+            */
+            for(Entity entity : keys) {
+                printLine();
+                System.out.println("Iniciando gravação: "+getPath(entity));
+                if(capsules.get(entity).isBlank()) {
+                    for(Entity e : keys) {
+                        clearInDB(e);
+                    }
+                    throw new NullPointerException("Entidade com capsula vazia -> "+entity.getClass().getName()+" -> "+entity.getId());
+                }
                 try {
                     if (uniqueFieldTest(entity)) {
                         String path = getNewPath(entity);
@@ -209,78 +263,90 @@ public class Capsule {
                     }
                 } catch (Exception ex) {
                     System.out.println(ex);
+                    for(Entity e : keys) {
+                        clearInDB(e);
+                    }
+                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                    throw new DuplicatedUniqueFieldException(ex.getMessage());
                 }
-            } catch (Exception ex) {
-                for(Entity e : keys) {
-                    clearInDB(e);
-                }
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                throw new DuplicatedUniqueFieldException(ex.getMessage());
             }
-        }
-        printLine();
-        System.out.println("Gravadas todas as novas entidades");
-        
-        /*
-        Renomeia as entidades de produção para estado velho.
-        */
-        System.out.println("Criando backup do estado atual de entidades.");
-        boolean match = keys.stream().allMatch(e -> {
-            try {
-                File file = new File(getPath(e));
-                if(file.exists()) {
-                    return renameToOld(e);
-                } else {
-                    return true;
-                }
-            } catch (Exception ex) {
-                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                return false;
-            }
-        });
-        
-        if(match) {
-            System.out.println("Backup de entidades criado");
-            
+            printLine();
+            System.out.println("Gravadas todas as novas entidades");
+
             /*
-            Reonmeia todas as novas entidades para o estado de produção.
+            Renomeia as entidades de produção para estado velho.
             */
-            System.out.println("Aplicando novas entidades para produção.");
-            match = keys.stream().allMatch(e -> {
+            System.out.println("Criando backup do estado atual de entidades.");
+            boolean match = keys.stream().allMatch(e -> {
                 try {
-                    System.out.println("Aplicando: -> "+e.getId());
-                    return renameFromNew(e);
+                    File file = new File(getPath(e));
+                    if(file.exists()) {
+                        return renameToOld(e);
+                    } else {
+                        return true;
+                    }
                 } catch (Exception ex) {
                     Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                     return false;
                 }
             });
-            
-            if(!match) {
-                System.out.println("Erro ao por novas entidades para produção, retornando ao estado antigo.");
+
+            if(match) {
+                System.out.println("Backup de entidades criado");
+
+                /*
+                Reonmeia todas as novas entidades para o estado de produção.
+                */
+                System.out.println("Aplicando novas entidades para produção.");
+                match = keys.stream().allMatch(e -> {
+                    try {
+                        System.out.println("Aplicando: -> "+e.getId());
+                        return renameFromNew(e);
+                    } catch (Exception ex) {
+                        Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                        return false;
+                    }
+                });
+
+                if(!match) {
+                    System.out.println("Erro ao por novas entidades para produção, retornando ao estado antigo.");
+                    for(Entity e : keys) {
+                        try {
+                            renameToNew(e);
+                            renameFromOld(e);
+                            clearInDB(e);
+                        } catch (Exception ex) {
+                            return false;
+                        }
+                    }
+                } else {
+                    for(Entity delete : listToDelete) {
+                        String path = getPath(delete);
+                        File file = new File(path);
+                        if(file.exists()) {
+                            file.delete();
+                        }
+                    }
+                    for(Entity e : keys) {
+                        clearInDB(e);
+                    }
+                    System.out.println("Todas as entidades aplicadas em produção.");
+                    System.out.println("\n\n\n\n");
+                    return true;
+                }
+            } else {
+                System.out.println("Erro ao criar backup do estado atual, retornando ao estado antigo.");
                 for(Entity e : keys) {
                     try {
-                        renameToNew(e);
                         renameFromOld(e);
                         clearInDB(e);
                     } catch (Exception ex) {
                         return false;
                     }
                 }
-            } else {
-                System.out.println("Todas as entidades aplicadas em produção.");
-                return true;
             }
-        } else {
-            System.out.println("Erro ao criar backup do estado atual, retornando ao estado antigo.");
-            for(Entity e : keys) {
-                try {
-                    renameFromOld(e);
-                    clearInDB(e);
-                } catch (Exception ex) {
-                    return false;
-                }
-            }
+        } finally {
+            FileManager.getInstance().unlockWrite(toLock.stream().toList());
         }
         
         return true;
@@ -332,8 +398,6 @@ public class Capsule {
                                 }
                                 sb.append(encapsuleId(ente));
                             } else {
-                                System.out.println("OBJETO");
-                                System.out.println(value);
                                 sb.append(encapsuleObject(value));
                             }
                         }
@@ -382,18 +446,14 @@ public class Capsule {
      * @return String do objeto encapsulado.
      */
     private String encapsuleObject(Object object) throws Exception {
-        System.out.println(object);
         StringBuilder sb = new StringBuilder();
         sb.append("{")
                 .append(String.valueOf(ClassDictionary.getIndex(object.getClass())))
                 .append(":");
-        
-        System.out.println(sb.toString());
-        
+
         List<Field> fields = FieldsManager.getAllFields(object.getClass());
             
         for(Field field : fields) {
-            System.out.println(field.getName());
             if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
                 field.setAccessible(true);
                 Object value = FieldsManager.getValue(field, object);
@@ -1135,12 +1195,20 @@ public class Capsule {
      * @throws Exception 
      */
     public boolean delete() throws Exception {
-        String path = getPath(this.entity);
-        File file = new File(path);
-        if(file.exists()) {
-            return file.delete();
+        List<String> list = new ArrayList<>();
+        list.add(this.entity.getId());
+        FileManager.getInstance().lockWrite(list);
+        
+        try {
+            String path = getPath(this.entity);
+            File file = new File(path);
+            if(file.exists()) {
+                return file.delete();
+            }
+            return false;
+        } finally {
+            FileManager.getInstance().unlockWrite(list);
         }
-        return false;
     }
     
     /**
@@ -1149,28 +1217,38 @@ public class Capsule {
      * @throws Exception 
      */
     public boolean deleteCascate() throws Exception {
-        Map<String, Entity> entities = recursiveCascadeEntities();
-        Set<String> keys = entities.keySet();
+        Map<String, Entity> recursiveEntities = recursiveEntities();
+        Set<String> setIds = recursiveEntities.keySet();
+        List<String> listIds = List.copyOf(setIds);
+        FileManager.getInstance().lockWrite(listIds);
         
-        if(keys.stream()
-                .allMatch(key -> {
+        try {
+            Map<String, Entity> entities = recursiveCascadeEntities();
+            Set<String> keys = entities.keySet();
+
+            if(keys.stream()
+                    .allMatch(key -> {
+                        try {
+                            renameToOld(entities.get(key));
+                            return true;
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    })) {
+
+                keys.forEach(key -> {
                     try {
-                        renameToOld(entities.get(key));
-                        return true;
-                    } catch (Exception e) {
-                        return false;
+                        clearInDB(entities.get(key));
+                    } catch (Exception ex) {
+                        Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                })) {
-            
-            keys.forEach(key -> {
-                try {
-                    clearInDB(entities.get(key));
-                } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            });
-            return true;
+                });
+                return true;
+            }
+        } finally {
+            FileManager.getInstance().unlockWrite(listIds);
         }
+        
         return false;
     }
     
@@ -1234,17 +1312,47 @@ public class Capsule {
         return true;
     }
     
+    /**
+     * Busca o arquivo da entidade no banco de dados, lendo o conteúdo e retornando.
+     * @param <T>
+     * @param entityClass
+     * @param id
+     * @return
+     * @throws Exception 
+     */
     public <T extends Entity> T load(Class entityClass, String id) throws Exception {
-        String path = getPath(entityClass, id);
-        if(this.loader != null) {
-            return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
+        
+        List<String> list = new ArrayList<>();
+        list.add(id);
+        FileManager.getInstance().lockRead(list);
+        
+        try {
+            String path = getPath(entityClass, id);
+            File file = new File(path);
+            if(file.exists()) {
+                if(this.loader != null) {
+                    return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
+                }
+                return (T) recover(Files.readString(Paths.get(path)), recovereds, this.getClass().getClassLoader());
+            } else {
+                throw new FileNotFoundException("Arquivo de entidade não encontrado.");
+            }
+        } finally {
+            FileManager.getInstance().unlockRead(list);
         }
-        return (T) recover(Files.readString(Paths.get(path)), recovereds, this.getClass().getClassLoader());
     }
     
     public <T extends Entity> T load(Class entityClass, String id, ClassLoader loader) throws Exception {
-        String path = getPath(entityClass, id);
-        return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
+        List<String> list = new ArrayList<>();
+        list.add(id);
+        FileManager.getInstance().lockRead(list);
+        
+        try {
+            String path = getPath(entityClass, id);
+            return (T) recover(Files.readString(Paths.get(path)), recovereds, loader);
+        } finally {
+            FileManager.getInstance().unlockRead(list);
+        }
     }
     
     /**
@@ -1258,6 +1366,15 @@ public class Capsule {
         return recursiveCascadeEntities(map);
     }
     
+    private Map<String, Entity> recursiveCascadeEntities(Entity entity) throws Exception {
+        Map<String, Entity> map = new HashMap<>();
+        return recursiveCascadeEntities(map, entity);
+    }
+    
+    private Map<String, Entity> recursiveCascadeEntities(Map<String, Entity> map) throws Exception {
+        return recursiveCascadeEntities(map, entity);
+    }
+    
     /**
      * Faz uma busca recursiva por todas as entidades referenciadas a partir da
      * entidade atual da capsula e que sejam anotadas com Cascate.
@@ -1265,17 +1382,18 @@ public class Capsule {
      * @return
      * @throws Exception 
      */
-    private Map<String, Entity> recursiveCascadeEntities(Map<String, Entity> map) throws Exception {
-        if(this.entity == null) {
+    private Map<String, Entity> recursiveCascadeEntities(Map<String, Entity> map, Entity entity) throws Exception {
+        if(entity == null) {
             throw new NullPointerException("Capsula com entidade nula para buscar.");
         }
         
-        if(!map.containsKey(this.entity.getId())) {
-            map.put(this.entity.getId(), entity);
-            List<Field> fields = FieldsManager.getAllFields(this.entity.getClass()).stream()
+        if(!map.containsKey(entity.getId())) {
+            map.put(entity.getId(), entity);
+            
+            List<Field> fields = FieldsManager.getAllFields(entity.getClass()).stream()
                     .filter(field -> {
-                        Class type = field.getType();
-                        if(Reflection.isInstance(type, Cascate.class)) {
+                        if(field.isAnnotationPresent(Cascate.class)) {
+                            Class type = field.getType();
                             return
                                     Reflection.isInstance(type, Entity.class) ||
                                     Reflection.isArrayMap(type);
@@ -1287,26 +1405,32 @@ public class Capsule {
 
             for(Field field : fields) {
                 if(Reflection.isInstance(field.getType(), Entity.class)) {
-                    Entity ente = FieldsManager.getValue(field, this.entity);
-                    Capsule cap = new Capsule(ente);
-                    cap.recursiveEntities(map);
+                    Entity ente = FieldsManager.getValue(field, entity);
+                    if(ente != null) {
+                        Capsule cap = new Capsule(ente);
+                        cap.recursiveEntities(map);
+                    }
                 } else if(Reflection.isInstance(field.getType(), List.class)) {
-                    List list = FieldsManager.getValue(field, this.entity);
-                    for(Object o : list) {
-                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                            Capsule cap = new Capsule((Entity) o);
-                            cap.recursiveEntities(map);
+                    List list = FieldsManager.getValue(field, entity);
+                    if(list != null && !list.isEmpty()) {
+                        for(Object o : list) {
+                            if(Reflection.isInstance(o.getClass(), Entity.class)) {
+                                Capsule cap = new Capsule((Entity) o);
+                                cap.recursiveEntities(map);
+                            }
                         }
                     }
                 } else if(Reflection.isInstance(field.getType(), Map.class)) {
-                    Map mapa = FieldsManager.getValue(field, this.entity);
-                    Set keys = mapa.keySet();
+                    Map mapa = FieldsManager.getValue(field, entity);
+                    if(mapa != null && !mapa.isEmpty()) {
+                        Set keys = mapa.keySet();
 
-                    for(Object key : keys) {
-                        Object get = mapa.get(key);
-                        if(Reflection.isInstance(get.getClass(), Entity.class)) {
-                            Capsule cap = new Capsule((Entity) get);
-                            cap.recursiveEntities(map);
+                        for(Object key : keys) {
+                            Object get = mapa.get(key);
+                            if(Reflection.isInstance(get.getClass(), Entity.class)) {
+                                Capsule cap = new Capsule((Entity) get);
+                                cap.recursiveEntities(map);
+                            }
                         }
                     }
                 }
@@ -1325,19 +1449,28 @@ public class Capsule {
         return recursiveEntities(map);
     }
     
+    private Map<String, Entity> recursiveEntities(Entity entity) throws Exception {
+        Map<String, Entity> map = new HashMap<>();
+        return recursiveEntities(map, entity);
+    }
+    
+    private Map<String, Entity> recursiveEntities(Map<String, Entity> map) throws Exception {
+        return recursiveEntities(map, this.entity);
+    }
+    
     /**
      * Faz uma busca recursiva por todas as entidades referenciadas a partir da
      * entidade atual da capsula.
      * @return Entidades referenciadas a partir da raiz da capsula.
      */
-    private Map<String, Entity> recursiveEntities(Map<String, Entity> map) throws Exception {
-        if(this.entity == null) {
+    private Map<String, Entity> recursiveEntities(Map<String, Entity> map, Entity entity) throws Exception {
+        if(entity == null) {
             throw new NullPointerException("Capsula com entidade nula para buscar.");
         }
         
-        if(!map.containsKey(this.entity.getId())) {
-            map.put(this.entity.getId(), entity);
-            List<Field> fields = FieldsManager.getAllFields(this.entity.getClass()).stream()
+        if(!map.containsKey(entity.getId())) {
+            map.put(entity.getId(), entity);
+            List<Field> fields = FieldsManager.getAllFields(entity.getClass()).stream()
                     .filter(field -> {
                         Class type = field.getType();
                         return
@@ -1348,11 +1481,11 @@ public class Capsule {
 
             for(Field field : fields) {
                 if(Reflection.isInstance(field.getType(), Entity.class)) {
-                    Entity ente = FieldsManager.getValue(field, this.entity);
+                    Entity ente = FieldsManager.getValue(field, entity);
                     Capsule cap = new Capsule(ente);
                     cap.recursiveEntities(map);
                 } else if(Reflection.isInstance(field.getType(), List.class)) {
-                    List list = FieldsManager.getValue(field, this.entity);
+                    List list = FieldsManager.getValue(field, entity);
                     for(Object o : list) {
                         if(Reflection.isInstance(o.getClass(), Entity.class)) {
                             Capsule cap = new Capsule((Entity) o);
@@ -1360,7 +1493,7 @@ public class Capsule {
                         }
                     }
                 } else if(Reflection.isInstance(field.getType(), Map.class)) {
-                    Map mapa = FieldsManager.getValue(field, this.entity);
+                    Map mapa = FieldsManager.getValue(field, entity);
                     Set keys = mapa.keySet();
 
                     for(Object key : keys) {
@@ -1484,6 +1617,45 @@ public class Capsule {
         if(file.exists()) {
             return file.renameTo(new File(getPath(entity)));
         }
+        return false;
+    }
+    
+    /**
+     * Recupera uma lista de entidades de seu estado antigo, retornando ao
+     * estado de produção. Deve-se ter certeza que não há arquivos das entidades
+     * no estado de produção.
+     * @param entities
+     * @return 
+     */
+    private boolean recoverOld(List<Entity> entities) {
+        entities.stream()
+                .allMatch(ente -> {
+            try {
+                return renameFromOld(ente);
+            } catch (Exception ex) {
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                return false;
+            }
+        });
+        return false;
+    }
+    
+    /**
+     * Converte uma lista de entidades em estado antigo. Método chamado antes de salvar
+     * o novo estado das entides para permitir backup.
+     * @param entities
+     * @return 
+     */
+    private boolean parseOld(List<Entity> entities) {
+        entities.stream()
+                .allMatch(ente -> {
+            try {
+                return renameToOld(ente);
+            } catch (Exception ex) {
+                Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
+                return false;
+            }
+        });
         return false;
     }
     
