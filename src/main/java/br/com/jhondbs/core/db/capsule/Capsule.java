@@ -338,9 +338,29 @@ public class Capsule {
                                 sb.append(encapsulePrimitive(value));
                                 fBuilder.append(encapsulePrimitive(value));
                             } else if(Reflection.isArrayMap(field.getType())) {
-                                String s = encapsuleArray(value, entity);
-                                sb.append(s);
-                                fBuilder.append(s);
+                                if(Reflection.isInstance(value.getClass(), List.class)) {
+                                    List l = (List) value;
+                                    if(!l.isEmpty()) {
+                                        String s = encapsuleArray(value, entity);
+                                        sb.append(s);
+                                        fBuilder.append(s);
+                                    } else {
+                                        String indice = String.valueOf(ClassDictionary.getIndex(List.class));
+                                        sb.append("{list:{}}");
+                                        fBuilder.append("{list:{}}");
+                                    }
+                                } else if(Reflection.isInstance(value.getClass(), Map.class)) {
+                                    Map m = (Map) value;
+                                    if(!m.isEmpty()) {
+                                        String s = encapsuleArray(value, entity);
+                                        sb.append(s);
+                                        fBuilder.append(s);
+                                    } else {
+                                        String indice = String.valueOf(ClassDictionary.getIndex(Map.class));
+                                        sb.append("{map:{}}");
+                                        fBuilder.append("{map:{}}");
+                                    }
+                                }
                             } else if(Reflection.isInstance(field.getType(), Entity.class)) {
                                 Entity ente = (Entity) value;
                                 if(!serializados.contains(ente)) {
@@ -863,6 +883,11 @@ public class Capsule {
         }
         
         List<String> fields = new ArrayList<>();
+        
+        if(str.equals("{}")) {
+            return fields;
+        }
+        
         int init = str.indexOf(":") + 1;
         String split = str.substring(init);
         
@@ -900,8 +925,10 @@ public class Capsule {
         List list = new ArrayList();
         List<String> fields = getFields(str);
         for(String field : fields) {
-            Class type = getType(field);
-            list.add(recoverFromCapsule(field, recovereds, loader));
+            if(!field.equals("{}")) {
+                Class type = getType(field);
+                list.add(recoverFromCapsule(field, recovereds, loader));
+            }
         }
         return list;
     }
@@ -919,12 +946,14 @@ public class Capsule {
         Map<Object, Object> map = new HashMap<>();
         List<String> fields = getFields(str);
         if (fields == null || fields.isEmpty()) {
-            throw new IllegalArgumentException("A string fornecida não contém campos válidos.");
+            return map;
         }
-        for (int i = 0; i < fields.size() - 1; i += 2) {
-            Object key = recoverFromCapsule(fields.get(i), recovereds, loader);
-            Object value = recoverFromCapsule(fields.get(i + 1), recovereds, loader);
-            map.put(key, value);
+        if(fields.size() >= 2) {
+            for (int i = 0; i < fields.size() - 1; i += 2) {
+                Object key = recoverFromCapsule(fields.get(i), recovereds, loader);
+                Object value = recoverFromCapsule(fields.get(i + 1), recovereds, loader);
+                map.put(key, value);
+            }
         }
         return map;
     }
