@@ -185,7 +185,7 @@ public interface Entity extends Serializable, Cloneable{
      * Retorna uma lista com os IDs de todas as entidades salvas.
      * @return 
      */
-    default List<String> getAllIds(){
+    default List<String> getAllIds() throws Exception{
         return Capsule.getAllIds(this.getClass());
     }
     

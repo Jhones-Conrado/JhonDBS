@@ -81,7 +81,7 @@ public class Capsule {
     /**
      * Armazena os dados que serão salvos no final.
      */
-    private Map<Entity, String> capsules = new HashMap<>();
+    private Map<String, Capsule> capsules = new HashMap<>();
     
     /**
      * Armazena as entidades recuperadas.
@@ -98,14 +98,18 @@ public class Capsule {
      */
     private String str;
     
+    private Set<String> referencias = new HashSet<>();
+    private Set<String> fields = new HashSet<>();
+    
     private ClassLoader loader;
     
     /**
      * Utilizado para serializar uma entidade.
      * @param entity Entidade a ser serializada.
      */
-    public Capsule(Entity entity) {
+    public Capsule(Entity entity) throws Exception {
         this.entity = entity;
+        loadRefs();
     }
     
     /**
@@ -116,6 +120,7 @@ public class Capsule {
      */
     public Capsule(Class entityClass, String id) throws Exception {
         this.entity = load(entityClass, id);
+        loadRefs();
     }
     
     /**
@@ -127,6 +132,7 @@ public class Capsule {
     public Capsule(Class entityClass, String id, ClassLoader loader) throws Exception {
         this.loader = loader;
         this.entity = load(entityClass, id, loader);
+        loadRefs();
     }
     
     /**
@@ -134,17 +140,18 @@ public class Capsule {
      * @param entity
      * @param serializados 
      */
-    private Capsule(Entity entity, Set<Entity> serializados, Map<Entity, String> capsules) {
+    private Capsule(Entity entity, Set<Entity> serializados, Map<String, Capsule> capsules) throws Exception {
         this.entity = entity;
         this.serializados = serializados;
         this.capsules = capsules;
+        loadRefs();
     }
     
     /**
      * Utilizado para desserializar uma entidade.
      * @param str Texto a ser desserializado.
      */
-    public Capsule(String str) {
+    public Capsule(String str) throws Exception {
         this.str = str;
     }
     
@@ -160,9 +167,35 @@ public class Capsule {
         this.entity.getId();
         serializados.add(entity);
         Encapsule(entity);
-        capsules.put(entity, str);
+        capsules.put(entity.getId(), this);
         return entity.getId();
     }
+    
+    private void putRef(Entity entity) throws Exception {
+        referencias.add(String.valueOf(ClassDictionary.getIndex(entity.getClass()))+":"+entity.getId());
+    }
+    
+    private void removeRef(Entity entity) throws Exception {
+        referencias.remove(String.valueOf(ClassDictionary.getIndex(entity.getClass()))+":"+entity.getId());
+    }
+    
+    private String build() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("{")
+                .append(String.valueOf(ClassDictionary.getIndex(entity.getClass())))
+                .append(":");
+        for(String s : fields) {
+            sb.append(s);
+        }
+        sb.append("}");
+        
+        sb.append("ref::");
+        for(String s : referencias) {
+            sb.append(s).append("::");
+        }
+        return sb.toString();
+    }
+    
     
     /*
     
@@ -171,6 +204,71 @@ public class Capsule {
     
     */
     
+    private void loadRefs() throws Exception {
+        File file = new File(getPath(entity));
+        if(file.exists()) {
+            String line = Files.readString(file.toPath());
+            if(line.contains("ref::")) {
+                line = line.substring(line.indexOf("ref::")+"ref::".length());
+                if(line.contains("::")) {
+                    String[] split = line.split("::");
+                    referencias.addAll(Arrays.asList(split));
+                }
+            }
+        }
+    }
+    
+    private void writeNewState() throws Exception {
+        for(Capsule c : capsules.values()) {
+            File file = new File(getNewPath(c.entity));
+            try(BufferedWriter w = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8)) {
+                w.write(c.build());
+                w.flush();
+            }
+        }
+    }
+    
+    private void makeBackUp() throws Exception {
+        for(Capsule c : capsules.values()) {
+            File file = new File(getPath(c.entity));
+            if(file.exists()) {
+                file.renameTo(new File(getOldPath(c.entity)));
+            }
+        }
+    }
+    
+    private void applyChanges() throws Exception {
+        for(Capsule c : capsules.values()) {
+            File file = new File(getNewPath(c.entity));
+            if(file.exists()) {
+                file.renameTo(new File(getPath(c.entity)));
+            }
+        }
+    }
+    
+    private void clearDb() throws Exception {
+        for(Capsule c : capsules.values()) {
+            File file = new File(getNewPath(c.entity));
+            if(file.exists()) {
+                file.delete();
+            }
+            File f = new File(getOldPath(c.entity));
+            if(f.exists()) {
+                f.delete();
+            }
+        }
+    }
+    
+    private void recoverBackUp() throws Exception {
+        for(Capsule c : capsules.values()) {
+            File file = new File(getPath(c.entity));
+            File f = new File(getOldPath(c.entity));
+            if(file.exists() && f.exists()) {
+                file.delete();
+                f.renameTo(file);
+            }
+        }
+    }
     
     
     /**
@@ -184,172 +282,18 @@ public class Capsule {
     public boolean flush() throws DuplicatedUniqueFieldException, Exception {
         initDb();
         
-        System.out.println("Inicializando a gravação no banco de dados: "+capsules.size());
-        
-        /*
-        Preparação do estado atual da entidade.
-        */
-        Entity estadoAtual = null;
         try {
-            estadoAtual = load(this.entity.getClass(), this.entity.getId());
+            writeNewState();
+            makeBackUp();
+            applyChanges();
+            clearDb();
+            return true;
         } catch (Exception e) {
-        }
-        Map<String, Entity> mapAtual;
-        if(estadoAtual != null) {
-            mapAtual = recursiveCascadeEntities(estadoAtual);
-        } else {
-            mapAtual = new HashMap<>();
-        }
-        System.out.println("Cascata em atual: "+mapAtual.size());
-        
-        
-        Map<String, Entity> mapNovo = recursiveCascadeEntities();
-        System.out.println("Cascata em novo: "+mapNovo.size());
-        
-        /*
-        Verifica quais entidades em cascata precisam ser deletadas.
-        */
-        for(String id : mapNovo.keySet()) {
-            if(mapAtual.containsKey(id)) {
-                mapAtual.remove(id);
-            }
-        }
-        System.out.println("Restantes para deletar ao final: "+mapAtual.size());
-        
-        /**
-         * Lista de entidades para ser deletadas.
-         */
-        List<Entity> listToDelete = mapAtual.values().stream().toList();
-        List<String> listIdsToDelete = mapAtual.keySet().stream().toList();
-        
-        /**
-         * Lista de ids para bloquear.
-         */
-        Set<String> toLock = new HashSet<>();
-        toLock.addAll(listIdsToDelete);
-        toLock.addAll(mapNovo.keySet());
-        FileManager.getInstance().lockWrite(toLock.stream().toList());
-        
-        try {
-            Set<Entity> keys = capsules.keySet();
-            /*
-            Grava o estado novo das entidades.
-            */
-            for(Entity entity : keys) {
-                printLine();
-                System.out.println("Iniciando gravação: "+getPath(entity));
-                if(capsules.get(entity).isBlank()) {
-                    for(Entity e : keys) {
-                        clearInDB(e);
-                    }
-                    throw new NullPointerException("Entidade com capsula vazia -> "+entity.getClass().getName()+" -> "+entity.getId());
-                }
-                try {
-                    if (uniqueFieldTest(entity)) {
-                        String path = getNewPath(entity);
-                        try {
-                            try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(path), StandardCharsets.UTF_8)) {
-                                writer.write(capsules.get(entity));
-                                writer.flush();
-                            }
-                            System.out.println("Gravado: " + path);
-                        } catch (IOException ex) {
-                            for (Entity e : keys) {
-                                clearInDB(e);
-                            }
-                            Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                            throw new IOException(ex);
-                        }
-                    }
-                } catch (Exception ex) {
-                    System.out.println(ex);
-                    for(Entity e : keys) {
-                        clearInDB(e);
-                    }
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                    throw new DuplicatedUniqueFieldException(ex.getMessage());
-                }
-            }
-            printLine();
-            System.out.println("Gravadas todas as novas entidades");
-
-            /*
-            Renomeia as entidades de produção para estado velho.
-            */
-            System.out.println("Criando backup do estado atual de entidades.");
-            boolean match = keys.stream().allMatch(e -> {
-                try {
-                    File file = new File(getPath(e));
-                    if(file.exists()) {
-                        return renameToOld(e);
-                    } else {
-                        return true;
-                    }
-                } catch (Exception ex) {
-                    Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                    return false;
-                }
-            });
-
-            if(match) {
-                System.out.println("Backup de entidades criado");
-
-                /*
-                Reonmeia todas as novas entidades para o estado de produção.
-                */
-                System.out.println("Aplicando novas entidades para produção.");
-                match = keys.stream().allMatch(e -> {
-                    try {
-                        System.out.println("Aplicando: -> "+e.getId());
-                        return renameFromNew(e);
-                    } catch (Exception ex) {
-                        Logger.getLogger(Capsule.class.getName()).log(Level.SEVERE, null, ex);
-                        return false;
-                    }
-                });
-
-                if(!match) {
-                    System.out.println("Erro ao por novas entidades para produção, retornando ao estado antigo.");
-                    for(Entity e : keys) {
-                        try {
-                            renameToNew(e);
-                            renameFromOld(e);
-                            clearInDB(e);
-                        } catch (Exception ex) {
-                            return false;
-                        }
-                    }
-                } else {
-                    for(Entity delete : listToDelete) {
-                        String path = getPath(delete);
-                        File file = new File(path);
-                        if(file.exists()) {
-                            file.delete();
-                        }
-                    }
-                    for(Entity e : keys) {
-                        clearInDB(e);
-                    }
-                    System.out.println("Todas as entidades aplicadas em produção.");
-                    System.out.println("\n\n\n\n");
-                    return true;
-                }
-            } else {
-                System.out.println("Erro ao criar backup do estado atual, retornando ao estado antigo.");
-                for(Entity e : keys) {
-                    try {
-                        renameFromOld(e);
-                        clearInDB(e);
-                    } catch (Exception ex) {
-                        return false;
-                    }
-                }
-            }
+            recoverBackUp();
+            clearDb();
+            return false;
         } finally {
-            FileManager.getInstance().unlockWrite(toLock.stream().toList());
         }
-        
-        return true;
     }
     
     /**
@@ -373,23 +317,35 @@ public class Capsule {
             if(!Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())){
                 field.setAccessible(true);
                 Object value = FieldsManager.getValue(field, entity);
+                
                 if(value != null) {
-                    if(ClassDictionary.getIndex(value.getClass()) != -1) {
+                    if(ClassDictionary.getIndex(value.getClass()) != -1 || Reflection.isArrayMap(field.getType())) {
+                        StringBuilder fBuilder = new StringBuilder();
                         sb.append("{")
                                 .append(field.getName())
                                 .append(":");
-
+                        
+                        fBuilder.append("{")
+                                .append(field.getName())
+                                .append(":");
+                        
+                        
                         if(value.getClass().isEnum()) {
                             sb.append(encapsuleEnum((Enum) value));
+                            fBuilder.append(encapsuleEnum((Enum) value));
                         } else {
                             if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
                                 sb.append(encapsulePrimitive(value));
+                                fBuilder.append(encapsulePrimitive(value));
                             } else if(Reflection.isArrayMap(field.getType())) {
-                                sb.append(encapsuleArray(value));
+                                String s = encapsuleArray(value, entity);
+                                sb.append(s);
+                                fBuilder.append(s);
                             } else if(Reflection.isInstance(field.getType(), Entity.class)) {
                                 Entity ente = (Entity) value;
                                 if(!serializados.contains(ente)) {
                                     Capsule capsule = new Capsule(ente, serializados, capsules);
+                                    capsule.putRef(entity);
                                     try {
                                         capsule.start();
                                     } catch (Exception ex) {
@@ -397,11 +353,16 @@ public class Capsule {
                                     }
                                 }
                                 sb.append(encapsuleId(ente));
+                                fBuilder.append(encapsuleId(ente));
                             } else {
-                                sb.append(encapsuleObject(value));
+                                String s = encapsuleObject(value, entity);
+                                sb.append(s);
+                                fBuilder.append(s);
                             }
                         }
                         sb.append("}");
+                        fBuilder.append("}");
+                        this.fields.add(fBuilder.toString());
                     }
                 }
             }
@@ -445,7 +406,7 @@ public class Capsule {
      * @param object Objeto geral que não seja uma entidade.
      * @return String do objeto encapsulado.
      */
-    private String encapsuleObject(Object object) throws Exception {
+    private String encapsuleObject(Object object, Entity ref) throws Exception {
         StringBuilder sb = new StringBuilder();
         sb.append("{")
                 .append(String.valueOf(ClassDictionary.getIndex(object.getClass())))
@@ -466,16 +427,17 @@ public class Capsule {
                     }else if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
                         sb.append(encapsulePrimitive(value));
                     } else if(Reflection.isArrayMap(field.getType())) {
-                        sb.append(encapsuleArray(value));
+                        sb.append(encapsuleArray(value, ref));
                     } else if(Reflection.isInstance(field.getType(), Entity.class)) {
                         Entity ente = (Entity) value;
                         if(!serializados.contains(ente)) {
                             Capsule capsule = new Capsule(ente, serializados, capsules);
+                            capsule.putRef(ref);
                             capsule.start();
                         }
                         sb.append(encapsuleId(ente));
                     } else {
-                        sb.append(encapsuleObject(value));
+                        sb.append(encapsuleObject(value, ref));
                     }
                     sb.append("}");
                 }
@@ -490,7 +452,7 @@ public class Capsule {
      * @param object Lista ou mapa para encapsular.
      * @return String da lista ou mapa encapsulado.
      */
-    private String encapsuleArray(Object object) throws Exception {
+    private String encapsuleArray(Object object, Entity ref) throws Exception {
         if(object == null) {
             return "{}";
         }
@@ -514,16 +476,17 @@ public class Capsule {
                 if(Reflection.isPrimitive(obj) || Reflection.isNumerical(obj.getClass()) || Reflection.isDate(obj.getClass())) {
                     sb.append(encapsulePrimitive(obj));
                 } else if(Reflection.isArrayMap(obj)) {
-                    sb.append(encapsuleArray(obj));
+                    sb.append(encapsuleArray(obj, ref));
                 } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
                     Entity ente = (Entity) obj;
                     if(!serializados.contains(ente)) {
                         Capsule capsule = new Capsule(ente, serializados, capsules);
+                        capsule.putRef(ref);
                         capsule.start();
                     }
                     sb.append(encapsuleId(ente));
                 } else {
-                    sb.append(encapsuleObject(obj));
+                    sb.append(encapsuleObject(obj, ref));
                 }
             }
         } else if(Reflection.isInstance(object.getClass(), Map.class)) {
@@ -539,16 +502,17 @@ public class Capsule {
                 if(Reflection.isPrimitive(key) || Reflection.isNumerical(key.getClass()) || Reflection.isDate(key.getClass())) {
                     sb.append(encapsulePrimitive(key));
                 } else if(Reflection.isArrayMap(key)) {
-                    sb.append(encapsuleArray(key));
+                    sb.append(encapsuleArray(key, ref));
                 } else if(Reflection.isInstance(key.getClass(), Entity.class)) {
                     Entity ente = (Entity) key;
                     if(!serializados.contains(ente)) {
                         Capsule capsule = new Capsule(ente, serializados, capsules);
+                        capsule.putRef(ref);
                         capsule.start();
                     }
                     sb.append(encapsuleId(ente));
                 } else {
-                    sb.append(encapsuleObject(key));
+                    sb.append(encapsuleObject(key, ref));
                 }
                 
                 /*
@@ -558,16 +522,17 @@ public class Capsule {
                 if(Reflection.isPrimitive(map.get(key)) || Reflection.isNumerical(map.get(key).getClass()) || Reflection.isDate(map.get(key).getClass())) {
                     sb.append(encapsulePrimitive(map.get(key)));
                 } else if(Reflection.isArrayMap(map.get(key))) {
-                    sb.append(encapsuleArray(map.get(key)));
+                    sb.append(encapsuleArray(map.get(key), ref));
                 } else if(Reflection.isInstance(map.get(key).getClass(), Entity.class)) {
                     Entity ente = (Entity) map.get(key);
                     if(!serializados.contains(ente)) {
                         Capsule capsule = new Capsule(ente, serializados, capsules);
+                        capsule.putRef(ref);
                         capsule.start();
                     }
                     sb.append(encapsuleId(ente));
                 } else {
-                    sb.append(encapsuleObject(map.get(key)));
+                    sb.append(encapsuleObject(map.get(key), ref));
                 }
             }
             
@@ -637,7 +602,10 @@ public class Capsule {
         if(this.entity != null) {
             return (T) this.entity;
         }
-        return (T) recover(str, recovereds, this.getClass().getClassLoader());
+        T ente = (T) recover(str, recovereds, this.getClass().getClassLoader());
+        this.entity = ente;
+        loadRefs();
+        return ente;
     }
     
     /**
@@ -655,7 +623,9 @@ public class Capsule {
         if(this.entity != null) {
             return (T) this.entity;
         }
-        return (T) recover(str, recovereds, loader);
+        this.entity = recover(str, recovereds, loader);
+        loadRefs();
+        return (T) this.entity;
     }
     
     private <T> T recover(String str, Map<String, Entity> recovereds, ClassLoader loader) 
@@ -770,6 +740,8 @@ public class Capsule {
     
     
     private <T> T recoverFromCapsule(String capsule, Map<String, Entity> recovereds, ClassLoader loader) throws Exception {
+        System.out.println("RECUPERANDO: -> "+capsule);
+        
         // Recupera a classe do tipo usando o ClassLoader especificado
         Class<?> type = Class.forName(getType(capsule).getName(), true, loader);
 
@@ -1728,7 +1700,7 @@ public class Capsule {
      * @param clazz
      * @return 
      */
-    public static List<String> getAllIds(Class clazz) {
+    public static List<String> getAllIds(Class clazz) throws Exception {
         Capsule cap = new Capsule("");
         File folder = new File(cap.getFolder(clazz));
         if(folder.exists()) {

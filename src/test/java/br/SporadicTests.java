@@ -79,14 +79,16 @@ public class SporadicTests {
         capsule.flush();
         System.out.println("Salvo:");
         System.out.println(capsule.getCapsule());
+        System.out.println("");
         
         Capsule cap2 = new Capsule(capsule.getCapsule());
         EnteA ee = cap2.recover();
+        
         System.out.println(ee.em);
         
         ee.enteb = null;
         
-        ee.save();
+//        ee.save();
         
 //        Filter filter = new Filter(true);
 //        StringFilter stringFilter = new StringFilter("name", "Jhones");
