@@ -202,7 +202,8 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean delete() throws Exception{
         Capsule cap = new Capsule(this);
-        return cap.delete();
+        return false;
+//        return cap.delete();
     }
     
     /**
@@ -220,7 +221,8 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean deleteCascate() throws Exception{
         Capsule cap = new Capsule(this);
-        return cap.deleteCascate();
+//        return cap.deleteCascate();
+        return false;
     }
     
     /**

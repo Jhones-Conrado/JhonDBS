@@ -77,9 +77,6 @@ public class SporadicTests {
         Capsule capsule = new Capsule(ente);
         capsule.start();
         capsule.flush();
-        System.out.println("Salvo:");
-        System.out.println(capsule.getCapsule());
-        System.out.println("");
         
         Capsule cap2 = new Capsule(capsule.getCapsule());
         EnteA ee = cap2.recover();
