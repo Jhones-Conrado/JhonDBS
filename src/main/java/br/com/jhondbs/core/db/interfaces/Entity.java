@@ -77,28 +77,6 @@ public interface Entity extends Serializable, Cloneable{
         return infunction.getid(this);
     }
     
-//    /**
-//     * ENGLISH<br>
-//     * Applies the ID to the entity.<br> 
-//     * An entity should only be able to have its ID changed if it is equal to -1l!
-//     * That is, after an entity receives an ID, it should no longer be exchangeable.<br><br>
-//     * PORTUGUÊS<br>
-//     * Aplica o ID para a entidade.<br>
-//     * Uma entidade só deverá poder ter o seu ID alterado caso este seja igual a
-//     * -1l! Ou seja, após uma entidade receber um ID, este não deverá mais poder
-//     * ser trocado.
-//     * @param enteId Novo ID para a entidade.
-//     * @throws java.lang.Exception
-//     */
-//    default String setId(String enteId) throws Exception{
-//        if(getId() == null || getId().isBlank() && !enteId.isBlank()){
-//            infunction.setid(this, enteId);
-//        } else if(getId() == null || getId().isBlank()) {
-//            infunction.makeId(this);
-//        }
-//        return getId();
-//    }
-    
     /**
      * ENGLISH<br>
      * THIS METHOD MUST NOT BE USED DIRECTLY! CALL METHOD setID!</br>
@@ -342,8 +320,6 @@ public interface Entity extends Serializable, Cloneable{
                     
                     if(selected != null){
                         FieldsManager.setValue(selected.getName(), entity, id);
-//                        selected.setAccessible(true);
-//                        selected.set(entity, id);
                     } else {
                         throw new Exception("The entity does not have a String type variable for the ID.");
                     }

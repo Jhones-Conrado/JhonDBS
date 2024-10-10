@@ -596,7 +596,7 @@ public class Bottle {
             String content = reader.readContent(clazz, id);
             List<String> fields = reader.splitCapsules(reader.getValueFromCapsule(content));
             for(String campo : fields) {
-                inserir(this.entity, campo);
+                inserir(this.entity, campo, loader);
                 this.bottledFields.add(campo);
             }
             loadRefs();
@@ -606,18 +606,18 @@ public class Bottle {
         }
     }
     
-    private void inserir(Object receptor, String capsule) throws Exception {
+    private void inserir(Object receptor, String capsule, ClassLoader loader) throws Exception {
         String nome_campo = reader.getKeyFromCapsule(capsule);
         String sub_capsula = reader.getValueFromCapsule(capsule);
         
         String indice_classe = reader.getKeyFromCapsule(sub_capsula);
         String conteudo = reader.getValueFromCapsule(sub_capsula);
         
-        Object valor = recuperar(indice_classe, conteudo);
+        Object valor = recuperar(indice_classe, conteudo, loader);
         FieldsManager.setValue(nome_campo, receptor, valor);
     }
     
-    private Object recuperar(String indice, String conteudo) throws Exception {
+    private Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
         Class classe_do_objeto = null;
         
         classe_do_objeto = switch (indice) {
@@ -657,19 +657,20 @@ public class Bottle {
             }
         } 
         else if (Reflection.isInstance(classe_do_objeto, List.class)) {
-            return parseListFromString(conteudo);
+            return parseListFromString(conteudo, loader);
         } 
         else if (Reflection.isInstance(classe_do_objeto, Map.class)) {
-            return parseMapFromString(conteudo);
+            return parseMapFromString(conteudo, loader);
         } 
         else {
             if (classe_do_objeto.isEnum()) {
-                return Enum.valueOf((Class<Enum>) classe_do_objeto, conteudo);
+                Class<?> forName = Class.forName(classe_do_objeto.getName(), true, loader);
+                return Enum.valueOf((Class<Enum>) forName, conteudo);
             }
             Object o = Reflection.getNewInstance(classe_do_objeto, loader);
             List<String> campos = reader.splitCapsules(conteudo);
             for(String campo : campos) {
-                inserir(o, campo);
+                inserir(o, campo, loader);
             }
             return o;
         }
@@ -677,20 +678,20 @@ public class Bottle {
         throw new Exception("Não foi possível distinguir o tipo de objeto -> "+conteudo);
     }
     
-    public List parseListFromString(String str) throws Exception {
+    public List parseListFromString(String str, ClassLoader loader) throws Exception {
         List list = new ArrayList();
         List<String> objetos = reader.splitCapsules(str);
         for(String objeto : objetos) {
             if(!objeto.equals("{}")) {
                 String indice_da_classe = reader.getKeyFromCapsule(objeto);
-                Object obj = recuperar(indice_da_classe, objeto);
+                Object obj = recuperar(indice_da_classe, objeto, loader);
                 list.add(obj);
             }
         }
         return list;
     }
     
-    public Map parseMapFromString(String str) throws Exception {
+    public Map parseMapFromString(String str, ClassLoader loader) throws Exception {
         Map<Object, Object> map = new HashMap<>();
         List<String> objetos = reader.splitCapsules(str);
         if (objetos == null || objetos.isEmpty()) {
@@ -703,11 +704,11 @@ public class Bottle {
                 
                 String indice_classe_chave = reader.getKeyFromCapsule(CapsulaChave);
                 String capsula_valor_chave = reader.getValueFromCapsule(CapsulaChave);
-                Object objeto_chave = recuperar(indice_classe_chave, capsula_valor_chave);
+                Object objeto_chave = recuperar(indice_classe_chave, capsula_valor_chave, loader);
                 
                 String indice_classe_valor = reader.getKeyFromCapsule(CapsulaValor);
                 String capsula_valor_valor = reader.getValueFromCapsule(CapsulaValor);
-                Object objeto_valor = recuperar(indice_classe_valor, capsula_valor_valor);
+                Object objeto_valor = recuperar(indice_classe_valor, capsula_valor_valor, loader);
                 
                 map.put(objeto_chave, objeto_valor);
             }

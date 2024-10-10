@@ -26,6 +26,7 @@ package br.com.jhondbs.core.tools;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -245,7 +246,8 @@ public class FieldsManager {
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    public static void setValue(String fieldName, Object entity, Object value) throws IllegalArgumentException, IllegalAccessException{
+    public static void setValue(String fieldName, Object entity, Object value) throws IllegalArgumentException, IllegalAccessException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
+        Object o = new Object();
         List<Field> fields = getFields(entity);
         for(Field f : fields){
             if(f.getName().equals(fieldName)){
