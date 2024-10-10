@@ -29,7 +29,9 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -80,6 +82,15 @@ public class FieldsManager {
             clazz = clazz.getSuperclass();
         }
         return fields;
+    }
+    
+    public static List<Field> getAllSerializebleFields(Class clazz){
+        Set<Field> fields = new HashSet<>();
+        while(clazz != null){
+            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
+            clazz = clazz.getSuperclass();
+        }
+        return fields.stream().filter(field -> !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())).toList();
     }
     
     /**

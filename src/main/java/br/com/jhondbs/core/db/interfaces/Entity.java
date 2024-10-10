@@ -23,7 +23,9 @@
  */
 package br.com.jhondbs.core.db.interfaces;
 
-import br.com.jhondbs.core.db.capsule.Capsule;
+import br.com.jhondbs.core.db.capsule.Bottle;
+import br.com.jhondbs.core.db.capsule.Reader;
+import br.com.jhondbs.core.db.capsule.Writer;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.filter.Filter;
@@ -75,27 +77,27 @@ public interface Entity extends Serializable, Cloneable{
         return infunction.getid(this);
     }
     
-    /**
-     * ENGLISH<br>
-     * Applies the ID to the entity.<br> 
-     * An entity should only be able to have its ID changed if it is equal to -1l!
-     * That is, after an entity receives an ID, it should no longer be exchangeable.<br><br>
-     * PORTUGUÊS<br>
-     * Aplica o ID para a entidade.<br>
-     * Uma entidade só deverá poder ter o seu ID alterado caso este seja igual a
-     * -1l! Ou seja, após uma entidade receber um ID, este não deverá mais poder
-     * ser trocado.
-     * @param enteId Novo ID para a entidade.
-     * @throws java.lang.Exception
-     */
-    default String setId(String enteId) throws Exception{
-        if(getId() == null || getId().isBlank() && !enteId.isBlank()){
-            infunction.setid(this, enteId);
-        } else if(getId() == null || getId().isBlank()) {
-            infunction.makeId(this);
-        }
-        return getId();
-    }
+//    /**
+//     * ENGLISH<br>
+//     * Applies the ID to the entity.<br> 
+//     * An entity should only be able to have its ID changed if it is equal to -1l!
+//     * That is, after an entity receives an ID, it should no longer be exchangeable.<br><br>
+//     * PORTUGUÊS<br>
+//     * Aplica o ID para a entidade.<br>
+//     * Uma entidade só deverá poder ter o seu ID alterado caso este seja igual a
+//     * -1l! Ou seja, após uma entidade receber um ID, este não deverá mais poder
+//     * ser trocado.
+//     * @param enteId Novo ID para a entidade.
+//     * @throws java.lang.Exception
+//     */
+//    default String setId(String enteId) throws Exception{
+//        if(getId() == null || getId().isBlank() && !enteId.isBlank()){
+//            infunction.setid(this, enteId);
+//        } else if(getId() == null || getId().isBlank()) {
+//            infunction.makeId(this);
+//        }
+//        return getId();
+//    }
     
     /**
      * ENGLISH<br>
@@ -124,9 +126,13 @@ public interface Entity extends Serializable, Cloneable{
      * the getId and onSetId methods.
      */
     default boolean save() throws Exception, DuplicatedUniqueFieldException {
-        Capsule capsule = new Capsule(this);
-        capsule.start();
-        return capsule.flush();
+        Bottle bottle = new Bottle(this);
+        try {
+            bottle.flush();
+            return true;
+        } catch (Exception e) {
+            throw e;
+        }
     }
     
     /**
@@ -140,13 +146,13 @@ public interface Entity extends Serializable, Cloneable{
      * Entity encontrada no banco de dados. Nulo para não encontrada.
      */
     default <T extends Entity> T load(String id) throws Exception{
-        Capsule capsule = new Capsule(this.getClass(), id);
-        return capsule.recover();
+        Bottle bottle = new Bottle(this.getClass(), id, Bottle.ROOT_STAGE);
+        return (T) bottle.entity;
     }
     
     default <T extends Entity> T load(String id, ClassLoader loader) throws Exception {
-        Capsule capsule = new Capsule(this.getClass(), id);
-        return capsule.recover(loader);
+        Bottle bottle = new Bottle(this.getClass(), id, Bottle.ROOT_STAGE, loader);
+        return (T) bottle.entity;
     }
     
     /**
@@ -163,7 +169,7 @@ public interface Entity extends Serializable, Cloneable{
      * Lista com as entidades desse tipo no banco de dados.
      */
     default <T extends Entity> List<T> loadAll() throws Exception{
-        return Capsule.loadAll(this.getClass());
+        return Bottle.loadAll(this.getClass(), this.getClass().getClassLoader());
     }
     
     /**
@@ -177,7 +183,7 @@ public interface Entity extends Serializable, Cloneable{
      * Lista com as entidades que passaram no teste.
      */
     default <T extends Entity> List<T> loadAll(Filter filter) throws Exception{
-        return Capsule.loadAll(this.getClass(), filter);
+        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
     }
     
     /**
@@ -186,7 +192,8 @@ public interface Entity extends Serializable, Cloneable{
      * @return 
      */
     default List<String> getAllIds() throws Exception{
-        return Capsule.getAllIds(this.getClass());
+        Reader reader = new Reader();
+        return reader.listAllIds(this.getClass());
     }
     
     /**
@@ -201,28 +208,15 @@ public interface Entity extends Serializable, Cloneable{
      * @throws java.lang.Exception
      */
     default boolean delete() throws Exception{
-        Capsule cap = new Capsule(this);
-        return false;
-//        return cap.delete();
-    }
-    
-    /**
-     * ENGLISH<br>
-     * Deletes the entity and all sub entities that are values of its fields.<br>
-     * In other words: If the entity has a field that stores the reference to
-     * another entity and so on, then recursive calls to the fullDelete method
-     * will be made so that all child entities are deleted.
-     * <br><br>
-     * PORTUGUÊS<br>
-     * Deleta a entidade e todas as sub entidades que sejam valores de seus campos.<br>
-     * Em outras palavras: Se a entidade possuir um campo que armazene a referência
-     * para outra entidade e assim por diante, então serão feitas chamadas recursivas
-     * ao método fullDelete para que todas as entidades filho sejam deletadas.
-     */
-    default boolean deleteCascate() throws Exception{
-        Capsule cap = new Capsule(this);
-//        return cap.deleteCascate();
-        return false;
+        Writer w = new Writer(Bottle.ROOT_STAGE);
+        try {
+            w.removeExistence(this);
+            Bottle.deleteFilesEndingWithDelete();
+            Bottle.moveDirectory();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
     
     /**
@@ -292,14 +286,14 @@ public interface Entity extends Serializable, Cloneable{
         GenericFilterCondition condition = new GenericFilterCondition(fieldname, value.toString(), false);
         Filter filter = new Filter();
         filter.addCondition(condition);
-        return Capsule.loadAll(this.getClass(), filter);
+        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
     }
     
     default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws Exception{
         GenericFilterCondition condition = new GenericFilterCondition(fieldname, value.toString(), true);
         Filter filter = new Filter();
         filter.addCondition(condition);
-        return Capsule.loadAll(this.getClass(), filter);
+        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
     }
     
     class infunction {

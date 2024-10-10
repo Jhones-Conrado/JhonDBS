@@ -43,6 +43,7 @@ public class EnteA implements Entity{
     
     private String id;
     
+    @Unique
     public final String name;
     
     public MeuEnum em;
@@ -62,7 +63,7 @@ public class EnteA implements Entity{
     
     public List<ObjetoA> lista = new ArrayList<>();
     
-    public Map<String, ObjetoA> mapa = new HashMap<>();
+    public Map<String, Object> mapa = new HashMap<>();
     
     public Date date = new Date();
     public Calendar calendar = GregorianCalendar.getInstance();

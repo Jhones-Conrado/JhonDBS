@@ -16,18 +16,14 @@
  */
 package br;
 
-import br.com.jhondbs.core.db.capsule.Capsule;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tests.objects.Endereco;
 import tests.objects.EnteA;
 import tests.objects.EnteB;
-import tests.objects.MeuEnum;
-import tests.objects.ObjetoA;
 
 /**
  *
@@ -58,51 +54,17 @@ public class SporadicTests {
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
-        Endereco endereco = new Endereco("SDO A", 429, "Jabuti", "Itaitinga", "Ceará", "Brasil");
-        EnteA ente = new EnteA("Jhones Sales", endereco);
+        EnteA a = new EnteA("Jhones");
+        EnteB b = new EnteB("Subentidade");
+        b.dono = a;
+        a.enteb = b;
+        a.save();
         
-//        for(int i = 0 ; i < 5 ; i++) {
-//            ente.lista.add(new ObjetoA("Objeto"+String.valueOf(i)));
-//        }
+        EnteA ab = new EnteA("Carlos");
+        ab.enteb = b;
+        ab.save();
         
-//        ente.mapa.put("Maria", new ObjetoA("Maria Pessoa"));
-//        ente.mapa.put("João", new ObjetoA("João Pessoa"));
-//        ente.mapa.put("Ricardo", new ObjetoA("Ricardo Pessoa"));
-//        ente.mapa.put("Lene", new ObjetoA("Lene Pessoa"));
-//
-//        ente.enteb = new EnteB("Carro");
-//        ente.enteb.dono = ente;
-//        ente.em = MeuEnum.USUARIO;
-        
-        Capsule capsule = new Capsule(ente);
-        capsule.start();
-        capsule.flush();
-        
-        Capsule cap2 = new Capsule(capsule.getCapsule());
-        EnteA ee = cap2.recover();
-        
-        System.out.println(ee.em);
-        
-        ee.enteb = null;
-        
-//        ee.save();
-        
-//        Filter filter = new Filter(true);
-//        StringFilter stringFilter = new StringFilter("name", "Jhones");
-//        NumberFilter numberFilter = new NumberFilter("age", NumberFilter.GREATER, 17);
-//        BooleanFilter booleanFilter = new BooleanFilter("client", true);
-//        
-//        filter.addCondition(stringFilter);
-//        filter.addCondition(numberFilter);
-//        filter.addCondition(booleanFilter);
-//        
-//        ente.loadAll(filter);
-        
-        
-//        System.out.println("NOME: "+FieldsManager.getValueFrom("name", ente));
-        
-//        EnteA recovered = capsule.recover();
-//        System.out.println(recovered.name);
+        a.delete();
         
         assert true;
     }
