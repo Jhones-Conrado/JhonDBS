@@ -26,6 +26,7 @@ package tests.objects;
 import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
+import br.com.jhondbs.core.db.obj.ColdEntity;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -84,6 +85,8 @@ public class EnteA implements Entity{
     
     @Cascate
     public EnteB enteb;
+    
+    public ColdEntity cold;
     
     public EnteA() {
         this.name = null;

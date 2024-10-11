@@ -23,12 +23,14 @@
  */
 package br;
 
+import br.com.jhondbs.core.db.obj.ColdEntity;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tests.objects.Cold;
 import tests.objects.EnteA;
 import tests.objects.EnteB;
 
@@ -65,13 +67,21 @@ public class SporadicTests {
         EnteB b = new EnteB("Subentidade");
         b.dono = a;
         a.enteb = b;
+        
+        Cold cold = new Cold();
+        a.cold = new ColdEntity(cold);
+        
         a.save();
         
-        EnteA ab = new EnteA("Carlos");
-        ab.enteb = b;
-        ab.save();
+        EnteA a2 = a.load(a.getId());
+        Cold get = a2.cold.get();
         
-        a.delete();
+        
+//        EnteA ab = new EnteA("Carlos");
+//        ab.enteb = b;
+//        ab.save();
+        
+//        a.delete();
         
         assert true;
     }

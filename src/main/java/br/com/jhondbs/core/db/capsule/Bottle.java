@@ -26,6 +26,7 @@ package br.com.jhondbs.core.db.capsule;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.db.interfaces.Entity;
+import br.com.jhondbs.core.db.obj.ColdEntity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.tools.Reflection;
@@ -191,8 +192,29 @@ public class Bottle {
         if (bottledFields.isEmpty()) {
             engarafar();
         }
+        
+        Set<String> toLock = new HashSet<>();
+        
         try {
             if (todosCamposSaoUnicos()) {
+                
+                for(Bottle b : bottles.values()) {
+                    toLock.add(b.entity.getId());
+                }
+                
+                Bottle b2 = null;
+                try {
+                    b2 = new Bottle(entity.getClass(), entity.getId(), ROOT_STAGE);
+                    for(Bottle b : b2.bottles.values()) {
+                        toLock.add(b.entity.getId());
+                    }
+                } catch (Exception e) {
+                }
+                
+                for(String s : toLock) {
+                    IO.io().lockWrite(s);
+                }
+                
                 List<Entity> excludeds = reader.listExcludeds(this);
                 removeReferences(excludeds);
                 
@@ -212,6 +234,10 @@ public class Bottle {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            for(String s : toLock) {
+                IO.io().unlockWrite(s);
+            }
         }
     }
     
@@ -589,6 +615,7 @@ public class Bottle {
     */
     
     private void load(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader) throws Exception {
+        IO.io().lockRead(id);
         writer.modoOperacional = this.modoOperacional;
         reader.modoOperacional = this.modoOperacional;
         try {
@@ -603,6 +630,8 @@ public class Bottle {
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException | NoSuchMethodException ex) {
             Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, null, ex);
             throw new Exception("Erro ao ler a entidade: "+clazz+" -> "+id);
+        } finally {
+            IO.io().unlockRead(id);
         }
     }
     
@@ -666,13 +695,27 @@ public class Bottle {
             if (classe_do_objeto.isEnum()) {
                 Class<?> forName = Class.forName(classe_do_objeto.getName(), true, loader);
                 return Enum.valueOf((Class<Enum>) forName, conteudo);
+            } else if(Reflection.isInstance(classe_do_objeto, ColdEntity.class)) {
+                Object o = Reflection.getNewInstance(classe_do_objeto, loader);
+                List<String> campos = reader.splitCapsules(conteudo);
+                for(String campo : campos) {
+                    if(campo.contains("loader")) {
+                        FieldsManager.setValue("loader", o, loader);
+                    } else if(campo.contains("entity")) {
+                        //Ignorar o campo entity durante o carregamento.
+                    } else {
+                        inserir(o, campo, loader);
+                    }
+                }
+                return o;
+            } else {
+                Object o = Reflection.getNewInstance(classe_do_objeto, loader);
+                List<String> campos = reader.splitCapsules(conteudo);
+                for(String campo : campos) {
+                    inserir(o, campo, loader);
+                }
+                return o;
             }
-            Object o = Reflection.getNewInstance(classe_do_objeto, loader);
-            List<String> campos = reader.splitCapsules(conteudo);
-            for(String campo : campos) {
-                inserir(o, campo, loader);
-            }
-            return o;
         }
         
         throw new Exception("Não foi possível distinguir o tipo de objeto -> "+conteudo);
