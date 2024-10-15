@@ -25,7 +25,6 @@ package br.com.jhondbs.core.db.interfaces;
 
 import br.com.jhondbs.core.db.capsule.Bottle;
 import br.com.jhondbs.core.db.capsule.Reader;
-import br.com.jhondbs.core.db.capsule.Writer;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.filter.Filter;
