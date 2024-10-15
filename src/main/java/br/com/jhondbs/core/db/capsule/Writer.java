@@ -225,10 +225,19 @@ public class Writer {
     */
     
     public void initDb() throws URISyntaxException, IOException {
-        List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
-        for(String path : all) {
-            File rootdb = new File(ROOT_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
-            rootdb.mkdirs();
+        File file  = null;
+        if(ROOT_DB.endsWith("/")) {
+            file  = new File(ROOT_DB.substring(0, ROOT_DB.length()-1));
+        } else {
+            file  = new File(ROOT_DB);
+        }
+        
+        if(!file.exists()) {
+            List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
+            for(String path : all) {
+                File rootdb = new File(ROOT_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
+                rootdb.mkdirs();
+            }
         }
     }
     

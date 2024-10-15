@@ -83,8 +83,8 @@ public class Bottle {
     public ClassLoader loader;
     
     public Entity entity;
-    
-    private final String identifier = this.toString().replace(this.getClass().getName(), "");
+
+    private boolean isSub = false;
     
     public Bottle(Class clazz, String id, int modoOperacional) throws Exception {
         this.modoOperacional = modoOperacional;
@@ -298,6 +298,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         load(clazz, id, bottles, loader);
     }
     
@@ -309,6 +310,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         load(clazz, id, bottles, loader);
     }
     
@@ -321,6 +323,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         load(clazz, id, bottles, loader);
     }
     
@@ -333,6 +336,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         load(clazz, id, bottles, loader);
     }
     
@@ -345,6 +349,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         loadRefs();
     }
     
@@ -357,6 +362,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         loadRefs();
     }
     
@@ -370,6 +376,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         loadRefs();
     }
     
@@ -383,6 +390,7 @@ public class Bottle {
         this.TEMP_DB = temp;
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
+        this.isSub = true;
         loadRefs();
     }
     
@@ -475,54 +483,55 @@ public class Bottle {
         if (bottledFields.isEmpty()) {
             engarafar();
         }
-        
         Set<String> toLock = new HashSet<>();
-        
         try {
-            if(todosCamposSaoUnicos()) {
-                
-                for(Bottle b : bottles.values()) {
+            if (todosCamposSaoUnicos()) {
+                for (Bottle b : bottles.values()) {
                     toLock.add(b.entity.getId());
                 }
-                
                 Bottle b2 = null;
                 try {
                     b2 = new Bottle(entity.getClass(), entity.getId(), ROOT_STAGE, ROOT_DB, TEMP_DB, true);
-                    for(Bottle b : b2.bottles.values()) {
+                    for (Bottle b : b2.bottles.values()) {
                         toLock.add(b.entity.getId());
                     }
                 } catch (Exception e) {
-                }
-                
-                for(String s : toLock) {
-                    IO.io().lockWrite(s);
-                }
-                
-                List<Entity> excludeds = reader.listExcludeds(this);
-                removeReferences(excludeds);
-                
-                for (Bottle bottle : bottles.values()) {
-                    writer.write(bottle);
-                }
-                
-                handleOrphanEntities(excludeds);
-                
-                try {
-                    deleteFilesEndingWithDelete();
-                    moveDirectory();
-                } catch (Exception e) {
                     e.printStackTrace();
+                }
+
+                // Tranca todas as entidades
+                try {
+                    for (String s : toLock) {
+                        IO.io().lockWrite(s);
+                    }
+                    List<Entity> excludeds = reader.listExcludeds(this);
+                    removeReferences(excludeds);
+                    for (Bottle bottle : bottles.values()) {
+                        writer.write(bottle);
+                    }
+                    handleOrphanEntities(excludeds);
+                    try {
+                        deleteFilesEndingWithDelete();
+                        moveDirectory();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace(); // Exceção no processo de escrita
+                } finally {
+                    for (String s : toLock) {
+                        IO.io().unlockWrite(s);
+                    }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Exceção na verificação de campos únicos
         } finally {
-            for(String s : toLock) {
-                IO.io().unlockWrite(s);
-            }
+            // Libera os locks apenas uma vez no final
             cleanFolders();
         }
     }
+
     
     /**
      * Verifica quais entidades são do tipo cascata para futura análise de orfandade e exclusão.
@@ -913,7 +922,9 @@ public class Bottle {
     */
     
     private void load(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader) throws Exception {
-        IO.io().lockRead(id);
+        if(!isSub) {
+            IO.io().lockRead(id);
+        }
         writer.modoOperacional = this.modoOperacional;
         reader.modoOperacional = this.modoOperacional;
         try {
@@ -929,7 +940,9 @@ public class Bottle {
             Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, null, ex);
             throw new Exception("Erro ao ler a entidade: "+clazz+" -> "+id);
         } finally {
-            IO.io().unlockRead(id);
+            if(!isSub) {
+                IO.io().unlockRead(id);
+            }
 //            cleanFolders();
         }
     }
@@ -1147,6 +1160,8 @@ public class Bottle {
     }
     
     public static <T extends Entity> List<T> loadAll(Class classe, Filter filter, ClassLoader loader) throws Exception {
+        Writer w = new Writer();
+        w.initDb();
         Reader reader = new Reader(ROOT_STAGE);
         List<String> ids = reader.listAllIds(classe);
         List<T> list = new ArrayList<>();

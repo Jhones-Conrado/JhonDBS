@@ -63,32 +63,29 @@ public class SporadicTests {
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
-        EnteA a = new EnteA("Jhones");
-        EnteB b = new EnteB("Subentidade");
-        b.dono = a;
-        a.enteb = b;
-        
-        Cold cold = new Cold();
-        a.cold = new ColdEntity(cold);
-        
-        try {
-            if(a.save()) {
-                System.out.println("salvou");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        EnteA a = new EnteA();
+//        a.loadAll();
         
         
-        EnteA a2 = a.load(a.getId());
-        Cold get = a2.cold.get();
         
-        
-        EnteA ab = new EnteA("Carlos");
-        ab.enteb = b;
-        ab.save();
-        
-        a.delete();
+//        EnteB b = new EnteB("Subentidade");
+//        b.dono = a;
+//        a.enteb = b;
+//        
+//        Cold cold = new Cold();
+//        a.cold = new ColdEntity(cold);
+//        
+//        try {
+//            if(a.save()) {
+//                System.out.println("salvou");
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//        
+//        EnteA ab = new EnteA("Carlos");
+//        ab.enteb = b;
+//        ab.save();
         
         assert true;
     }

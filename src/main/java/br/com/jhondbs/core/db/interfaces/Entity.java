@@ -108,6 +108,7 @@ public interface Entity extends Serializable, Cloneable{
             bottle.flush();
             return true;
         } catch (Exception e) {
+            e.printStackTrace();
             throw e;
         }
     }
@@ -123,8 +124,13 @@ public interface Entity extends Serializable, Cloneable{
      * Entity encontrada no banco de dados. Nulo para não encontrada.
      */
     default <T extends Entity> T load(String id) throws Exception{
-        Bottle bottle = new Bottle(this.getClass(), id, Bottle.ROOT_STAGE);
-        return (T) bottle.entity;
+        try {
+            Bottle bottle = new Bottle(this.getClass(), id, Bottle.ROOT_STAGE);
+            return (T) bottle.entity;
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw e;
+        }
     }
     
     default <T extends Entity> T load(String id, ClassLoader loader) throws Exception {

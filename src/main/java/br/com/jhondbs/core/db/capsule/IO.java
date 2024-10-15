@@ -24,7 +24,6 @@
 package br.com.jhondbs.core.db.capsule;
 
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -42,30 +41,24 @@ public class IO {
     
     // Método para adquirir bloqueio de leitura
     public void lockRead(String id) {
-        Lock readLock = getLock(id).readLock();
-        readLock.lock();
+        getLock(id).readLock().lock();
     }
     
     // Método para liberar bloqueio de leitura e remover o lock se não for mais necessário
     public void unlockRead(String id) {
-        ReadWriteLock lock = getLock(id);
-        Lock readLock = lock.readLock();
-        readLock.unlock();
-        cleanUpLock(id, lock);
+        getLock(id).readLock().unlock();
+        cleanUpLock(id);
     }
 
     // Método para adquirir bloqueio de escrita
     public void lockWrite(String id) {
-        Lock writeLock = getLock(id).writeLock();
-        writeLock.lock();
+        getLock(id).writeLock().lock();
     }
 
     // Método para liberar bloqueio de escrita e remover o lock se não for mais necessário
     public void unlockWrite(String id) {
-        ReadWriteLock lock = getLock(id);
-        Lock writeLock = lock.writeLock();
-        writeLock.unlock();
-        cleanUpLock(id, lock);
+        getLock(id).writeLock().unlock();
+        cleanUpLock(id);
     }
     
     // Obtém ou cria o ReadWriteLock associado ao arquivo
@@ -74,10 +67,9 @@ public class IO {
     }
     
     // Verifica se o lock não está mais sendo utilizado e remove do mapa
-    private void cleanUpLock(String id, ReadWriteLock lock) {
-        // Verifica se não há mais leitores nem escritores segurando o lock
-        if (!lock.writeLock().tryLock() && !lock.readLock().tryLock()) {
-            // Nenhum lock está sendo utilizado, podemos remover do mapa
+    private void cleanUpLock(String id) {
+        ReadWriteLock lock = getLock(id);
+        if (lock.writeLock().tryLock() && lock.readLock().tryLock()) {
             lockMap.remove(id);
         }
     }
