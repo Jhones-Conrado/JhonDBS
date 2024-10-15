@@ -26,6 +26,9 @@ package br.com.jhondbs.core.server;
 import br.com.jhondbs.core.Starter;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Cria um servidor básico que ficará ouvindo requisições de novas conexões.
@@ -85,6 +88,8 @@ public class Server {
                 try {
                     new Connection(hash).startAsServer(server.accept());
                 } catch (IOException | ClassNotFoundException e) {
+                } catch (URISyntaxException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
         }

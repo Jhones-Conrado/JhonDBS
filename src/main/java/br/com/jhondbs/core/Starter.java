@@ -68,7 +68,7 @@ public class Starter {
      * mensagens recebidas a partir de todas as conexões.
      * @throws IOException
      */
-    public static void startInterpretadores() throws IOException{
+    public static void startInterpretadores() throws IOException, URISyntaxException{
         if(!interpretadoresCarregados){
             printName();
             Reflection r = new Reflection();

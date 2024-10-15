@@ -29,6 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -91,6 +92,8 @@ public class ClassDictionary {
                 startDictionary();
             } catch (IOException ex) {
                 Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (URISyntaxException ex) {
+                Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         return dictionary;
@@ -100,7 +103,7 @@ public class ClassDictionary {
      * Initializes the database class dictionary if it does not already exist.
      * @throws IOException 
      */
-    private static void startDictionary() throws IOException{
+    private static void startDictionary() throws IOException, URISyntaxException{
         if(dictionary == null){
             File dic = new File("db/dictionary.dic");
             if(dic.exists()){

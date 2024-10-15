@@ -186,15 +186,14 @@ public interface Entity extends Serializable, Cloneable{
      * @throws java.lang.Exception
      */
     default boolean delete() throws Exception{
-        Writer w = new Writer(Bottle.ROOT_STAGE);
-        try {
-            w.removeExistence(this);
-            Bottle.deleteFilesEndingWithDelete();
-            Bottle.moveDirectory();
+        Bottle b = new Bottle(this);
+        if(b.delete()) {
+            b.deleteFilesEndingWithDelete();
+            b.moveDirectory();
+            b.cleanFolders();
             return true;
-        } catch (Exception e) {
-            return false;
         }
+        return false;
     }
     
     /**

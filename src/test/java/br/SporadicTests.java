@@ -71,17 +71,24 @@ public class SporadicTests {
         Cold cold = new Cold();
         a.cold = new ColdEntity(cold);
         
-        a.save();
+        try {
+            if(a.save()) {
+                System.out.println("salvou");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         
         EnteA a2 = a.load(a.getId());
         Cold get = a2.cold.get();
         
         
-//        EnteA ab = new EnteA("Carlos");
-//        ab.enteb = b;
-//        ab.save();
+        EnteA ab = new EnteA("Carlos");
+        ab.enteb = b;
+        ab.save();
         
-//        a.delete();
+        a.delete();
         
         assert true;
     }

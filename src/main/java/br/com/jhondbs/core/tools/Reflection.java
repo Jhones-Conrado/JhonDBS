@@ -74,6 +74,7 @@ import java.util.stream.Stream;
 public final class Reflection {
     
     private static List<String> array;
+    private static List<String> notAbstracts;
     
     /**
      * Creates a new instance of Reflection.
@@ -222,14 +223,22 @@ public final class Reflection {
      * @param classe
      * @return 
      */
-    public static List<String> allImplementsNotAbstract(Class classe){
-        return allImplements(classe).stream().filter(clName -> {
+    public static List<String> allImplementsNotAbstract(Class classe) throws URISyntaxException, IOException{
+        if(notAbstracts == null) {
+            notAbstracts = reflect().stream().filter(path -> {
+                try {
+                    return !Modifier.isAbstract(makeClass(path).getModifiers());
+                } catch (Exception e) {
+                    return false;
+                }
+            }).toList();
+        }
+        return notAbstracts.stream().filter(path -> {
             try {
-                return !Modifier.isAbstract(makeClass(clName).getModifiers());
-            } catch (Exception ex) {
-                Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
+                return isInstance(makeClass(path), classe);
+            } catch (Exception e) {
+                return false;
             }
-            return false;
         }).toList();
     }
     

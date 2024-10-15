@@ -30,6 +30,7 @@ import br.com.jhondbs.core.server.interpreter.InterpreterBottle;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -74,7 +75,7 @@ public class Connection {
      * @throws IOException
      * @throws ClassNotFoundException 
      */
-    public void startAsClient() throws IOException, ClassNotFoundException, InvalidHash{
+    public void startAsClient() throws IOException, ClassNotFoundException, InvalidHash, URISyntaxException{
         startAsClient("localhost");
     }
     
@@ -84,7 +85,7 @@ public class Connection {
      * @throws IOException
      * @throws ClassNotFoundException 
      */
-    public void startAsClient(String ip) throws IOException, ClassNotFoundException, InvalidHash{
+    public void startAsClient(String ip) throws IOException, ClassNotFoundException, InvalidHash, URISyntaxException{
         startAsClient(ip, 15200);
     }
     
@@ -95,7 +96,7 @@ public class Connection {
      * @throws IOException
      * @throws ClassNotFoundException 
      */
-    public void startAsClient(String ip, int port) throws IOException, ClassNotFoundException, InvalidHash{
+    public void startAsClient(String ip, int port) throws IOException, ClassNotFoundException, InvalidHash, URISyntaxException{
         Starter.startInterpretadores();
         this.socket = new Socket(ip, port);
         initIO();
@@ -119,7 +120,7 @@ public class Connection {
      * @throws IOException
      * @throws ClassNotFoundException 
      */
-    public void startAsServer(Socket socket) throws IOException, ClassNotFoundException{
+    public void startAsServer(Socket socket) throws IOException, ClassNotFoundException, URISyntaxException{
         Starter.startInterpretadores();
         this.socket = socket;
         initIO();

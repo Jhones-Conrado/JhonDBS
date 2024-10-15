@@ -51,12 +51,26 @@ import java.util.regex.Pattern;
 public class Reader {
     
     public int modoOperacional = Bottle.TEMP_STAGE;
+    
+    private String ROOT_DB = "./db/";
+    private String TEMP_DB = "./temp/";
 
     public Reader() {
     }
     
+    public Reader(String root, String temp) {
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+    }
+    
     public Reader(int modoOperacional) {
         this.modoOperacional = modoOperacional;
+    }
+    
+    public Reader(int modoOperacional, String root, String temp) {
+        this.modoOperacional = modoOperacional;
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
     }
     
     
@@ -67,9 +81,9 @@ public class Reader {
     public String readFile(Class classe, String id) throws IOException {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         if(modoOperacional == 0) {
-            path = Bottle.ROOT_DB+path;
+            path = ROOT_DB+path;
         } else {
-            path = Bottle.TEMP_DB+path;
+            path = TEMP_DB+path;
         }
         
         File file = new File(path);
@@ -383,14 +397,14 @@ public class Reader {
     }
     
     public String sendToTemp(Class classe, String id) throws IOException, Exception {
-        Reader reader = new Reader(Bottle.TEMP_STAGE);
+        Reader reader = new Reader(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
         try {
             return reader.readFile(classe, id);
         } catch (Exception e) {
             reader.modoOperacional = Bottle.ROOT_STAGE;
         }
         String line = reader.readFile(classe, id);
-        Writer writer = new Writer(Bottle.TEMP_STAGE);
+        Writer writer = new Writer(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
         writer.writeText(classe, id, line);
         return line;
     }
@@ -398,9 +412,9 @@ public class Reader {
     public List<String> listAllIds(Class entityClass) {
         String path = entityClass.getName().replace(".class", "").replace(".", "/");
         if(modoOperacional == 0) {
-            path = Bottle.ROOT_DB+path;
+            path = ROOT_DB+path;
         } else {
-            path = Bottle.TEMP_DB+path;
+            path = TEMP_DB+path;
         }
         
         File file = new File(path);
@@ -414,7 +428,7 @@ public class Reader {
         List<Entity> list = new ArrayList<>();
         
         try {
-            Bottle bot = new Bottle(bottle.entity.getClass(), bottle.entity.getId(), Bottle.ROOT_STAGE);
+            Bottle bot = new Bottle(bottle.entity.getClass(), bottle.entity.getId(), Bottle.ROOT_STAGE, ROOT_DB, TEMP_DB, true);
             if(bot.entity != null) {
                 for(String id : bot.bottles.keySet()) {
                     if(!bottle.bottles.containsKey(id)) {

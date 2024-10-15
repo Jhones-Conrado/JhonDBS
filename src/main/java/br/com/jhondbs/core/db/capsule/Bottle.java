@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -65,16 +66,16 @@ import java.util.logging.Logger;
  */
 public class Bottle {
     
-    public static final String ROOT_DB = "./db/";
-    public static final String TEMP_DB = "./temp/";
+    private String ROOT_DB = "./db/";
+    private String TEMP_DB = "./temp/";
     
     public static final int ROOT_STAGE = 0;
     public static final int TEMP_STAGE = 1;
     
     public int modoOperacional = TEMP_STAGE;
     
-    public Writer writer = new Writer();
-    public Reader reader = new Reader();
+    private Writer writer;
+    private Reader reader;
     
     public Map<String, Bottle> bottles = new HashMap<>();
     public List<String> bottledFields = new ArrayList<>();
@@ -83,18 +84,26 @@ public class Bottle {
     
     public Entity entity;
     
+    private final String identifier = this.toString().replace(this.getClass().getName(), "");
+    
     public Bottle(Class clazz, String id, int modoOperacional) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles.put(id, this);
         this.loader = this.getClass().getClassLoader();
+        defineTemp();
+        initFolders();
         load(clazz, id, bottles, loader);
+        cleanFolders();
     }
     
     public Bottle(Class clazz, String id, int modoOperacional, ClassLoader loader) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles.put(id, this);
         this.loader = loader;
+        defineTemp();
+        initFolders();
         load(clazz, id, bottles, loader);
+        cleanFolders();
     }
     
     public Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional) throws Exception {
@@ -102,7 +111,10 @@ public class Bottle {
         this.bottles = bottles;
         this.bottles.put(id, this);
         this.loader = this.getClass().getClassLoader();
+        defineTemp();
+        initFolders();
         load(clazz, id, bottles, loader);
+        cleanFolders();
     }
     
     public Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional) throws Exception {
@@ -110,7 +122,10 @@ public class Bottle {
         this.bottles = bottles;
         this.bottles.put(id, this);
         this.loader = loader;
+        defineTemp();
+        initFolders();
         load(clazz, id, bottles, loader);
+        cleanFolders();
     }
     
     public Bottle(Entity entity) throws Exception {
@@ -118,7 +133,10 @@ public class Bottle {
         this.loader = this.getClass().getClassLoader();
         this.modoOperacional = ROOT_STAGE;
         this.bottles.put(entity.getId(), this);
+        defineTemp();
+        initFolders();
         loadRefs();
+        cleanFolders();
     }
     
     public Bottle(Entity entity, int modoOperacional) throws Exception {
@@ -126,7 +144,10 @@ public class Bottle {
         this.loader = this.getClass().getClassLoader();
         this.modoOperacional = modoOperacional;
         this.bottles.put(entity.getId(), this);
+        defineTemp();
+        initFolders();
         loadRefs();
+        cleanFolders();
     }
     
     public Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional) throws Exception {
@@ -135,7 +156,10 @@ public class Bottle {
         this.loader = this.getClass().getClassLoader();
         this.modoOperacional = modoOperacional;
         this.bottles.put(entity.getId(), this);
+        defineTemp();
+        initFolders();
         loadRefs();
+        cleanFolders();
     }
     
     public Bottle(Entity entity, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional) throws Exception {
@@ -144,8 +168,230 @@ public class Bottle {
         this.loader = loader;
         this.modoOperacional = modoOperacional;
         this.bottles.put(entity.getId(), this);
+        defineTemp();
+        initFolders();
+        loadRefs();
+        cleanFolders();
+    }
+    
+    public Bottle(Class clazz, String id, int modoOperacional, String root, String temp) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(id, this);
+        this.loader = this.getClass().getClassLoader();
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        load(clazz, id, bottles, loader);
+        cleanFolders();
+    }
+    
+    public Bottle(Class clazz, String id, int modoOperacional, ClassLoader loader, String root, String temp) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(id, this);
+        this.loader = loader;
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        load(clazz, id, bottles, loader);
+        cleanFolders();
+    }
+    
+    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles = bottles;
+        this.bottles.put(id, this);
+        this.loader = this.getClass().getClassLoader();
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        load(clazz, id, bottles, loader);
+        cleanFolders();
+    }
+    
+    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles = bottles;
+        this.bottles.put(id, this);
+        this.loader = loader;
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        load(clazz, id, bottles, loader);
+        cleanFolders();
+    }
+    
+    public Bottle(Entity entity, String root, String temp) throws Exception {
+        this.entity = entity;
+        this.loader = this.getClass().getClassLoader();
+        this.modoOperacional = ROOT_STAGE;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        loadRefs();
+        cleanFolders();
+    }
+    
+    public Bottle(Entity entity, int modoOperacional, String root, String temp) throws Exception {
+        this.entity = entity;
+        this.loader = this.getClass().getClassLoader();
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        loadRefs();
+        cleanFolders();
+    }
+    
+    public Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
+        this.entity = entity;
+        this.bottles = bottles;
+        this.loader = this.getClass().getClassLoader();
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        loadRefs();
+        cleanFolders();
+    }
+    
+    public Bottle(Entity entity, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp) throws Exception {
+        this.entity = entity;
+        this.bottles = bottles;
+        this.loader = loader;
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        initFolders();
+        loadRefs();
+        cleanFolders();
+    }
+    
+    
+    
+    
+    
+    public Bottle(Class clazz, String id, int modoOperacional, String root, String temp, boolean sub) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(id, this);
+        this.loader = this.getClass().getClassLoader();
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        load(clazz, id, bottles, loader);
+    }
+    
+    public Bottle(Class clazz, String id, int modoOperacional, ClassLoader loader, String root, String temp, boolean sub) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(id, this);
+        this.loader = loader;
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        load(clazz, id, bottles, loader);
+    }
+    
+    private Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp, boolean sub) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles = bottles;
+        this.bottles.put(id, this);
+        this.loader = this.getClass().getClassLoader();
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        load(clazz, id, bottles, loader);
+    }
+    
+    private Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp, boolean sub) throws Exception {
+        this.modoOperacional = modoOperacional;
+        this.bottles = bottles;
+        this.bottles.put(id, this);
+        this.loader = loader;
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        load(clazz, id, bottles, loader);
+    }
+    
+    private Bottle(Entity entity, String root, String temp, boolean sub) throws Exception {
+        this.entity = entity;
+        this.loader = this.getClass().getClassLoader();
+        this.modoOperacional = ROOT_STAGE;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
         loadRefs();
     }
+    
+    private Bottle(Entity entity, int modoOperacional, String root, String temp, boolean sub) throws Exception {
+        this.entity = entity;
+        this.loader = this.getClass().getClassLoader();
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        loadRefs();
+    }
+    
+    private Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp, boolean sub) throws Exception {
+        this.entity = entity;
+        this.bottles = bottles;
+        this.loader = this.getClass().getClassLoader();
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        loadRefs();
+    }
+    
+    private Bottle(Entity entity, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp, boolean sub) throws Exception {
+        this.entity = entity;
+        this.bottles = bottles;
+        this.loader = loader;
+        this.modoOperacional = modoOperacional;
+        this.bottles.put(entity.getId(), this);
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
+        this.writer = new Writer(modoOperacional, root, temp);
+        this.reader = new Reader(modoOperacional, root, temp);
+        loadRefs();
+    }
+    
+    
+    
+    
+    
+    
+    
     
     public void putRef(Entity entity) throws Exception {
         this.referencias.add(String.valueOf(ClassDictionary.getIndex(entity.getClass())) + ":" +entity.getId());
@@ -160,6 +406,42 @@ public class Bottle {
             this.referencias.addAll(reader.spliteredReferences(entity));
         } catch (Exception e) {
         }
+    }
+    
+    private void defineTemp() {
+        String identity = this.toString().replace(this.getClass().getName(), "");
+        this.TEMP_DB = this.TEMP_DB + identity +"/";
+        this.reader = new Reader(ROOT_DB, TEMP_DB);
+        this.writer = new Writer(ROOT_DB, TEMP_DB);
+    }
+    
+    private void initFolders() throws URISyntaxException, IOException {
+        List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
+        for(String path : all) {
+            File tempdb = new File(TEMP_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
+            tempdb.mkdirs();
+        }
+    }
+    
+    public void cleanFolders() {
+        File directory = new File(TEMP_DB);
+        if (!directory.exists()) {
+            return;
+        }
+        deleteContents(directory);
+        directory.delete();
+    }
+    
+    private void deleteContents(File file) {
+        if (file.isDirectory()) {
+            File[] contents = file.listFiles();
+            if (contents != null) {
+                for (File f : contents) {
+                    deleteContents(f);
+                }
+            }
+        }
+        file.delete();
     }
     
     /*
@@ -188,6 +470,7 @@ public class Bottle {
     }
     
     public void flush() throws Exception {
+        initFolders();
         writer.initDb();
         if (bottledFields.isEmpty()) {
             engarafar();
@@ -196,7 +479,7 @@ public class Bottle {
         Set<String> toLock = new HashSet<>();
         
         try {
-            if (todosCamposSaoUnicos()) {
+            if(todosCamposSaoUnicos()) {
                 
                 for(Bottle b : bottles.values()) {
                     toLock.add(b.entity.getId());
@@ -204,7 +487,7 @@ public class Bottle {
                 
                 Bottle b2 = null;
                 try {
-                    b2 = new Bottle(entity.getClass(), entity.getId(), ROOT_STAGE);
+                    b2 = new Bottle(entity.getClass(), entity.getId(), ROOT_STAGE, ROOT_DB, TEMP_DB, true);
                     for(Bottle b : b2.bottles.values()) {
                         toLock.add(b.entity.getId());
                     }
@@ -228,7 +511,6 @@ public class Bottle {
                     deleteFilesEndingWithDelete();
                     moveDirectory();
                 } catch (Exception e) {
-                    
                     e.printStackTrace();
                 }
             }
@@ -238,6 +520,7 @@ public class Bottle {
             for(String s : toLock) {
                 IO.io().unlockWrite(s);
             }
+            cleanFolders();
         }
     }
     
@@ -251,8 +534,8 @@ public class Bottle {
                 excludedIds.add(e.getId());
             }
             try {
-                Reader r = new Reader(TEMP_STAGE);
-                Bottle bot = new Bottle(entity.getClass(), entity.getId(), Bottle.ROOT_STAGE);
+                Reader r = new Reader(TEMP_STAGE, ROOT_DB, TEMP_DB);
+                Bottle bot = new Bottle(entity.getClass(), entity.getId(), Bottle.ROOT_STAGE, ROOT_DB, TEMP_DB, true);
                 List<Entity> oldcascs = r.listCascateEntities(bot.entity);
                 List<Entity> todelete = new ArrayList<>();
                 for(Entity e : oldcascs) {
@@ -262,7 +545,11 @@ public class Bottle {
                 }
                 for(Entity e : todelete) {
                     if(isOrphan(e)) {
-                        e.delete();
+                        Bottle b = new Bottle(entity, ROOT_DB, TEMP_DB, true);
+                        if(b.delete(true)) {
+                            b.deleteFilesEndingWithDelete();
+                            b.moveDirectory();
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -277,8 +564,8 @@ public class Bottle {
      */
     private void removeReferences(List<Entity> excludeds) throws Exception {
         if(!excludeds.isEmpty()) {
-            Reader r = new Reader(TEMP_STAGE);
-            Writer ww = new Writer(TEMP_STAGE);
+            Reader r = new Reader(TEMP_STAGE, ROOT_DB, TEMP_DB);
+            Writer ww = new Writer(TEMP_STAGE, ROOT_DB, TEMP_DB);
             for(Entity e : excludeds) {
                 reader.sendToTemp(e);
                 String cont = r.readContent(e);
@@ -299,9 +586,9 @@ public class Bottle {
         }
     }
     
-    public static void moveDirectory() throws IOException {
-        Path sourceDir = Paths.get("./temp");
-        Path targetDir = Paths.get("./db");
+    public void moveDirectory() throws IOException {
+        Path sourceDir = Paths.get(this.TEMP_DB);
+        Path targetDir = Paths.get(this.ROOT_DB);
         // Walk through the file tree starting from the source directory
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
             @Override
@@ -324,9 +611,9 @@ public class Bottle {
         });
     }
     
-    public static void deleteFilesEndingWithDelete() throws IOException {
-        Path sourceDir = Paths.get("./temp");
-        Path targetDir = Paths.get("./db");
+    public void deleteFilesEndingWithDelete() throws IOException {
+        Path sourceDir = Paths.get(this.TEMP_DB);
+        Path targetDir = Paths.get(this.ROOT_DB);
         // Walk through the file tree starting from the source directory
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
             @Override
@@ -356,16 +643,27 @@ public class Bottle {
     }
     
     public boolean isOrphan(Entity entity) throws Exception {
-        Reader r = new Reader(TEMP_STAGE);
+        Reader r = new Reader(TEMP_STAGE, ROOT_DB, TEMP_DB);
         r.sendToTemp(entity);
         List<String> refs = r.spliteredReferences(entity);
         return refs.isEmpty();
     }
     
     public boolean delete() throws IllegalArgumentException, IllegalAccessException, Exception {
-        Reader r = new Reader(TEMP_STAGE);
-        Writer w = new Writer(TEMP_STAGE);
-        Bottle b = new Bottle(entity);
+        initFolders();
+        Reader r = new Reader(TEMP_STAGE, ROOT_DB, TEMP_DB);
+        Writer w = new Writer(TEMP_STAGE, ROOT_DB, TEMP_DB);
+        Bottle b = new Bottle(entity, ROOT_DB, TEMP_DB, true);
+        for(Bottle bb : b.bottles.values()) {
+            w.removeExistence(bb.entity);
+        }
+        return true;
+    }
+    
+    private boolean delete(boolean sub) throws IllegalArgumentException, IllegalAccessException, Exception {
+        Reader r = new Reader(TEMP_STAGE, ROOT_DB, TEMP_DB);
+        Writer w = new Writer(TEMP_STAGE, ROOT_DB, TEMP_DB);
+        Bottle b = new Bottle(entity, ROOT_DB, TEMP_DB, true);
         for(Bottle bb : b.bottles.values()) {
             w.removeExistence(bb.entity);
         }
@@ -413,7 +711,7 @@ public class Bottle {
                         } else if(Reflection.isInstance(field.getType(), Entity.class)) {
                             Entity ente = (Entity) valor;
                             if(!bottles.containsKey(ente.getId())) {
-                                Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional);
+                                Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
                                 bottle.engarafar();
                             }
                             bottles.get(ente.getId()).putRef(this.entity);
@@ -455,7 +753,7 @@ public class Bottle {
             } else if(Reflection.isInstance(objeto.getClass(), Entity.class)) {
                 Entity ente = (Entity) objeto;
                 if(!bottles.containsKey(ente.getId())) {
-                    Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional);
+                    Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
                     bottle.engarafar();
                     bottle.putRef(this.entity);
                 }
@@ -530,7 +828,7 @@ public class Bottle {
                 } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
                     Entity ente = (Entity) obj;
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional);
+                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
                         bottle.engarafar();
                         bottle.putRef(this.entity);
                     }
@@ -550,7 +848,7 @@ public class Bottle {
                 } else if(Reflection.isInstance(key.getClass(), Entity.class)) {
                     Entity ente = (Entity) key;
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional);
+                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
                         bottle.engarafar();
                         bottle.putRef(this.entity);
                     }
@@ -565,7 +863,7 @@ public class Bottle {
                 } else if(Reflection.isInstance(map.get(key).getClass(), Entity.class)) {
                     Entity ente = (Entity) map.get(key);
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional);
+                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
                         bottle.engarafar();
                         bottle.putRef(this.entity);
                     }
@@ -632,6 +930,7 @@ public class Bottle {
             throw new Exception("Erro ao ler a entidade: "+clazz+" -> "+id);
         } finally {
             IO.io().unlockRead(id);
+//            cleanFolders();
         }
     }
     
@@ -681,7 +980,7 @@ public class Bottle {
             if(bottles.containsKey(id)) {
                 return bottles.get(id).entity;
             } else {
-                Bottle bottle = new Bottle(classe_do_objeto, id, bottles, loader, modoOperacional);
+                Bottle bottle = new Bottle(classe_do_objeto, id, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
                 return bottle.entity;
             }
         } 
@@ -800,7 +1099,7 @@ public class Bottle {
         String raiz = (modoOperacional == ROOT_STAGE) ? ROOT_DB : TEMP_DB;
         String[] listaDeIds = new File(raiz + entity.getClass().getName().replace(".class", "").replace(".", "/")).list();
 
-        Reader reader = new Reader();
+        Reader reader = new Reader(ROOT_DB, TEMP_DB);
         reader.modoOperacional = modoOperacional;
 
         if (listaDeIds != null && listaDeIds.length > 0) {

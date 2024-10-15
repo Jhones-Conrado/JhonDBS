@@ -28,6 +28,8 @@ import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.Reflection;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -45,12 +47,26 @@ import java.util.logging.Logger;
 public class Writer {
     
     public int modoOperacional = Bottle.TEMP_STAGE;
-
+    
+    private String ROOT_DB = "./db/";
+    private String TEMP_DB = "./temp/";
+    
     public Writer() {
+    }
+    
+    public Writer(String root, String temp) {
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
     }
     
     public Writer(int modoOperacional) {
         this.modoOperacional = modoOperacional;
+    }
+    
+    public Writer(int modoOperacional, String root, String temp) {
+        this.modoOperacional = modoOperacional;
+        this.ROOT_DB = root;
+        this.TEMP_DB = temp;
     }
     
     public boolean write(Bottle bottle) throws Exception {
@@ -72,7 +88,7 @@ public class Writer {
     }
     
     public void removeExistence(Entity entity) throws Exception {
-        Reader reader = new Reader(Bottle.TEMP_STAGE);
+        Reader reader = new Reader(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
         List<String> refs = new ArrayList<>();
         String originalContent = null;
         try {
@@ -88,7 +104,7 @@ public class Writer {
             }
         }
         reader.modoOperacional = Bottle.TEMP_STAGE;
-        Writer w = new Writer(Bottle.TEMP_STAGE);
+        Writer w = new Writer(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
         if(!originalContent.endsWith("DELETE")) {
             for(String ref : refs) {
                 String[] dados = ref.split(":");
@@ -171,7 +187,7 @@ public class Writer {
     }
     
     private String removeEntityFromList(String capsulesList, String idToRemove) {
-        Reader reader = new Reader();
+        Reader reader = new Reader(ROOT_DB, TEMP_DB);
         List<String> capsules = reader.splitCapsules(capsulesList);
         capsules = capsules.stream().filter(cap -> !cap.contains(idToRemove)).toList();
         StringBuilder sb = new StringBuilder();
@@ -184,7 +200,7 @@ public class Writer {
     }
     
     private String removeEntityFromMap(String capsulesList, String idToRemove) {
-        Reader reader = new Reader();
+        Reader reader = new Reader(ROOT_DB, TEMP_DB);
         List<String> capsules = reader.splitCapsules(capsulesList);
         List<String> pares = new ArrayList<>();
         for(int i = 0 ; i < capsules.size()-1 ; i += 2) {
@@ -208,33 +224,24 @@ public class Writer {
     ************************************************************
     */
     
-    public void initDb() {
+    public void initDb() throws URISyntaxException, IOException {
         List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
         for(String path : all) {
-            File rootdb = new File(Bottle.ROOT_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
-            File tempdb = new File(Bottle.TEMP_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
+            File rootdb = new File(ROOT_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
             rootdb.mkdirs();
-            tempdb.mkdirs();
-//            System.out.println("Diretório criado -> "+rootdb.getPath());
         }
     }
     
     public String getPath(Entity entity) throws Exception {
-        String path = entity.getClass().getName().replace(".class", "").replace(".", "/")+"/"+entity.getId();
-        if(modoOperacional == 0) {
-            path = Bottle.ROOT_DB+path;
-        } else {
-            path = Bottle.TEMP_DB+path;
-        }
-        return path;
+        return getPath(entity.getClass(), entity.getId());
     }
     
     public String getPath(Class classe, String id) throws Exception {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         if(modoOperacional == 0) {
-            path = Bottle.ROOT_DB+path;
+            path = ROOT_DB+path;
         } else {
-            path = Bottle.TEMP_DB+path;
+            path = TEMP_DB+path;
         }
         return path;
     }
