@@ -23,16 +23,15 @@
  */
 package br;
 
-import br.com.jhondbs.core.db.obj.ColdEntity;
+import java.awt.Color;
+import java.awt.Graphics2D;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import tests.objects.Cold;
-import tests.objects.EnteA;
-import tests.objects.EnteB;
+import tests.objects.EnteImg;
 
 /**
  *
@@ -62,6 +61,20 @@ public class SporadicTests {
     @Test
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
+        
+//        EnteImg ente = new EnteImg();
+//        ente.save();
+        
+        
+//        EnteImg enteLoaded = ente.load(ente.getId());
+//        Graphics2D g = (Graphics2D) enteLoaded.img.getGraphics();
+//        g.setColor(Color.yellow);
+//        g.fillOval(400, 250, 50, 50);
+//        g.dispose();
+//        enteLoaded.save();
+        
+//        enteLoaded.delete();
+        
         
 //        EnteA a = new EnteA();
 //        a.loadAll();

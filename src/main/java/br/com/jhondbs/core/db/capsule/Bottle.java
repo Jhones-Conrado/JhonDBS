@@ -30,12 +30,20 @@ import br.com.jhondbs.core.db.obj.ColdEntity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.tools.Reflection;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
+import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -44,6 +52,8 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
 import java.time.Period;
 import java.time.temporal.Temporal;
@@ -59,6 +69,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 
 /**
  * Versão 4
@@ -80,6 +91,7 @@ public class Bottle {
     public Map<String, Bottle> bottles = new HashMap<>();
     public List<String> bottledFields = new ArrayList<>();
     public Set<String> referencias = new HashSet<>();
+    public Map<String, Image> imgs = new HashMap<>();
     public ClassLoader loader;
     
     public Entity entity;
@@ -504,15 +516,46 @@ public class Bottle {
                     for (String s : toLock) {
                         IO.io().lockWrite(s);
                     }
+                    
+                    List<File> imgsToDelete = new ArrayList<>();
+                    
                     List<Entity> excludeds = reader.listExcludeds(this);
                     removeReferences(excludeds);
                     for (Bottle bottle : bottles.values()) {
                         writer.write(bottle);
+                        
+                        if(!bottle.imgs.isEmpty()) {
+                            File folder = new File(TEMP_DB+"imgs/"+bottle.entity.getId());
+                            folder.mkdirs();
+                            File prodFolder = new File(ROOT_DB+"imgs/"+bottle.entity.getId());
+                            prodFolder.mkdirs();
+                            
+                            List<String> hashs = Arrays.asList(prodFolder.list());
+                            for(String hash : bottle.imgs.keySet()) {
+                                if(!hashs.contains(hash)) {
+                                    File out = new File(folder.getPath()+"/"+hash);
+                                    ImageIO.write((RenderedImage) bottle.imgs.get(hash), "png", out);
+                                }
+                            }
+                            for(String hash : hashs) {
+                                if(!bottle.imgs.containsKey(hash)) {
+                                    File del = new File(prodFolder.getPath()+"/"+hash);
+                                    imgsToDelete.add(del);
+                                }
+                            }
+                        }
+                        
                     }
                     handleOrphanEntities(excludeds);
+                    
                     try {
                         deleteFilesEndingWithDelete();
                         moveDirectory();
+                        for(File f : imgsToDelete) {
+                            if(f.exists()) {
+                                f.delete();
+                            }
+                        }
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -627,26 +670,41 @@ public class Bottle {
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                // Read all lines of the file
-                List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
-                
-                // Check if the last line ends with "DELETE"
-                if (!lines.isEmpty() && lines.get(lines.size() - 1).endsWith("DELETE")) {
-                    // Resolve the corresponding file in the target directory (db)
-                    Path targetFile = targetDir.resolve(sourceDir.relativize(file));
-                    
-                    // Delete the file in the target directory if it exists
-                    if (Files.exists(targetFile)) {
-                        Files.delete(targetFile);
-//                        System.out.println("Deleted from db: " + targetFile);
+                if(!file.toString().contains("/imgs/")) {
+                    // Read all lines of the file
+                    List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
+
+                    // Check if the last line ends with "DELETE"
+                    if (!lines.isEmpty() && lines.get(lines.size() - 1).endsWith("DELETE")) {
+                        // Resolve the corresponding file in the target directory (db)
+                        Path targetFile = targetDir.resolve(sourceDir.relativize(file));
+
+                        // Delete the file in the target directory if it exists
+                        if (Files.exists(targetFile)) {
+                            File f = targetFile.toFile();
+                            if(f.isFile()) {
+                                File imgFolder = new File(ROOT_DB+"imgs/"+f.getName());
+                                if(imgFolder.exists()) {
+                                    File[] list = imgFolder.listFiles();
+                                    for(File ff : list) {
+                                        ff.delete();
+                                    }
+                                    imgFolder.delete();
+                                }
+                            }
+                            Files.delete(targetFile);
+                            
+    //                        System.out.println("Deleted from db: " + targetFile);
+                        }
+
+                        // Delete the file in the source directory (temp)
+                        Files.delete(file);
+    //                    System.out.println("Deleted from temp: " + file);
                     }
 
-                    // Delete the file in the source directory (temp)
-                    Files.delete(file);
-//                    System.out.println("Deleted from temp: " + file);
+                    return FileVisitResult.CONTINUE;
                 }
-                
-                return FileVisitResult.CONTINUE;
+                return FileVisitResult.SKIP_SUBTREE;
             }
         });
     }
@@ -767,6 +825,16 @@ public class Bottle {
                     bottle.putRef(this.entity);
                 }
                 return encapsuleId(ente);
+            } else if(objeto instanceof File) {
+                
+            } else if(objeto instanceof Image) {
+                Image img = (Image) objeto;
+                byte[] bytes = getImageData(img);
+                String hash = generateMD5Hash(bytes);
+                if(!this.imgs.containsKey(hash)) {
+                    this.imgs.put(hash, img);
+                }
+                return "{img:"+hash+"}";
             } else {
                 StringBuilder sb = new StringBuilder();
                 sb.append("{");
@@ -788,6 +856,56 @@ public class Bottle {
             }
         }
         throw new Exception("Objeto não serializável: "+objeto.getClass());
+    }
+    
+    private byte[] getImageData(BufferedImage image) {
+        if(image != null) {
+            // Garante que a imagem seja do tipo correto (exemplo: BufferedImage.TYPE_3BYTE_BGR)
+            BufferedImage newImage = null;
+            if (image.getType() != BufferedImage.TYPE_3BYTE_BGR) {
+                newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+                newImage.getGraphics().drawImage(image, 0, 0, null);
+            }
+            DataBufferByte buffer = (DataBufferByte) newImage.getRaster().getDataBuffer();
+            return buffer.getData();
+        }
+        throw new NullPointerException("BufferedImage vazia.");
+    }
+    
+    private byte[] getImageData(Image image) {
+        BufferedImage bufferedImage = toBufferedImage(image);
+        if (bufferedImage.getType() != BufferedImage.TYPE_3BYTE_BGR) {
+            BufferedImage newImage = new BufferedImage(bufferedImage.getWidth(), bufferedImage.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
+            Graphics2D g = newImage.createGraphics();
+            g.drawImage(bufferedImage, 0, 0, null);
+            g.dispose();
+            bufferedImage = newImage;
+        }
+        DataBufferByte buffer = (DataBufferByte) bufferedImage.getRaster().getDataBuffer();
+        return buffer.getData();
+    }
+
+    // Método auxiliar para converter Image em BufferedImage
+    private BufferedImage toBufferedImage(Image img) {
+        if (img instanceof BufferedImage) {
+            return (BufferedImage) img;
+        }
+        BufferedImage bufferedImage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_3BYTE_BGR);
+        Graphics2D g2 = bufferedImage.createGraphics();
+        g2.drawImage(img, 0, 0, null);
+        g2.dispose();
+        return bufferedImage;
+    }
+    
+    private String generateMD5Hash(byte[] inputBytes) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(inputBytes);
+        byte[] digest = md.digest();
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b & 0xff));
+        }
+        return sb.toString();
     }
     
     private String encapsuleEnum(Enum e) {
@@ -931,6 +1049,13 @@ public class Bottle {
             this.entity = (Entity) Reflection.getNewInstance(clazz, loader);
             String content = reader.readContent(clazz, id);
             List<String> fields = reader.splitCapsules(reader.getValueFromCapsule(content));
+            
+            for(String campo : fields) {
+                if(campo.substring(0, campo.indexOf(":")).contains("id")) {
+                    inserir(this.entity, campo, loader);
+                }
+            }
+            
             for(String campo : fields) {
                 inserir(this.entity, campo, loader);
                 this.bottledFields.add(campo);
@@ -964,6 +1089,7 @@ public class Bottle {
         classe_do_objeto = switch (indice) {
             case "list" -> List.class;
             case "map" -> Map.class;
+            case "img" -> Image.class;
             default -> ClassDictionary.fromIndex(Integer.parseInt(indice));
         };
         
@@ -1002,8 +1128,9 @@ public class Bottle {
         } 
         else if (Reflection.isInstance(classe_do_objeto, Map.class)) {
             return parseMapFromString(conteudo, loader);
-        } 
-        else {
+        } else if(Reflection.isInstance(classe_do_objeto, Image.class)) {
+            return getImg(conteudo, loader);
+        } else {
             if (classe_do_objeto.isEnum()) {
                 Class<?> forName = Class.forName(classe_do_objeto.getName(), true, loader);
                 return Enum.valueOf((Class<Enum>) forName, conteudo);
@@ -1031,6 +1158,29 @@ public class Bottle {
         }
         
         throw new Exception("Não foi possível distinguir o tipo de objeto -> "+conteudo);
+    }
+    
+    public Image getImg(String hash, ClassLoader loader) throws ClassNotFoundException, Exception {
+        if(!this.imgs.containsKey(hash)) {
+            File imageFile = new File(ROOT_DB+"imgs/"+this.entity.getId()+"/"+hash);
+            if (!imageFile.exists()) {
+                throw new IllegalArgumentException("Imagem não encontrada no caminho: " + imageFile.getPath());
+            }
+            BufferedImage readed = ImageIO.read(imageFile);
+            this.imgs.put(hash, readed);
+            
+            
+//            URL imageUrl = imageFile.toURI().toURL();
+//            URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{imageUrl}, loader);
+//            Class<?> toolkitClass = Toolkit.getDefaultToolkit().getClass();
+//            try {
+//                Image image = (Image) toolkitClass.getMethod("getImage", URL.class).invoke(Toolkit.getDefaultToolkit(), imageUrl);
+//                this.imgs.put(hash, image);
+//            } catch (Exception e) {
+//                throw new IOException("Falha ao carregar a imagem com o ClassLoader informado", e);
+//            }
+        }
+        return this.imgs.get(hash);
     }
     
     public List parseListFromString(String str, ClassLoader loader) throws Exception {

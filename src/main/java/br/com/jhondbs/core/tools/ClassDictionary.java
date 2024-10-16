@@ -23,6 +23,8 @@
  */
 package br.com.jhondbs.core.tools;
 
+import java.awt.Image;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -154,6 +156,13 @@ public class ClassDictionary {
                 dictionary.put(Map.class.getName(), String.valueOf(dictionary.size()));
                 dictionary.put(Set.class.getName(), String.valueOf(dictionary.size()));
                 dictionary.put(Properties.class.getName(), String.valueOf(dictionary.size()));
+                
+                /*
+                Imagens e arquivos.
+                */
+                dictionary.put(Image.class.getName(), String.valueOf(dictionary.size()));
+                dictionary.put(BufferedImage.class.getName(), String.valueOf(dictionary.size()));
+                
             }
             List<String> all = Reflection.allImplementsNotAbstract(Object.class);
             all.forEach(cl -> {
