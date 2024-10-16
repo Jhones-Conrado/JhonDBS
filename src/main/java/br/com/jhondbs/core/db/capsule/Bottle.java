@@ -32,18 +32,16 @@ import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.tools.Reflection;
 import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Toolkit;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.awt.image.RenderedImage;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -52,6 +50,7 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -92,6 +91,7 @@ public class Bottle {
     public List<String> bottledFields = new ArrayList<>();
     public Set<String> referencias = new HashSet<>();
     public Map<String, Image> imgs = new HashMap<>();
+    public Map<String, File> files = new HashMap<>();
     public ClassLoader loader;
     
     public Entity entity;
@@ -104,7 +104,7 @@ public class Bottle {
         this.loader = this.getClass().getClassLoader();
         defineTemp();
         initFolders();
-        load(clazz, id, bottles, loader);
+        load(clazz, id, loader);
         cleanFolders();
     }
     
@@ -114,29 +114,7 @@ public class Bottle {
         this.loader = loader;
         defineTemp();
         initFolders();
-        load(clazz, id, bottles, loader);
-        cleanFolders();
-    }
-    
-    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles = bottles;
-        this.bottles.put(id, this);
-        this.loader = this.getClass().getClassLoader();
-        defineTemp();
-        initFolders();
-        load(clazz, id, bottles, loader);
-        cleanFolders();
-    }
-    
-    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles = bottles;
-        this.bottles.put(id, this);
-        this.loader = loader;
-        defineTemp();
-        initFolders();
-        load(clazz, id, bottles, loader);
+        load(clazz, id, loader);
         cleanFolders();
     }
     
@@ -151,157 +129,6 @@ public class Bottle {
         cleanFolders();
     }
     
-    public Bottle(Entity entity, int modoOperacional) throws Exception {
-        this.entity = entity;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        defineTemp();
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    public Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional) throws Exception {
-        this.entity = entity;
-        this.bottles = bottles;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        defineTemp();
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    public Bottle(Entity entity, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional) throws Exception {
-        this.entity = entity;
-        this.bottles = bottles;
-        this.loader = loader;
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        defineTemp();
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    public Bottle(Class clazz, String id, int modoOperacional, String root, String temp) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(id, this);
-        this.loader = this.getClass().getClassLoader();
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        load(clazz, id, bottles, loader);
-        cleanFolders();
-    }
-    
-    public Bottle(Class clazz, String id, int modoOperacional, ClassLoader loader, String root, String temp) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(id, this);
-        this.loader = loader;
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        load(clazz, id, bottles, loader);
-        cleanFolders();
-    }
-    
-    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles = bottles;
-        this.bottles.put(id, this);
-        this.loader = this.getClass().getClassLoader();
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        load(clazz, id, bottles, loader);
-        cleanFolders();
-    }
-    
-    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles = bottles;
-        this.bottles.put(id, this);
-        this.loader = loader;
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        load(clazz, id, bottles, loader);
-        cleanFolders();
-    }
-    
-    public Bottle(Entity entity, String root, String temp) throws Exception {
-        this.entity = entity;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = ROOT_STAGE;
-        this.bottles.put(entity.getId(), this);
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    public Bottle(Entity entity, int modoOperacional, String root, String temp) throws Exception {
-        this.entity = entity;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    public Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
-        this.entity = entity;
-        this.bottles = bottles;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    public Bottle(Entity entity, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp) throws Exception {
-        this.entity = entity;
-        this.bottles = bottles;
-        this.loader = loader;
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        initFolders();
-        loadRefs();
-        cleanFolders();
-    }
-    
-    
-    
-    
-    
     public Bottle(Class clazz, String id, int modoOperacional, String root, String temp, boolean sub) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles.put(id, this);
@@ -311,32 +138,7 @@ public class Bottle {
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
         this.isSub = true;
-        load(clazz, id, bottles, loader);
-    }
-    
-    public Bottle(Class clazz, String id, int modoOperacional, ClassLoader loader, String root, String temp, boolean sub) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(id, this);
-        this.loader = loader;
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        this.isSub = true;
-        load(clazz, id, bottles, loader);
-    }
-    
-    private Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp, boolean sub) throws Exception {
-        this.modoOperacional = modoOperacional;
-        this.bottles = bottles;
-        this.bottles.put(id, this);
-        this.loader = this.getClass().getClassLoader();
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        this.isSub = true;
-        load(clazz, id, bottles, loader);
+        load(clazz, id, loader);
     }
     
     private Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp, boolean sub) throws Exception {
@@ -349,40 +151,13 @@ public class Bottle {
         this.writer = new Writer(modoOperacional, root, temp);
         this.reader = new Reader(modoOperacional, root, temp);
         this.isSub = true;
-        load(clazz, id, bottles, loader);
+        load(clazz, id, loader);
     }
     
     private Bottle(Entity entity, String root, String temp, boolean sub) throws Exception {
         this.entity = entity;
         this.loader = this.getClass().getClassLoader();
         this.modoOperacional = ROOT_STAGE;
-        this.bottles.put(entity.getId(), this);
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        this.isSub = true;
-        loadRefs();
-    }
-    
-    private Bottle(Entity entity, int modoOperacional, String root, String temp, boolean sub) throws Exception {
-        this.entity = entity;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = modoOperacional;
-        this.bottles.put(entity.getId(), this);
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-        this.writer = new Writer(modoOperacional, root, temp);
-        this.reader = new Reader(modoOperacional, root, temp);
-        this.isSub = true;
-        loadRefs();
-    }
-    
-    private Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp, boolean sub) throws Exception {
-        this.entity = entity;
-        this.bottles = bottles;
-        this.loader = this.getClass().getClassLoader();
-        this.modoOperacional = modoOperacional;
         this.bottles.put(entity.getId(), this);
         this.ROOT_DB = root;
         this.TEMP_DB = temp;
@@ -405,13 +180,6 @@ public class Bottle {
         this.isSub = true;
         loadRefs();
     }
-    
-    
-    
-    
-    
-    
-    
     
     public void putRef(Entity entity) throws Exception {
         this.referencias.add(String.valueOf(ClassDictionary.getIndex(entity.getClass())) + ":" +entity.getId());
@@ -504,63 +272,33 @@ public class Bottle {
                 Bottle b2 = null;
                 try {
                     b2 = new Bottle(entity.getClass(), entity.getId(), ROOT_STAGE, ROOT_DB, TEMP_DB, true);
-                    for (Bottle b : b2.bottles.values()) {
-                        toLock.add(b.entity.getId());
-                    }
+                    toLock.addAll(b2.bottles.keySet());
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
-                // Tranca todas as entidades
                 try {
+                    // Tranca todas as entidades
                     for (String s : toLock) {
                         IO.io().lockWrite(s);
                     }
                     
-                    List<File> imgsToDelete = new ArrayList<>();
-                    
                     List<Entity> excludeds = reader.listExcludeds(this);
                     removeReferences(excludeds);
-                    for (Bottle bottle : bottles.values()) {
-                        writer.write(bottle);
-                        
-                        if(!bottle.imgs.isEmpty()) {
-                            File folder = new File(TEMP_DB+"imgs/"+bottle.entity.getId());
-                            folder.mkdirs();
-                            File prodFolder = new File(ROOT_DB+"imgs/"+bottle.entity.getId());
-                            prodFolder.mkdirs();
-                            
-                            List<String> hashs = Arrays.asList(prodFolder.list());
-                            for(String hash : bottle.imgs.keySet()) {
-                                if(!hashs.contains(hash)) {
-                                    File out = new File(folder.getPath()+"/"+hash);
-                                    ImageIO.write((RenderedImage) bottle.imgs.get(hash), "png", out);
-                                }
-                            }
-                            for(String hash : hashs) {
-                                if(!bottle.imgs.containsKey(hash)) {
-                                    File del = new File(prodFolder.getPath()+"/"+hash);
-                                    imgsToDelete.add(del);
-                                }
-                            }
-                        }
-                        
-                    }
                     handleOrphanEntities(excludeds);
                     
-                    try {
-                        deleteFilesEndingWithDelete();
-                        moveDirectory();
-                        for(File f : imgsToDelete) {
-                            if(f.exists()) {
-                                f.delete();
-                            }
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                    List<File> imgsToDelete = new ArrayList<>();
+                    List<File> filesToDelete = new ArrayList<>();
+                    for (Bottle bottle : bottles.values()) {
+                        writer.write(bottle);
+                        flushImgs(bottle, imgsToDelete);
+                        flushFiles(bottle, filesToDelete);
                     }
+                    
+                    applyChanges(imgsToDelete, filesToDelete);
                 } catch (Exception e) {
                     e.printStackTrace(); // Exceção no processo de escrita
+                    throw e;
                 } finally {
                     for (String s : toLock) {
                         IO.io().unlockWrite(s);
@@ -569,12 +307,94 @@ public class Bottle {
             }
         } catch (Exception e) {
             e.printStackTrace(); // Exceção na verificação de campos únicos
+            throw e;
         } finally {
-            // Libera os locks apenas uma vez no final
             cleanFolders();
         }
     }
+    
+    private void applyChanges(List<File> imgsToDelete, List<File> filesToDelete) throws IOException {
+        deleteFilesEndingWithDelete();
+        moveDirectory();
+        for(File f : imgsToDelete) {
+            if(f.exists()) {
+                f.delete();
+            }
+        }
+        for(File f : filesToDelete) {
+            if(f.exists()) {
+                f.delete();
+            }
+        }
 
+        for(File f : imgsToDelete) {
+            if(f.getParentFile().list().length == 0) {
+                f.getParentFile().delete();
+            }
+        }
+        for(File f : filesToDelete) {
+            if(f.getParentFile().list().length == 0) {
+                f.getParentFile().delete();
+            }
+        }
+        
+    }
+    
+    private void flushImgs(Bottle bottle, List<File> imgsToDelete) throws Exception {
+        File folder = new File(TEMP_DB+"imgs/"+bottle.entity.getId());
+        File prodFolder = new File(ROOT_DB+"imgs/"+bottle.entity.getId());
+        if(!bottle.imgs.isEmpty() || prodFolder.exists()) {
+            folder.mkdirs();
+            prodFolder.mkdirs();
+            List<String> hashs = Arrays.asList(prodFolder.list());
+            for(String hash : bottle.imgs.keySet()) {
+                if(!hashs.contains(hash)) {
+                    File out = new File(folder.getPath()+"/"+hash);
+                    ImageIO.write((RenderedImage) bottle.imgs.get(hash), "png", out);
+                }
+            }
+            for(String hash : hashs) {
+                if(!bottle.imgs.containsKey(hash)) {
+                    File del = new File(prodFolder.getPath()+"/"+hash);
+                    imgsToDelete.add(del);
+                }
+            }
+            if(prodFolder.list().length == 0 && folder.list().length == 0) {
+                prodFolder.delete();
+            }
+        }
+    }
+
+    private void flushFiles(Bottle bottle, List<File> filesToDelete) throws Exception {
+        File fileFolder = new File(TEMP_DB+"files/"+bottle.entity.getId());
+        File prodFileFolder = new File(ROOT_DB+"files/"+bottle.entity.getId());
+        if(!bottle.files.isEmpty() || prodFileFolder.exists()) {
+            fileFolder.mkdirs();
+            prodFileFolder.mkdirs();
+            List<String> fileHashs = Arrays.asList(prodFileFolder.list());
+            for(String hash : bottle.files.keySet()) {
+                if(!fileHashs.contains(hash)) {
+                    File out = new File(fileFolder.getPath()+"/"+hash);
+                    Files.copy(bottle.files.get(hash).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                } else {
+                    File antigo = new File(prodFileFolder.getPath()+"/"+hash);
+                    File novo = bottle.files.get(hash);
+                    if(!areFilesEquals(antigo, novo)) {
+                        Files.copy(novo.toPath(), antigo.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+            }
+            for(String hash : fileHashs) {
+                if(!bottle.files.containsKey(hash)) {
+                    File antigo = new File(prodFileFolder.getPath()+"/"+hash);
+                    filesToDelete.add(antigo);
+                }
+            }
+            if(prodFileFolder.list().length == 0 && fileFolder.list().length == 0) {
+                prodFileFolder.delete();
+            }
+        }
+    }
     
     /**
      * Verifica quais entidades são do tipo cascata para futura análise de orfandade e exclusão.
@@ -670,7 +490,7 @@ public class Bottle {
         Files.walkFileTree(sourceDir, new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if(!file.toString().contains("/imgs/")) {
+                if(!file.toString().contains("/imgs/") && !file.toString().contains("/files/")) {
                     // Read all lines of the file
                     List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
 
@@ -683,6 +503,7 @@ public class Bottle {
                         if (Files.exists(targetFile)) {
                             File f = targetFile.toFile();
                             if(f.isFile()) {
+                                File fileFolder = new File(ROOT_DB+"files/"+f.getName());
                                 File imgFolder = new File(ROOT_DB+"imgs/"+f.getName());
                                 if(imgFolder.exists()) {
                                     File[] list = imgFolder.listFiles();
@@ -691,17 +512,18 @@ public class Bottle {
                                     }
                                     imgFolder.delete();
                                 }
+                                if(fileFolder.exists()) {
+                                    File[] list = fileFolder.listFiles();
+                                    for(File ff : list) {
+                                        ff.delete();
+                                    }
+                                    fileFolder.delete();
+                                }
                             }
                             Files.delete(targetFile);
-                            
-    //                        System.out.println("Deleted from db: " + targetFile);
                         }
-
-                        // Delete the file in the source directory (temp)
                         Files.delete(file);
-    //                    System.out.println("Deleted from temp: " + file);
                     }
-
                     return FileVisitResult.CONTINUE;
                 }
                 return FileVisitResult.SKIP_SUBTREE;
@@ -751,45 +573,54 @@ public class Bottle {
             Object valor = field.get(this.entity);
             if(valor != null) {
                 if(ClassDictionary.getIndex(valor.getClass()) != -1 || Reflection.isArrayMap(field.getType())) {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("{").append(field.getName()).append(":");
-
-                    if(valor.getClass().isEnum()) {
-                        sb.append(encapsuleEnum((Enum) valor));
-                    } else {
-                        if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
-                            sb.append(encapsulePrimitive(valor));
-                        } else if(Reflection.isArrayMap(field.getType())) {
-                            if(Reflection.isInstance(valor.getClass(), List.class)) {
-                                List l = (List) valor;
-                                if(!l.isEmpty()) {
-                                    sb.append(encapsuleArray(l));
-                                } else {
-                                    sb.append("{list:{}}");
-                                }
-                            } else if(Reflection.isInstance(valor.getClass(), Map.class)) {
-                                Map m = (Map) valor;
-                                if(!m.isEmpty()) {
-                                    sb.append(encapsuleArray(m));
-                                } else {
-                                    sb.append("{map:{}}");
-                                }
-                            }
-                        } else if(Reflection.isInstance(field.getType(), Entity.class)) {
-                            Entity ente = (Entity) valor;
-                            if(!bottles.containsKey(ente.getId())) {
-                                Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
-                                bottle.engarafar();
-                            }
-                            bottles.get(ente.getId()).putRef(this.entity);
-                            sb.append(encapsuleId(ente));
-                        } else {
-                            sb.append(encapsularObjeto(valor));
+                    boolean condicional = true;
+                    if(valor instanceof File) {
+                        File f = (File) valor;
+                        if(!f.exists()) {
+                            condicional = false;
                         }
                     }
+                    if(condicional) {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("{").append(field.getName()).append(":");
 
-                    sb.append("}");
-                    this.bottledFields.add(sb.toString());
+                        if(valor.getClass().isEnum()) {
+                            sb.append(encapsuleEnum((Enum) valor));
+                        } else {
+                            if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                                sb.append(encapsulePrimitive(valor));
+                            } else if(Reflection.isArrayMap(field.getType())) {
+                                if(Reflection.isInstance(valor.getClass(), List.class)) {
+                                    List l = (List) valor;
+                                    if(!l.isEmpty()) {
+                                        sb.append(encapsuleArray(l));
+                                    } else {
+                                        sb.append("{list:{}}");
+                                    }
+                                } else if(Reflection.isInstance(valor.getClass(), Map.class)) {
+                                    Map m = (Map) valor;
+                                    if(!m.isEmpty()) {
+                                        sb.append(encapsuleArray(m));
+                                    } else {
+                                        sb.append("{map:{}}");
+                                    }
+                                }
+                            } else if(Reflection.isInstance(field.getType(), Entity.class)) {
+                                Entity ente = (Entity) valor;
+                                if(!bottles.containsKey(ente.getId())) {
+                                    Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
+                                    bottle.engarafar();
+                                }
+                                bottles.get(ente.getId()).putRef(this.entity);
+                                sb.append(encapsuleId(ente));
+                            } else {
+                                sb.append(encapsularObjeto(valor));
+                            }
+                        }
+
+                        sb.append("}");
+                        this.bottledFields.add(sb.toString());
+                    }
                 }
             }
         }
@@ -826,7 +657,15 @@ public class Bottle {
                 }
                 return encapsuleId(ente);
             } else if(objeto instanceof File) {
-                
+                File file = (File) objeto;
+                if(file.exists()) {
+                    if(!file.getPath().contains(ROOT_DB+"files/")) {
+                        if(!this.files.containsKey(file.getName())) {
+                            this.files.put(file.getName(), file);
+                        }
+                        return "{file:"+file.getName()+"}";
+                    }
+                }
             } else if(objeto instanceof Image) {
                 Image img = (Image) objeto;
                 byte[] bytes = getImageData(img);
@@ -858,20 +697,6 @@ public class Bottle {
         throw new Exception("Objeto não serializável: "+objeto.getClass());
     }
     
-    private byte[] getImageData(BufferedImage image) {
-        if(image != null) {
-            // Garante que a imagem seja do tipo correto (exemplo: BufferedImage.TYPE_3BYTE_BGR)
-            BufferedImage newImage = null;
-            if (image.getType() != BufferedImage.TYPE_3BYTE_BGR) {
-                newImage = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_3BYTE_BGR);
-                newImage.getGraphics().drawImage(image, 0, 0, null);
-            }
-            DataBufferByte buffer = (DataBufferByte) newImage.getRaster().getDataBuffer();
-            return buffer.getData();
-        }
-        throw new NullPointerException("BufferedImage vazia.");
-    }
-    
     private byte[] getImageData(Image image) {
         BufferedImage bufferedImage = toBufferedImage(image);
         if (bufferedImage.getType() != BufferedImage.TYPE_3BYTE_BGR) {
@@ -887,8 +712,8 @@ public class Bottle {
 
     // Método auxiliar para converter Image em BufferedImage
     private BufferedImage toBufferedImage(Image img) {
-        if (img instanceof BufferedImage) {
-            return (BufferedImage) img;
+        if (img instanceof BufferedImage bufferedImage) {
+            return bufferedImage;
         }
         BufferedImage bufferedImage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_3BYTE_BGR);
         Graphics2D g2 = bufferedImage.createGraphics();
@@ -906,6 +731,20 @@ public class Bottle {
             sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString();
+    }
+    
+    private byte[] calculateMD5(File file) throws NoSuchAlgorithmException, IOException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        try (DigestInputStream dis = new DigestInputStream(new FileInputStream(file), md)) {
+            while (dis.read() != -1) ; // Lê o arquivo completamente para calcular o hash
+        }
+        return md.digest();
+    }
+    
+    private boolean areFilesEquals(File fileA, File fileB) throws NoSuchAlgorithmException, IOException {
+        byte[] hashA = calculateMD5(fileA);
+        byte[] hashB = calculateMD5(fileB);
+        return Arrays.equals(hashA, hashB);
     }
     
     private String encapsuleEnum(Enum e) {
@@ -1039,7 +878,7 @@ public class Bottle {
     ************************************************************
     */
     
-    private void load(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader) throws Exception {
+    private void load(Class clazz, String id, ClassLoader loader) throws Exception {
         if(!isSub) {
             IO.io().lockRead(id);
         }
@@ -1068,7 +907,6 @@ public class Bottle {
             if(!isSub) {
                 IO.io().unlockRead(id);
             }
-//            cleanFolders();
         }
     }
     
@@ -1090,6 +928,7 @@ public class Bottle {
             case "list" -> List.class;
             case "map" -> Map.class;
             case "img" -> Image.class;
+            case "file" -> File.class;
             default -> ClassDictionary.fromIndex(Integer.parseInt(indice));
         };
         
@@ -1130,6 +969,8 @@ public class Bottle {
             return parseMapFromString(conteudo, loader);
         } else if(Reflection.isInstance(classe_do_objeto, Image.class)) {
             return getImg(conteudo, loader);
+        } else if(Reflection.isInstance(classe_do_objeto, File.class)) {
+            return getFile(conteudo);
         } else {
             if (classe_do_objeto.isEnum()) {
                 Class<?> forName = Class.forName(classe_do_objeto.getName(), true, loader);
@@ -1160,6 +1001,17 @@ public class Bottle {
         throw new Exception("Não foi possível distinguir o tipo de objeto -> "+conteudo);
     }
     
+    public File getFile(String name) throws Exception {
+        if(!this.files.containsKey(name)) {
+            File file = new File(ROOT_DB+"files/"+this.entity.getId()+"/"+name);
+            if(!file.exists()) {
+                throw new NullPointerException("Arquivo inexistente: "+file.getPath());
+            }
+            this.files.put(name, file);
+        }
+        return this.files.get(name);
+    }
+    
     public Image getImg(String hash, ClassLoader loader) throws ClassNotFoundException, Exception {
         if(!this.imgs.containsKey(hash)) {
             File imageFile = new File(ROOT_DB+"imgs/"+this.entity.getId()+"/"+hash);
@@ -1168,17 +1020,6 @@ public class Bottle {
             }
             BufferedImage readed = ImageIO.read(imageFile);
             this.imgs.put(hash, readed);
-            
-            
-//            URL imageUrl = imageFile.toURI().toURL();
-//            URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{imageUrl}, loader);
-//            Class<?> toolkitClass = Toolkit.getDefaultToolkit().getClass();
-//            try {
-//                Image image = (Image) toolkitClass.getMethod("getImage", URL.class).invoke(Toolkit.getDefaultToolkit(), imageUrl);
-//                this.imgs.put(hash, image);
-//            } catch (Exception e) {
-//                throw new IOException("Falha ao carregar a imagem com o ClassLoader informado", e);
-//            }
         }
         return this.imgs.get(hash);
     }
@@ -1327,6 +1168,5 @@ public class Bottle {
         }
         return list;
     }
-    
     
 }

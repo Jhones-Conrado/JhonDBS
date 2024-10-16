@@ -162,6 +162,7 @@ public class ClassDictionary {
                 */
                 dictionary.put(Image.class.getName(), String.valueOf(dictionary.size()));
                 dictionary.put(BufferedImage.class.getName(), String.valueOf(dictionary.size()));
+                dictionary.put(File.class.getName(), String.valueOf(dictionary.size()));
                 
             }
             List<String> all = Reflection.allImplementsNotAbstract(Object.class);
