@@ -246,8 +246,8 @@ public class FieldsManager {
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    public static synchronized void setValue(String fieldName, Object receptor, Object value) throws IllegalArgumentException, IllegalAccessException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        List<Field> fields = getFields(receptor);
+    public static void setValue(String fieldName, Object receptor, Object value) throws IllegalArgumentException, IllegalAccessException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
+        List<Field> fields = getAllFields(receptor);
         for(Field f : fields){
             if(f.getName().equals(fieldName)){
                 f.setAccessible(true);

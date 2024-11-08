@@ -29,7 +29,6 @@ import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.obj.ColdEntity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.FieldsManager;
-import static br.com.jhondbs.core.tools.FieldsManager.getFields;
 import br.com.jhondbs.core.tools.Reflection;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -567,13 +566,14 @@ public class Bottle {
     */
     
     public void engarafar() throws IllegalArgumentException, IllegalAccessException, Exception {
+        
         bottledFields.clear();
         List<Field> fields = FieldsManager.getAllSerializebleFields(this.entity.getClass());
         for(Field field : fields) {
             field.setAccessible(true);
             Object valor = field.get(this.entity);
             if(valor != null) {
-                if(ClassDictionary.getIndex(valor.getClass()) != -1 || Reflection.isArrayMap(field.getType())) {
+                if(ClassDictionary.getIndex(valor.getClass()) != -1 || Reflection.isArrayMap(field.getType()) || Reflection.isArrayMap(valor)) {
                     boolean condicional = true;
                     if(valor instanceof File) {
                         File f = (File) valor;
@@ -588,9 +588,9 @@ public class Bottle {
                         if(valor.getClass().isEnum()) {
                             sb.append(encapsuleEnum((Enum) valor));
                         } else {
-                            if(Reflection.isPrimitive(field.getType()) || Reflection.isNumerical(field.getType()) || Reflection.isDate(field.getType())) {
+                            if(Reflection.isPrimitive(valor) || Reflection.isNumerical(valor.getClass()) || Reflection.isDate(valor)) {
                                 sb.append(encapsulePrimitive(valor));
-                            } else if(Reflection.isArrayMap(field.getType())) {
+                            } else if(Reflection.isArrayMap(field.getType()) || Reflection.isArrayMap(valor)) {
                                 if(Reflection.isInstance(valor.getClass(), List.class)) {
                                     List l = (List) valor;
                                     if(!l.isEmpty()) {
@@ -606,7 +606,7 @@ public class Bottle {
                                         sb.append("{map:{}}");
                                     }
                                 }
-                            } else if(Reflection.isInstance(field.getType(), Entity.class)) {
+                            } else if(Reflection.isInstance(field.getType(), Entity.class) || Reflection.isInstance(valor.getClass(), Entity.class)) {
                                 Entity ente = (Entity) valor;
                                 if(!bottles.containsKey(ente.getId())) {
                                     Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB, true);
@@ -887,19 +887,31 @@ public class Bottle {
         reader.modoOperacional = this.modoOperacional;
         try {
             this.entity = (Entity) Reflection.getNewInstance(clazz, loader);
+            
+            List<String> actualFieldsList = FieldsManager.getAllFields(this.entity.getClass())
+                    .stream()
+                    .map(field -> field.getName())
+                    .toList();
+            
             String content = reader.readContent(clazz, id);
             List<String> fields = reader.splitCapsules(reader.getValueFromCapsule(content));
             
             for(String campo : fields) {
-                if(campo.substring(0, campo.indexOf(":")).contains("id")) {
+                if(campo.substring(0, campo.indexOf(":")).toLowerCase().contains("id")) {
                     inserir(this.entity, campo, loader);
+                    this.bottledFields.add(campo);
+                    fields.remove(campo);
+                    break;
                 }
             }
             
             for(String campo : fields) {
-                inserir(this.entity, campo, loader);
-                this.bottledFields.add(campo);
+                if(actualFieldsList.contains(campo.substring(1, campo.indexOf(":")))) {
+                    inserir(this.entity, campo, loader);
+                    this.bottledFields.add(campo);
+                }
             }
+            
             loadRefs();
         } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException | NoSuchMethodException ex) {
             Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, null, ex);
@@ -911,36 +923,18 @@ public class Bottle {
         }
     }
     
-    private synchronized void inserir(Object receptor, String capsule, ClassLoader loader) throws Exception {
-        try {
-            String nome_campo = reader.getKeyFromCapsule(capsule);
-            String sub_capsula = reader.getValueFromCapsule(capsule);
-            
-            String indice_classe = reader.getKeyFromCapsule(sub_capsula);
-            String conteudo = reader.getValueFromCapsule(sub_capsula);
+    private void inserir(Object receptor, String capsule, ClassLoader loader) throws Exception {
+        String nome_campo = reader.getKeyFromCapsule(capsule);
+        String sub_capsula = reader.getValueFromCapsule(capsule);
 
-            Object valor = recuperar(indice_classe, conteudo, loader);
+        String indice_classe = reader.getKeyFromCapsule(sub_capsula);
+        String conteudo = reader.getValueFromCapsule(sub_capsula);
 
-            FieldsManager.setValue(nome_campo, receptor, valor);
-
-            Object x = FieldsManager.getValueFrom(nome_campo, receptor);
-            
-            if(FieldsManager.getValueFrom(nome_campo, receptor) == null && valor != null) {
-                List<Field> fields = FieldsManager.getAllFields(receptor);
-                for(Field f : fields){
-                    if(f.getName().equals(nome_campo)){
-                        f.setAccessible(true);
-                        f.set(receptor, valor);
-                        break;
-                   }
-                }
-            }
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
+        Object valor = recuperar(indice_classe, conteudo, loader);
+        FieldsManager.setValue(nome_campo, receptor, valor);
     }
     
-    private synchronized Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
+    private Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
         Class classe_do_objeto = null;
         
         classe_do_objeto = switch (indice) {
@@ -981,20 +975,20 @@ public class Bottle {
                 return bottle.entity;
             }
         } 
-        else if (Reflection.isInstance(classe_do_objeto, List.class)) {
+        else if (Reflection.isInstance(classe_do_objeto, List.class) || classe_do_objeto.isAssignableFrom(List.class)) {
             return parseListFromString(conteudo, loader);
         } 
-        else if (Reflection.isInstance(classe_do_objeto, Map.class)) {
+        else if (Reflection.isInstance(classe_do_objeto, Map.class) || classe_do_objeto.isAssignableFrom(Map.class)) {
             return parseMapFromString(conteudo, loader);
-        } else if(Reflection.isInstance(classe_do_objeto, Image.class)) {
+        } else if(Reflection.isInstance(classe_do_objeto, Image.class) || classe_do_objeto.isAssignableFrom(Image.class)) {
             return getImg(conteudo, loader);
-        } else if(Reflection.isInstance(classe_do_objeto, File.class)) {
+        } else if(Reflection.isInstance(classe_do_objeto, File.class) || classe_do_objeto.isAssignableFrom(File.class)) {
             return getFile(conteudo);
         } else {
             if (classe_do_objeto.isEnum()) {
                 Class<?> forName = Class.forName(classe_do_objeto.getName(), true, loader);
                 return Enum.valueOf((Class<Enum>) forName, conteudo);
-            } else if(Reflection.isInstance(classe_do_objeto, ColdEntity.class)) {
+            } else if(Reflection.isInstance(classe_do_objeto, ColdEntity.class) || classe_do_objeto.isAssignableFrom(ColdEntity.class)) {
                 Object o = Reflection.getNewInstance(classe_do_objeto, loader);
                 List<String> campos = reader.splitCapsules(conteudo);
                 for(String campo : campos) {
@@ -1009,9 +1003,16 @@ public class Bottle {
                 return o;
             } else {
                 Object o = Reflection.getNewInstance(classe_do_objeto, loader);
+                List<String> actualFieldsList = FieldsManager.getAllFields(o.getClass())
+                    .stream()
+                    .map(field -> field.getName())
+                    .toList();
+                
                 List<String> campos = reader.splitCapsules(conteudo);
                 for(String campo : campos) {
-                    inserir(o, campo, loader);
+                    if(actualFieldsList.contains(campo.substring(1, campo.indexOf(":")))) {
+                        inserir(o, campo, loader);
+                    }
                 }
                 return o;
             }

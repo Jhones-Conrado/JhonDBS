@@ -73,7 +73,39 @@ public interface Entity extends Serializable, Cloneable{
      * @throws java.lang.Exception
      */
     default String getId() throws Exception{
-        return infunction.getid(this);
+        
+        List<Field> ids = FieldsManager.getAllFields(this).parallelStream()
+                .filter(field -> (field.getType().getName().contains("String")))
+                .filter(field -> (field.getName().toUpperCase().contains("ID")))
+                .toList();
+        if(!ids.isEmpty()){
+            Field selected = null;
+            List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
+                    .toList();
+            if(toList.size() == 1){
+                selected = toList.get(0);
+            } else {
+                toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
+                    .toList();
+                if(toList.size() == 1){
+                    selected = toList.get(0);
+                } else {
+                    selected = ids.get(0);
+                }
+            }
+            if(selected != null){
+                selected.setAccessible(true);
+                String id = (String) selected.get(this);
+                if(id == null || id.isBlank()) {
+                    UUID uuid = UUID.randomUUID();
+                    selected.set(this, uuid.toString());
+                    return uuid.toString();
+                } else {
+                    return id;
+                }
+            }
+        }
+        throw new Exception("The entity does not have a String type variable for the ID.");
     }
     
     /**
@@ -276,115 +308,6 @@ public interface Entity extends Serializable, Cloneable{
         Filter filter = new Filter();
         filter.addCondition(condition);
         return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
-    }
-    
-    class infunction {
-        
-        private static String makeId(Entity entity) throws Exception {
-            UUID uuid = UUID.randomUUID();
-            setid(entity, uuid.toString());
-            return uuid.toString();
-        }
-        
-        /**
-         * It will look for all variables of type "long" and among these, it 
-         * will look for those that have either the word "ent" or that are equal 
-         * to "id".
-         * The ID value will preferably be from the "enteid" variable, secondarily 
-         * from the "id" variable if the first one is not found and thirdly from 
-         * the first long type variable with the word "id" in the name, if the 
-         * first two are not found.
-         * @param entity
-         * @param id
-         * @throws Exception 
-         */
-        private static void setid(Entity entity, String id) throws Exception{
-            if(entity != null){
-                List<Field> ids = FieldsManager.getAllFields(entity).parallelStream()
-                        .filter(field -> (field.getType().getName().contains("java.lang.String")))
-                        .filter(field -> (field.getName().toUpperCase().contains("ID")))
-                        .toList();
-                
-                if(!ids.isEmpty()){
-                    Field selected = null;
-                    
-                    List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
-                            .toList();
-                    if(toList.size() == 1){
-                        selected = toList.get(0);
-                    } else {
-                        toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
-                            .toList();
-                        if(toList.size() == 1){
-                            selected = toList.get(0);
-                        } else {
-                            selected = ids.get(0);
-                        }
-                    }
-                    
-                    if(selected != null){
-                        FieldsManager.setValue(selected.getName(), entity, id);
-                    } else {
-                        throw new Exception("The entity does not have a String type variable for the ID.");
-                    }
-                } else {
-                    throw new Exception("The entity does not have a String type variable for the ID.");
-                }
-            } else {
-                throw new NullPointerException("Entidade nula");
-            }
-        }
-        
-        /**
-         * It will look for all variables of type "long" and among these, it 
-         * will look for those that have either the word "ent" or that are equal 
-         * to "id".
-         * The ID value will preferably be from the "enteid" variable, secondarily 
-         * from the "id" variable if the first one is not found and thirdly from 
-         * the first long type variable with the word "id" in the name, if the 
-         * first two are not found.
-         * The value "-1l" will be returned by default if no ID variable is found.
-         * @param entity
-         * @return
-         * @throws Exception 
-         */
-        private static String getid(Entity entity) throws Exception{
-            if(entity != null){
-                List<Field> ids = FieldsManager.getAllFields(entity).parallelStream()
-                        .filter(field -> (field.getType().getName().contains("String")))
-                        .filter(field -> (field.getName().toUpperCase().contains("ID")))
-                        .toList();
-                if(!ids.isEmpty()){
-                    Field selected = null;
-                    List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
-                            .toList();
-                    if(toList.size() == 1){
-                        selected = toList.get(0);
-                    } else {
-                        toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
-                            .toList();
-                        if(toList.size() == 1){
-                            selected = toList.get(0);
-                        } else {
-                            selected = ids.get(0);
-                        }
-                    }
-                    if(selected != null){
-                        String id = FieldsManager.getValueFrom(selected.getName(), entity);
-                        if(id == null || id.isBlank()) {
-                            return makeId(entity);
-                        } else {
-                            return id;
-                        }
-                    } else {
-                        throw new Exception("The entity does not have a String type variable for the ID.");
-                    }
-                }
-                throw new NullPointerException("Entidade não possui um campo tipo String para o ID.");
-            }
-            throw new Exception("The entity does not have a String type variable for the ID.");
-        }
-        
     }
     
 }
