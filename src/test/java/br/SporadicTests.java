@@ -59,6 +59,14 @@ public class SporadicTests {
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
+//        User user = new User();
+//        user.caixa.cobrancas.add(new Cobranca());
+//        
+//        user.save();
+//        
+//        User u2 = user.load(user.getId());
+//        System.out.println(u2.caixa.cobrancas.getFirst().valor.valor);
+        
         assert true;
     }
 }

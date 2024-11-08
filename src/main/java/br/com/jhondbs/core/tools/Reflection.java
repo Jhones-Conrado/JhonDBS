@@ -496,7 +496,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isArrayMap(Object object){
-        boolean um = object.toString().contains(List.class.getName()) || object.toString().contains(Map.class.getName());
+        boolean um = object.getClass().toString().contains(List.class.getName()) || object.toString().contains(Map.class.getName());
         boolean dois = false;
         
         if(object instanceof Class) {

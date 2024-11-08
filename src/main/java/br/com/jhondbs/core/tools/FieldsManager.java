@@ -239,20 +239,19 @@ public class FieldsManager {
      * Adiciona um valor à uma varíavel de uma entidade.
      * @param fieldName Field name<br>
      * Nome da variável.
-     * @param entity Object that will receive the value in your variable.<br>
+     * @param receptor Object that will receive the value in your variable.<br>
      * Objeto que receberá o valor em sua variável.
      * @param value Value that will be placed in the variable.<br>
      * Valor que será posto na variável.
      * @throws IllegalArgumentException
      * @throws IllegalAccessException 
      */
-    public static void setValue(String fieldName, Object entity, Object value) throws IllegalArgumentException, IllegalAccessException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        Object o = new Object();
-        List<Field> fields = getFields(entity);
+    public static synchronized void setValue(String fieldName, Object receptor, Object value) throws IllegalArgumentException, IllegalAccessException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
+        List<Field> fields = getFields(receptor);
         for(Field f : fields){
             if(f.getName().equals(fieldName)){
                 f.setAccessible(true);
-                f.set(entity, value);
+                f.set(receptor, value);
                 break;
            }
         }

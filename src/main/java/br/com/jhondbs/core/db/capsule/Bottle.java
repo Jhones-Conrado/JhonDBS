@@ -29,6 +29,7 @@ import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.obj.ColdEntity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.FieldsManager;
+import static br.com.jhondbs.core.tools.FieldsManager.getFields;
 import br.com.jhondbs.core.tools.Reflection;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -632,7 +633,7 @@ public class Bottle {
         } else {
             if(Reflection.isPrimitive(objeto.getClass()) || Reflection.isNumerical(objeto.getClass()) || Reflection.isDate(objeto.getClass())) {
                 return encapsulePrimitive(objeto);
-            } else if(Reflection.isArrayMap(objeto.getClass())) {
+            } else if(Reflection.isArrayMap(objeto)) {
                 if(Reflection.isInstance(objeto.getClass(), List.class)) {
                     List l = (List) objeto;
                     if(!l.isEmpty()) {
@@ -910,18 +911,36 @@ public class Bottle {
         }
     }
     
-    private void inserir(Object receptor, String capsule, ClassLoader loader) throws Exception {
-        String nome_campo = reader.getKeyFromCapsule(capsule);
-        String sub_capsula = reader.getValueFromCapsule(capsule);
-        
-        String indice_classe = reader.getKeyFromCapsule(sub_capsula);
-        String conteudo = reader.getValueFromCapsule(sub_capsula);
-        
-        Object valor = recuperar(indice_classe, conteudo, loader);
-        FieldsManager.setValue(nome_campo, receptor, valor);
+    private synchronized void inserir(Object receptor, String capsule, ClassLoader loader) throws Exception {
+        try {
+            String nome_campo = reader.getKeyFromCapsule(capsule);
+            String sub_capsula = reader.getValueFromCapsule(capsule);
+            
+            String indice_classe = reader.getKeyFromCapsule(sub_capsula);
+            String conteudo = reader.getValueFromCapsule(sub_capsula);
+
+            Object valor = recuperar(indice_classe, conteudo, loader);
+
+            FieldsManager.setValue(nome_campo, receptor, valor);
+
+            Object x = FieldsManager.getValueFrom(nome_campo, receptor);
+            
+            if(FieldsManager.getValueFrom(nome_campo, receptor) == null && valor != null) {
+                List<Field> fields = FieldsManager.getAllFields(receptor);
+                for(Field f : fields){
+                    if(f.getName().equals(nome_campo)){
+                        f.setAccessible(true);
+                        f.set(receptor, valor);
+                        break;
+                   }
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
     }
     
-    private Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
+    private synchronized Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
         Class classe_do_objeto = null;
         
         classe_do_objeto = switch (indice) {
@@ -1030,7 +1049,7 @@ public class Bottle {
         for(String objeto : objetos) {
             if(!objeto.equals("{}")) {
                 String indice_da_classe = reader.getKeyFromCapsule(objeto);
-                Object obj = recuperar(indice_da_classe, objeto, loader);
+                Object obj = recuperar(indice_da_classe, reader.getValueFromCapsule(objeto), loader);
                 list.add(obj);
             }
         }
