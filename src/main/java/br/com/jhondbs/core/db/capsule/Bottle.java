@@ -345,6 +345,7 @@ public class Bottle {
         for(String id : excludeds) {
             Bottle get = oldState.bottles.get(id);
             String path = getPath(get.entity);
+            
             Properties props = new Properties();
             props.load(new FileInputStream(new File(path)));
             
@@ -599,7 +600,6 @@ public class Bottle {
     }
     
     public boolean delete() throws IllegalArgumentException, IllegalAccessException, Exception {
-//        List<String> corridos = new ArrayList<>();
         List<File> imgsToDelete = new ArrayList<>();
         List<File> filesToDelete = new ArrayList<>();
         delete(true);
@@ -610,7 +610,6 @@ public class Bottle {
     }
     
     private boolean delete(boolean sub) throws Exception {
-//        corridos.add(this.entity.getId());
         sendToTemp(this.entity);
         
         List<String> refs = new ArrayList<>();
@@ -634,48 +633,47 @@ public class Bottle {
             Class clazz = ClassDictionary.fromIndex(Integer.parseInt(dados[0]));
             String id = dados[1];
             
-//            if(!corridos.contains(id)) {
-                sendToTemp(clazz, id);
+            sendToTemp(clazz, id);
 
-                String path = getTempPath(clazz, id);
+            String path = getTempPath(clazz, id);
 
-                Properties properties = new Properties();
-                properties.load(new FileInputStream(new File(path)));
-                
-                
-                /*
-                Remover referência dos campos do referenciador.
-                */
-                properties.put("fields", properties.get("fields").toString().replace("{"+ClassDictionary.getIndex(this.entity.getClass())+":"+this.entity.getId()+"}", ""));
-                
-                
-                /*
-                Remover referência dos referenciadores.
-                 */
-                String refStream = properties.get("refs").toString();
-                List<String> filtered = new ArrayList<>();
-                filtered.addAll(Arrays.asList(refStream.split("::"))
-                        .stream()
-                        .filter(r -> !r.isBlank() && !r.contains(thisId))
-                        .toList());
-                
-                if(filtered.isEmpty()) {
-                    if(properties.containsKey("cascate")) {
-                        if(properties.get("cascate").equals("true")) {
-                            properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
-                            Bottle bottle = new Bottle(clazz, id, TEMP_STAGE, ROOT_DB, TEMP_DB);
-                            bottle.delete(true);
-                        }
+            Properties properties = new Properties();
+            properties.load(new FileInputStream(new File(path)));
+
+            /*
+            Remover referência dos campos do referenciador.
+            */
+            properties.put("fields", properties.get("fields").toString().replace("{"+ClassDictionary.getIndex(this.entity.getClass())+":"+this.entity.getId()+"}", ""));
+
+            /*
+            Remover referência dos referenciadores.
+             */
+            String refStream = properties.get("refs").toString();
+            List<String> filtered = new ArrayList<>();
+            filtered.addAll(Arrays.asList(refStream.split("::"))
+                    .stream()
+                    .filter(r -> !r.isBlank() && !r.contains(thisId))
+                    .toList());
+
+            if(filtered.isEmpty()) {
+                if(properties.containsKey("cascate")) {
+                    if(properties.get("cascate").equals("true")) {
+                        properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
+                        Bottle bottle = new Bottle(clazz, id, TEMP_STAGE, ROOT_DB, TEMP_DB);
+                        bottle.delete(true);
                     }
                 } else {
-                    StringBuffer buffer = new StringBuffer();
-                    for(String r : filtered) {
-                        buffer.append(r).append("::");
-                    }
-                    properties.put("refs", buffer.toString());
+                    properties.put("refs", "");
                     properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
                 }
-//            }
+            } else {
+                StringBuffer buffer = new StringBuffer();
+                for(String r : filtered) {
+                    buffer.append(r).append("::");
+                }
+                properties.put("refs", buffer.toString());
+                properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
+            }
         }
         
         for(Bottle bottle : this.bottles.values()) {
