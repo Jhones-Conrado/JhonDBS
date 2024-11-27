@@ -23,12 +23,15 @@
  */
 package br;
 
+import java.io.File;
 import java.io.IOException;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import tests.objects.EnteA;
+import tests.objects.EnteB;
 
 /**
  *
@@ -59,13 +62,14 @@ public class SporadicTests {
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
         
-//        User user = new User();
-//        user.caixa.cobrancas.add(new Cobranca());
-//        
-//        user.save();
-//        
-//        User u2 = user.load(user.getId());
-//        System.out.println(u2.caixa.cobrancas.getFirst().valor.valor);
+        EnteA a = new EnteA("Jhones"+String.valueOf(System.nanoTime()));
+        a.enteb = new EnteB("Carro");
+        a.file = new File("./medidas.pdf");
+        
+        a.save();
+        
+        EnteA a2 = a.load(a.getId());
+        a2.delete();
         
         assert true;
     }

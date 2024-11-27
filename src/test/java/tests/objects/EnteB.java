@@ -24,7 +24,6 @@
 package tests.objects;
 
 import br.com.jhondbs.core.db.interfaces.Entity;
-import br.com.jhondbs.core.db.interfaces.Unique;
 
 /**
  *

@@ -41,6 +41,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -392,23 +393,6 @@ public class Reader {
         return "GMT"; // valor padrão se o campo não for encontrado
     }
     
-    public String sendToTemp(Entity entity) throws Exception {
-        return sendToTemp(entity.getClass(), entity.getId());
-    }
-    
-    public String sendToTemp(Class classe, String id) throws IOException, Exception {
-        Reader reader = new Reader(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
-        try {
-            return reader.readFile(classe, id);
-        } catch (Exception e) {
-            reader.modoOperacional = Bottle.ROOT_STAGE;
-        }
-        String line = reader.readFile(classe, id);
-        Writer writer = new Writer(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
-        writer.writeText(classe, id, line);
-        return line;
-    }
-    
     public List<String> listAllIds(Class entityClass) {
         String path = entityClass.getName().replace(".class", "").replace(".", "/");
         if(modoOperacional == 0) {
@@ -424,23 +408,23 @@ public class Reader {
         return new ArrayList<>();
     }
     
-    public List<Entity> listExcludeds(Bottle bottle) throws Exception {
-        List<Entity> list = new ArrayList<>();
-        
-        try {
-            Bottle bot = new Bottle(bottle.entity.getClass(), bottle.entity.getId(), Bottle.ROOT_STAGE, ROOT_DB, TEMP_DB, true);
-            if(bot.entity != null) {
-                for(String id : bot.bottles.keySet()) {
-                    if(!bottle.bottles.containsKey(id)) {
-                        list.add(bot.bottles.get(id).entity);
-                    }
-                }
-            }
-        } catch (Exception e) {
-        }
-        
-        return list;
-    }
+//    public List<Entity> listExcludeds(Bottle bottle) throws Exception {
+//        List<Entity> list = new ArrayList<>();
+//        
+//        try {
+//            Bottle bot = new Bottle(bottle.entity.getClass(), bottle.entity.getId(), Bottle.ROOT_STAGE, ROOT_DB, TEMP_DB);
+//            if(bot.entity != null) {
+//                for(String id : bot.bottles.keySet()) {
+//                    if(!bottle.bottles.containsKey(id)) {
+//                        list.add(bot.bottles.get(id).entity);
+//                    }
+//                }
+//            }
+//        } catch (Exception e) {
+//        }
+//        
+//        return list;
+//    }
     
     /**
      * Recebe uma entidade e busca por subentidades anotadas como cascata.

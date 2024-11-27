@@ -224,13 +224,17 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean delete() throws Exception{
         Bottle b = new Bottle(this);
-        if(b.delete()) {
-            b.deleteFilesEndingWithDelete();
-            b.moveDirectory();
-            b.cleanFolders();
-            return true;
-        }
-        return false;
+        b.engarafar();
+        return b.delete();
+//        try {
+//            if(b.delete()) {
+//                b.deleteFilesEndingWithDelete();
+//                b.moveDirectory();
+//                return true;
+//            }
+//        } finally {
+//            b.cleanFolders();
+//        }
     }
     
     /**

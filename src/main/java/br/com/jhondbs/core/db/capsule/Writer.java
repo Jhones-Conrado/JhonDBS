@@ -28,6 +28,7 @@ import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.Reflection;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -37,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -72,10 +74,8 @@ public class Writer {
     public boolean write(Bottle bottle) throws Exception {
         String path = getPath(bottle.entity);
         File file = new File(path);
-        try(BufferedWriter w = Files.newBufferedWriter(file.toPath(), StandardCharsets.UTF_8)) {
-            w.write(bottle.build());
-            w.flush();
-        }
+        Properties build = bottle.build();
+        build.store(new FileOutputStream(file), "JhonDBS Entity");
         return true;
     }
     
@@ -87,104 +87,104 @@ public class Writer {
         return true;
     }
     
-    public void removeExistence(Entity entity) throws Exception {
-        Reader reader = new Reader(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
-        List<String> refs = new ArrayList<>();
-        String originalContent = null;
-        try {
-            refs.addAll(reader.spliteredReferences(entity));
-            originalContent = reader.readContent(entity);
-        } catch (Exception e) {
-            reader.modoOperacional = Bottle.ROOT_STAGE;
-            try {
-                refs.addAll(reader.spliteredReferences(entity));
-                originalContent = reader.readContent(entity);
-            } catch (Exception ex) {
-                System.out.println("Entidade não possui arquivos para referenciamento.");
-            }
-        }
-        reader.modoOperacional = Bottle.TEMP_STAGE;
-        Writer w = new Writer(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
-        if(!originalContent.endsWith("DELETE")) {
-            for(String ref : refs) {
-                String[] dados = ref.split(":");
-                Class classe = ClassDictionary.fromIndex(Integer.parseInt(dados[0]));
-                String id = dados[1];
-
-                try {
-                    String enteId = entity.getId();
-                    String oritxt = reader.sendToTemp(classe, id);
-                    if(!oritxt.endsWith("DELETE")) {
-                        // Limpeza das referências.
-                        List<String> referencias = reader.spliteredReferences(classe, id);
-                        List<String> filteredRefs = referencias.stream().filter(r -> !r.contains(enteId)).toList();
-
-                        //Limpeza dos campos.
-                        String content = reader.readContent(classe, id);
-
-                        //{nome-do-campo:{valor}}
-                        Map<String, String> fields = reader.splitFieldsAsMap(reader.getValueFromCapsule(content));
-                        Map<String, String> filteredFields = new HashMap<>();
-
-                        for(String key : fields.keySet()) {
-                            if(fields.get(key).contains(enteId)) {
-                                String capsulaLista = fields.get(key);
-                                if(fields.get(key).contains("list")) {
-                                    String filteredList = removeEntityFromList(reader.getValueFromCapsule(capsulaLista), enteId);
-                                    filteredFields.put(key, filteredList);
-                                } else if(fields.get(key).contains("map")) {
-                                    String capsulasMapa = reader.getValueFromCapsule(capsulaLista);
-                                    String filteredMap = removeEntityFromMap(capsulasMapa, enteId);
-                                    filteredFields.put(key, filteredMap);
-                                }
-                            } else {
-                                filteredFields.put(key, fields.get(key));
-                            }
-                        }
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("{").append(dados[0]).append(":");
-                        for(String s : filteredFields.keySet()) {
-                            sb.append("{");
-                            sb.append(s).append(":");
-                            sb.append(filteredFields.get(s));
-                            sb.append("}");
-                        }
-                        sb.append("}");
-                        if(!filteredRefs.isEmpty()) {
-                            sb.append("ref::");
-                            for(String s : filteredRefs) {
-                                sb.append(s).append("::");
-                            }
-                        }
-                        w.writeText(classe, id, sb.toString());
-                    }
-                } catch (Exception ex) {
-                    Logger.getLogger(Writer.class.getName()).log(Level.SEVERE, null, ex);
-                    ex.printStackTrace();
-                }
-            }
-            originalContent = originalContent + "DELETE";
-            w.writeText(entity.getClass(), entity.getId(), originalContent);
-            List<Entity> casc = reader.listCascateEntities(entity);
-            
-            String supid = entity.getId();
-            for(Entity e : casc) {
-                List<String> refss = reader.spliteredReferences(e);
-                refss = refss.stream().filter(ref -> !ref.contains(supid)).toList();
-                if(refss.isEmpty()) {
-                    w.removeExistence(e);
-                } else {
-                    StringBuilder sb = new StringBuilder();
-                    String cont = reader.readContent(e);
-                    sb.append(cont).append("ref::");
-                    for(String ref : refss) {
-                        sb.append(ref).append("::");
-                    }
-                    w.writeText(e.getClass(), e.getId(), sb.toString());
-                }
-            }
-        }
-    }
+//    public void removeExistence(Entity entity) throws Exception {
+//        Reader reader = new Reader(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
+//        List<String> refs = new ArrayList<>();
+//        String originalContent = null;
+//        try {
+//            refs.addAll(reader.spliteredReferences(entity));
+//            originalContent = reader.readContent(entity);
+//        } catch (Exception e) {
+//            reader.modoOperacional = Bottle.ROOT_STAGE;
+//            try {
+//                refs.addAll(reader.spliteredReferences(entity));
+//                originalContent = reader.readContent(entity);
+//            } catch (Exception ex) {
+//                System.out.println("Entidade não possui arquivos para referenciamento.");
+//            }
+//        }
+//        reader.modoOperacional = Bottle.TEMP_STAGE;
+//        Writer w = new Writer(Bottle.TEMP_STAGE, ROOT_DB, TEMP_DB);
+//        if(!originalContent.endsWith("DELETE")) {
+//            for(String ref : refs) {
+//                String[] dados = ref.split(":");
+//                Class classe = ClassDictionary.fromIndex(Integer.parseInt(dados[0]));
+//                String id = dados[1];
+//
+//                try {
+//                    String enteId = entity.getId();
+//                    String oritxt = reader.sendToTemp(classe, id);
+//                    if(!oritxt.endsWith("DELETE")) {
+//                        // Limpeza das referências.
+//                        List<String> referencias = reader.spliteredReferences(classe, id);
+//                        List<String> filteredRefs = referencias.stream().filter(r -> !r.contains(enteId)).toList();
+//
+//                        //Limpeza dos campos.
+//                        String content = reader.readContent(classe, id);
+//
+//                        //{nome-do-campo:{valor}}
+//                        Map<String, String> fields = reader.splitFieldsAsMap(reader.getValueFromCapsule(content));
+//                        Map<String, String> filteredFields = new HashMap<>();
+//
+//                        for(String key : fields.keySet()) {
+//                            if(fields.get(key).contains(enteId)) {
+//                                String capsulaLista = fields.get(key);
+//                                if(fields.get(key).contains("list")) {
+//                                    String filteredList = removeEntityFromList(reader.getValueFromCapsule(capsulaLista), enteId);
+//                                    filteredFields.put(key, filteredList);
+//                                } else if(fields.get(key).contains("map")) {
+//                                    String capsulasMapa = reader.getValueFromCapsule(capsulaLista);
+//                                    String filteredMap = removeEntityFromMap(capsulasMapa, enteId);
+//                                    filteredFields.put(key, filteredMap);
+//                                }
+//                            } else {
+//                                filteredFields.put(key, fields.get(key));
+//                            }
+//                        }
+//                        StringBuilder sb = new StringBuilder();
+//                        sb.append("{").append(dados[0]).append(":");
+//                        for(String s : filteredFields.keySet()) {
+//                            sb.append("{");
+//                            sb.append(s).append(":");
+//                            sb.append(filteredFields.get(s));
+//                            sb.append("}");
+//                        }
+//                        sb.append("}");
+//                        if(!filteredRefs.isEmpty()) {
+//                            sb.append("ref::");
+//                            for(String s : filteredRefs) {
+//                                sb.append(s).append("::");
+//                            }
+//                        }
+//                        w.writeText(classe, id, sb.toString());
+//                    }
+//                } catch (Exception ex) {
+//                    Logger.getLogger(Writer.class.getName()).log(Level.SEVERE, null, ex);
+//                    ex.printStackTrace();
+//                }
+//            }
+//            originalContent = originalContent + "DELETE";
+//            w.writeText(entity.getClass(), entity.getId(), originalContent);
+//            List<Entity> casc = reader.listCascateEntities(entity);
+//            
+//            String supid = entity.getId();
+//            for(Entity e : casc) {
+//                List<String> refss = reader.spliteredReferences(e);
+//                refss = refss.stream().filter(ref -> !ref.contains(supid)).toList();
+//                if(refss.isEmpty()) {
+//                    w.removeExistence(e);
+//                } else {
+//                    StringBuilder sb = new StringBuilder();
+//                    String cont = reader.readContent(e);
+//                    sb.append(cont).append("ref::");
+//                    for(String ref : refss) {
+//                        sb.append(ref).append("::");
+//                    }
+//                    w.writeText(e.getClass(), e.getId(), sb.toString());
+//                }
+//            }
+//        }
+//    }
     
     private String removeEntityFromList(String capsulesList, String idToRemove) {
         Reader reader = new Reader(ROOT_DB, TEMP_DB);

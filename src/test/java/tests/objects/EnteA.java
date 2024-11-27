@@ -27,6 +27,7 @@ import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
 import br.com.jhondbs.core.db.obj.ColdEntity;
+import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -87,6 +88,8 @@ public class EnteA implements Entity{
     public EnteB enteb;
     
     public ColdEntity cold;
+    
+    public File file;
     
     public EnteA() {
         this.name = null;
