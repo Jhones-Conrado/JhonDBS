@@ -32,13 +32,12 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.Period;
 import java.time.chrono.ChronoPeriod;
@@ -48,12 +47,12 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 /**
  * ENGLISH<br>
@@ -95,37 +94,48 @@ public final class Reflection {
      * @throws URISyntaxException
      * @throws IOException 
      */
-    public static List<String> reflect() throws URISyntaxException, IOException{
-        if(array == null){
+    public static List<String> reflect() throws IOException {
+        if (array == null) {
             List<String> classList = new ArrayList<>();
-            String r1 = Reflection.class.getResource("/").getPath();
-            File f1 = new File(r1).getParentFile();
-            URI uri = f1.toURI();
-            Path myPath;
-            if (Reflection.class.getResource("/").toURI().getScheme().equals("jar")) {
-                uri = Reflection.class.getProtectionDomain().getCodeSource().getLocation().toURI();
-                try (FileSystem fileSystem = FileSystems.newFileSystem(uri, Collections.<String, Object>emptyMap())) {
-                    myPath = fileSystem.getPath("/");
-                    Stream<Path> walk = Files.walk(myPath, 100);
-                    walk.forEach( t -> {
-                        classList.add(t.toString());
-                    });
+            ClassLoader classLoader = Reflection.class.getClassLoader();
+
+            // Obtém todos os recursos disponíveis no classpath
+            Enumeration<URL> resources = classLoader.getResources("");
+            while (resources.hasMoreElements()) {
+                URL resource = resources.nextElement();
+                String protocol = resource.getProtocol();
+
+                if ("file".equals(protocol)) {
+                    // Diretório de classes no sistema de arquivos
+                    File directory = new File(resource.getPath());
+                    getFiles(classList, directory);
+                } else if ("jar".equals(protocol)) {
+                    // Classes dentro de um JAR
+                    try (FileSystem fileSystem = FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap())) {
+                        Path myPath = fileSystem.getPath("/");
+                        Files.walk(myPath, 100).forEach(path -> classList.add(path.toString()));
+                    } catch (Exception e) {
+                        System.err.println("Erro ao processar JAR: " + e.getMessage());
+                    }
                 }
-            } else {
-                myPath = Paths.get(uri);
-                getFiles(classList, new File(myPath.toString().replaceAll("%20", " ")));
             }
+
             List<String> pronta = new ArrayList<>();
-            classList.forEach(p -> {
-                Class s = makeClass(p);
-                if(s != null){
-                    pronta.add(s.getName());
-                }
-            });
+            
+            classList.stream()
+                    .filter(item -> item.endsWith(".class"))
+                    .toList()
+                    .forEach(p -> {
+                        Class<?> s = makeClass(p);
+                        if (s != null) {
+                            pronta.add(s.getName());
+                        }
+                    });
             array = pronta;
         }
         return array;
     }
+
     
     /**
      * Tenta criar uma instância de classe a partir do caminho de classe.
@@ -140,11 +150,12 @@ public final class Reflection {
                 if(str.startsWith(".")) {
                     str = str.substring(1);
                 }
-                Class c = cl.loadClass(str);
+                Class c;
+                c = cl.loadClass(str);
                 if(c != null){
                     return c;
                 }
-            } catch (ClassNotFoundException e) {
+            } catch (Throwable e) {
                 if(str.contains(".")){
                     str = str.substring(str.indexOf(".")+1);
                 } else {
@@ -205,7 +216,7 @@ public final class Reflection {
                 return false;
             })
                     .toList();
-        } catch (URISyntaxException | IOException ex) {
+        } catch (IOException ex) {
             Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
         }
         return retorno;
