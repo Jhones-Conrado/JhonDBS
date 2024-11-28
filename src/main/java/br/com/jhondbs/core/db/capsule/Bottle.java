@@ -474,9 +474,10 @@ public class Bottle {
     private void flushImgs(Bottle bottle, List<File> imgsToDelete) throws Exception {
         File folder = new File(TEMP_DB+"imgs/"+bottle.entity.getId());
         File prodFolder = new File(ROOT_DB+"imgs/"+bottle.entity.getId());
-        if(!bottle.imgs.isEmpty() || prodFolder.exists()) {
+        if(!bottle.imgs.isEmpty()) {
             folder.mkdirs();
             prodFolder.mkdirs();
+            
             List<String> hashs = Arrays.asList(prodFolder.list());
             for(String hash : bottle.imgs.keySet()) {
                 if(!hashs.contains(hash)) {
@@ -499,7 +500,7 @@ public class Bottle {
     private void flushFiles(Bottle bottle, List<File> filesToDelete) throws Exception {
         File fileFolder = new File(TEMP_DB+"files/"+bottle.entity.getId());
         File prodFileFolder = new File(ROOT_DB+"files/"+bottle.entity.getId());
-        if(!bottle.files.isEmpty() || prodFileFolder.exists()) {
+        if(!bottle.files.isEmpty()) {
             fileFolder.mkdirs();
             prodFileFolder.mkdirs();
             List<String> fileHashs = Arrays.asList(prodFileFolder.list());
