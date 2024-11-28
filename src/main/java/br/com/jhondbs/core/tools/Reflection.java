@@ -133,10 +133,13 @@ public final class Reflection {
      * @return Instância da classe.
      */
     private static Class makeClass(String str){
-        str = str.replaceAll(".class", "").replaceAll("/", ".");
+        str = str.replace(".class", "").replace("/", ".");
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
         while(!str.isBlank()){
             try {
-                ClassLoader cl = Thread.currentThread().getContextClassLoader();
+                if(str.startsWith(".")) {
+                    str = str.substring(1);
+                }
                 Class c = cl.loadClass(str);
                 if(c != null){
                     return c;
