@@ -47,14 +47,6 @@ public class ColdEntity {
         this.entity = entity;
         this.index = ClassDictionary.getIndex(entity.getClass());
         this.id = entity.getId();
-        this.loader = this.getClass().getClassLoader();
-    }
-    
-    public ColdEntity(Entity entity, ClassLoader loader) throws Exception {
-        this.entity = entity;
-        this.index = ClassDictionary.getIndex(entity.getClass());
-        this.id = entity.getId();
-        this.loader = loader;
     }
     
     public void set(Entity entity) throws Exception {
@@ -65,7 +57,7 @@ public class ColdEntity {
     
     public <T extends Entity>T get() throws Exception {
         if(this.entity == null) {
-            Bottle bottle = new Bottle(ClassDictionary.fromIndex(index), id, Bottle.ROOT_STAGE, loader);
+            Bottle bottle = new Bottle(ClassDictionary.fromIndex(index), id, Bottle.ROOT_STAGE);
             this.entity = bottle.entity;
         }
         return (T) this.entity;

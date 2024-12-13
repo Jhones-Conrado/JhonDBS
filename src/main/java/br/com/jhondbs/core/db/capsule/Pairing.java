@@ -21,55 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package br;
-
-import java.io.IOException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import tests.objects.EnteA;
-import tests.objects.EnteB;
+package br.com.jhondbs.core.db.capsule;
 
 /**
  *
- * @author jhonessales
+ * @author jhones
+ * Utilizado para fazer o pareamento entre dois valores nos moldes de "Chave -> Valor",
+ * similar a um Map, porém para pareamento único.
  */
-public class SporadicTests {
-    
-    public SporadicTests() {
-    }
-    
-    @BeforeClass
-    public static void setUpClass() {
-    }
-    
-    @AfterClass
-    public static void tearDownClass() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
+public class Pairing<K, V> {
+    private K key;
+    private V value;
+
+    public Pairing(K key, V value) {
+        this.key = key;
+        this.value = value;
     }
 
-    @Test
-    public void hello() throws IOException, Exception {
-        System.out.println("sporadic test");
-        
-        EnteA a = new EnteA("Jhones"+String.valueOf(System.nanoTime()));
-        a.enteb = new EnteB("Carro");
-//        a.file = new File("./medidas.pdf");
-        
-        a.save();
-        
-        EnteA a2 = a.load(a.getId());
-        a2.delete();
-        
-        assert true;
+    public K getKey() {
+        return key;
     }
+
+    public void setKey(K key) {
+        this.key = key;
+    }
+
+    public V getValue() {
+        return value;
+    }
+
+    public void setValue(V value) {
+        this.value = value;
+    }
+
+    @Override
+    public String toString() {
+        return "<"+key.toString()+"><"+value.toString()+">";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj.toString().equals(toString());
+    }
+    
 }

@@ -165,11 +165,6 @@ public interface Entity extends Serializable, Cloneable{
         }
     }
     
-    default <T extends Entity> T load(String id, ClassLoader loader) throws Exception {
-        Bottle bottle = new Bottle(this.getClass(), id, Bottle.ROOT_STAGE, loader);
-        return (T) bottle.entity;
-    }
-    
     /**
      * ENGLISH<br>
      * Loads all entities of the current type.
@@ -226,15 +221,6 @@ public interface Entity extends Serializable, Cloneable{
         Bottle b = new Bottle(this);
         b.engarafar();
         return b.delete();
-//        try {
-//            if(b.delete()) {
-//                b.deleteFilesEndingWithDelete();
-//                b.moveDirectory();
-//                return true;
-//            }
-//        } finally {
-//            b.cleanFolders();
-//        }
     }
     
     /**

@@ -21,55 +21,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package br;
+package br.com.jhondbs.core.db.capsule;
 
-import java.io.IOException;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import tests.objects.EnteA;
-import tests.objects.EnteB;
+import br.com.jhondbs.core.db.interfaces.Entity;
+import br.com.jhondbs.core.tools.ClassDictionary;
 
 /**
  *
- * @author jhonessales
+ * @author jhones
  */
-public class SporadicTests {
+public class Ref extends Pairing<String, Integer>{
     
-    public SporadicTests() {
+    public Ref(String key, Integer value) {
+        super(key, value);
     }
     
-    @BeforeClass
-    public static void setUpClass() {
-    }
-    
-    @AfterClass
-    public static void tearDownClass() {
-    }
-    
-    @Before
-    public void setUp() {
-    }
-    
-    @After
-    public void tearDown() {
+    public Ref(Entity entity) throws Exception {
+        super(entity.getId(), ClassDictionary.getIndex(entity.getClass()));
     }
 
-    @Test
-    public void hello() throws IOException, Exception {
-        System.out.println("sporadic test");
-        
-        EnteA a = new EnteA("Jhones"+String.valueOf(System.nanoTime()));
-        a.enteb = new EnteB("Carro");
-//        a.file = new File("./medidas.pdf");
-        
-        a.save();
-        
-        EnteA a2 = a.load(a.getId());
-        a2.delete();
-        
-        assert true;
+    public Ref(String pair) {
+        super(null, null);
+        String[] split = pair.split(":");
+        setKey(split[1]);
+        setValue(Integer.valueOf(split[0]));
     }
+    
+    @Override
+    public String toString() {
+        return getValue()+":"+getKey();
+    }
+    
 }

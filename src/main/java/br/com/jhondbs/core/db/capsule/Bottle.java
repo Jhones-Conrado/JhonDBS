@@ -79,8 +79,8 @@ import javax.imageio.ImageIO;
  */
 public class Bottle {
     
-    private String ROOT_DB = "./db/";
-    private String TEMP_DB = "./temp/";
+    public String ROOT_DB = "./db/";
+    public String TEMP_DB = "./temp/";
     
     public static final int ROOT_STAGE = 0;
     public static final int TEMP_STAGE = 1;
@@ -92,7 +92,7 @@ public class Bottle {
     
     public Map<String, Bottle> bottles = new HashMap<>();
     public List<String> bottledFields = new ArrayList<>();
-    public Set<String> referencias = new HashSet<>();
+    public Set<Ref> referencias = new HashSet<>();
     public Map<String, Image> imgs = new HashMap<>();
     public Map<String, File> files = new HashMap<>();
     public ClassLoader loader;
@@ -103,26 +103,50 @@ public class Bottle {
     
     private Properties props = new Properties();
     
+    /**
+     * Construtor útil para carregar uma entidade a partir de seu ID e Classe, quando não
+     * há um objeto de referência.
+     * @param clazz
+     * @param id
+     * @param modoOperacional
+     * @throws Exception 
+     */
     public Bottle(Class clazz, String id, int modoOperacional) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles.put(id, this);
-        this.loader = this.getClass().getClassLoader();
+        this.loader = Thread.currentThread().getContextClassLoader();
         defineTemp();
         initFolders();
         load(clazz, id, loader);
         cleanFolders();
     }
     
-    public Bottle(Class clazz, String id, int modoOperacional, ClassLoader loader) throws Exception {
+    /**
+     * Utilizado apenas dentro do método de exclusão. Não deve ser utilizado
+     * fora desse contexto.
+     * @param clazz
+     * @param id
+     * @param modoOperacional
+     * @param temp_db
+     * @throws Exception 
+     */
+    public Bottle(Class clazz, String id, int modoOperacional, String temp_db) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles.put(id, this);
-        this.loader = loader;
-        defineTemp();
-        initFolders();
+        this.loader = Thread.currentThread().getContextClassLoader();
+        this.TEMP_DB = temp_db;
+        this.reader = new Reader(ROOT_DB, TEMP_DB);
+        this.writer = new Writer(ROOT_DB, TEMP_DB);
         load(clazz, id, loader);
-        cleanFolders();
     }
     
+    /**
+     * Ideal para criar uma garrafa a partir de uma entidade. O construtor irá
+     * buscar no banco de dados por uma versão prévia da entidade e tentar carregar
+     * as referências a partir de lá.
+     * @param entity
+     * @throws Exception 
+     */
     public Bottle(Entity entity) throws Exception {
         this.entity = entity;
         this.loader = this.getClass().getClassLoader();
@@ -148,11 +172,11 @@ public class Bottle {
         load(clazz, id, loader);
     }
     
-    private Bottle(Class clazz, String id, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp) throws Exception {
+    private Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles = bottles;
         this.bottles.put(id, this);
-        this.loader = loader;
+        this.loader = Thread.currentThread().getContextClassLoader();
         this.ROOT_DB = root;
         this.TEMP_DB = temp;
         
@@ -178,10 +202,10 @@ public class Bottle {
         loadRefs();
     }
     
-    private Bottle(Entity entity, Map<String, Bottle> bottles, ClassLoader loader, int modoOperacional, String root, String temp) throws Exception {
+    private Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
         this.entity = entity;
         this.bottles = bottles;
-        this.loader = loader;
+        this.loader = Thread.currentThread().getContextClassLoader();
         this.modoOperacional = modoOperacional;
         this.bottles.put(entity.getId(), this);
         this.ROOT_DB = root;
@@ -195,11 +219,13 @@ public class Bottle {
     }
     
     public void putRef(Entity entity) throws Exception {
-        this.referencias.add(String.valueOf(ClassDictionary.getIndex(entity.getClass())) + ":" +entity.getId());
+        Ref ref = new Ref(entity);
+        this.referencias.add(ref);
     }
     
     public void removeRef(Entity entity) throws Exception {
-        this.referencias.remove(String.valueOf(ClassDictionary.getIndex(entity.getClass())) + ":" +entity.getId());
+        Ref ref = new Ref(entity);
+        this.referencias.remove(ref);
     }
     
     public void loadRefs() throws Exception {
@@ -211,10 +237,10 @@ public class Bottle {
             this.props = props;
             String refs = props.get("refs").toString();
             if(!refs.isBlank()) {
-                for(String ref : refs.split("::")) {
-                    if(!ref.isBlank()) {
-                        this.referencias.add(ref);
-                    }
+                List<String> refPairs = reader.splitCapsules(refs);
+                for(String ref : refPairs) {
+                    Ref refz = new Ref(refs.toString());
+                    this.referencias.add(refz);
                 }
             }
         }
@@ -264,12 +290,12 @@ public class Bottle {
     public Properties build() {
         StringBuffer fields = new StringBuffer();
         for(String s : bottledFields) {
-            fields.append(s);
+            fields.append(s).append("\n");
         }
         
         StringBuffer refs = new StringBuffer();
-        for(String s : referencias) {
-            refs.append(s).append("::");
+        for(Ref s : referencias) {
+            refs.append(s.toString()).append("::");
         }
         
         props.put("fields", fields.toString());
@@ -601,93 +627,61 @@ public class Bottle {
     }
     
     public boolean delete() throws IllegalArgumentException, IllegalAccessException, Exception {
-        List<File> imgsToDelete = new ArrayList<>();
-        List<File> filesToDelete = new ArrayList<>();
-        delete(true);
-        applyChanges(imgsToDelete, filesToDelete);
-        moveDirectory();
-        cleanFolders();
+        try {
+            List<File> imgsToDelete = new ArrayList<>();
+            List<File> filesToDelete = new ArrayList<>();
+            delete(true);
+            applyChanges(imgsToDelete, filesToDelete);
+        } finally {
+            cleanFolders();
+        }
         return true;
     }
     
-    private boolean delete(boolean sub) throws Exception {
-        sendToTemp(this.entity);
+    public boolean delete(boolean sub) throws Exception {
+        Assist.sendToTemp(new Ref(entity), TEMP_DB);
         
-        List<String> refs = new ArrayList<>();
-        Object objRefs = props.get("refs");
-        if(objRefs != null) {
-            refs.addAll(Arrays.asList(objRefs.toString().split("::"))
-                    .stream()
-                    .filter(ref -> !ref.isBlank())
-                    .toList());
-        }
-        
-        
-        String thisId = this.entity.getId();
-        
-        /**
-         * Percorre todos os referenciadores para que seja removida a referência tanto nos campos
-         * como nas referências do referenciador.
-         */
-        for(String ref : refs) {
-            String[] dados = ref.split(":");
-            Class clazz = ClassDictionary.fromIndex(Integer.parseInt(dados[0]));
-            String id = dados[1];
+        Properties tester = new Properties();
+        tester.load(new FileInputStream(new File(Assist.getPathFromRef(new Ref(entity), TEMP_DB))));
+        if(!tester.containsKey("exclude")) {
+            List<Ref> enties = Assist.getEnties(build().get("fields").toString());
+            String id = entity.getId();
+            enties = enties.stream()
+                    .filter(ref -> !ref.getKey().equals(id))
+                    .toList();
             
-            sendToTemp(clazz, id);
+            // Remove a entidade atual das subentidades.
+            Ref toRemove = new Ref(entity);
+            for(Ref ref : enties) {
+                Assist.removeExistence(toRemove, ref, TEMP_DB);
+            }
 
-            String path = getTempPath(clazz, id);
-
-            Properties properties = new Properties();
-            properties.load(new FileInputStream(new File(path)));
-
-            /*
-            Remover referência dos campos do referenciador.
-            */
-            properties.put("fields", properties.get("fields").toString().replace("{"+ClassDictionary.getIndex(this.entity.getClass())+":"+this.entity.getId()+"}", ""));
-
-            /*
-            Remover referência dos referenciadores.
-             */
-            String refStream = properties.get("refs").toString();
-            List<String> filtered = new ArrayList<>();
-            filtered.addAll(Arrays.asList(refStream.split("::"))
-                    .stream()
-                    .filter(r -> !r.isBlank() && !r.contains(thisId))
-                    .toList());
-
-            if(filtered.isEmpty()) {
-                if(properties.containsKey("cascate")) {
-                    if(properties.get("cascate").equals("true")) {
-                        properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
-                        Bottle bottle = new Bottle(clazz, id, TEMP_STAGE, ROOT_DB, TEMP_DB);
-                        bottle.delete(true);
+            // Marca a entidade atual para exclusão.
+            Properties prop = new Properties();
+            prop.put("exclude", "true");
+            prop.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
+            
+            // Busca as entidades que ficaram órfãs e tem cascata para exlusão.
+            for(Ref ref : enties) {
+                Properties p = new Properties();
+                p.load(new FileInputStream(new File(Assist.getPathFromRef(ref, TEMP_DB))));
+                if(!p.containsKey("exclude")) {
+                    
+                    // Carrega a lista atual de referências da entidade atualizada.
+                    List<String> refs = Arrays.asList(p.getProperty("refs").toString().split("::"))
+                            .stream().filter(r -> !r.isBlank())
+                            .toList();
+                    // Verifica se ficou órfã.
+                    if(refs.isEmpty()) {
+                        if(p.containsKey("cascate")) {
+                            // Deleta a entidade em casa de orfandade e cascata.
+                            Bottle bottle = new Bottle(ClassDictionary.fromIndex(ref.getValue()), ref.getKey(), TEMP_STAGE, TEMP_DB);
+                            bottle.delete(true);
+                        }
                     }
-                } else {
-                    properties.put("refs", "");
-                    properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
                 }
-            } else {
-                StringBuffer buffer = new StringBuffer();
-                for(String r : filtered) {
-                    buffer.append(r).append("::");
-                }
-                properties.put("refs", buffer.toString());
-                properties.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
             }
-        }
-        
-        for(Bottle bottle : this.bottles.values()) {
-            if(!bottle.entity.getId().equals(thisId)) {
-                Bottle b = new Bottle(bottle.entity.getClass(), bottle.entity.getId(), TEMP_STAGE, ROOT_DB, TEMP_DB);
-                b.delete(true);
-            }
-        }
-        
-        props.put("exclude", "true");
-        
-        String path = getTempPath(this.entity);
-        props.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
+        }        
         return true;
     }
     
@@ -741,7 +735,7 @@ public class Bottle {
                             } else if(Reflection.isInstance(field.getType(), Entity.class) || Reflection.isInstance(valor.getClass(), Entity.class)) {
                                 Entity ente = (Entity) valor;
                                 if(!bottles.containsKey(ente.getId())) {
-                                    Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB);
+                                    Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
                                     bottle.engarafar();
                                     if(field.isAnnotationPresent(Cascate.class)) {
                                         bottle.props.put("cascate", "true");
@@ -803,7 +797,7 @@ public class Bottle {
             } else if(Reflection.isInstance(objeto.getClass(), Entity.class)) {
                 Entity ente = (Entity) objeto;
                 if(!bottles.containsKey(ente.getId())) {
-                    Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB);
+                    Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
                     bottle.engarafar();
                     bottle.putRef(this.entity);
                     bottle.props.put("cascate", String.valueOf(cascate));
@@ -949,7 +943,7 @@ public class Bottle {
                 } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
                     Entity ente = (Entity) obj;
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB);
+                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
                         bottle.engarafar();
                         bottle.putRef(this.entity);
                     }
@@ -969,7 +963,7 @@ public class Bottle {
                 } else if(Reflection.isInstance(key.getClass(), Entity.class)) {
                     Entity ente = (Entity) key;
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB);
+                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
                         bottle.engarafar();
                         bottle.putRef(this.entity);
                     }
@@ -984,7 +978,7 @@ public class Bottle {
                 } else if(Reflection.isInstance(map.get(key).getClass(), Entity.class)) {
                     Entity ente = (Entity) map.get(key);
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB);
+                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
                         bottle.engarafar();
                         bottle.putRef(this.entity);
                     }
@@ -1108,7 +1102,8 @@ public class Bottle {
             if(!refs.isBlank()) {
                 for(String ref : refs.split("::")) {
                     if(!ref.isBlank()) {
-                        this.referencias.add(ref);
+                        Ref r = new Ref(ref);
+                        this.referencias.add(r);
                     }
                 }
             }
@@ -1173,7 +1168,7 @@ public class Bottle {
             if(bottles.containsKey(id)) {
                 return bottles.get(id).entity;
             } else {
-                Bottle bottle = new Bottle(classe_do_objeto, id, bottles, loader, modoOperacional, ROOT_DB, TEMP_DB);
+                Bottle bottle = new Bottle(classe_do_objeto, id, bottles, modoOperacional, ROOT_DB, TEMP_DB);
                 return bottle.entity;
             }
         } 
@@ -1286,6 +1281,31 @@ public class Bottle {
     
     
     
+    
+    /*
+    ************************************************************
+    ******************** FUNÇÕES AUXILIARES ********************
+    ************************************************************
+    */
+    
+    
+    public List<String> extractRefs(Entity entity) throws Exception {
+        sendToTemp(entity);
+        List<String> refs = new ArrayList<>();
+        Object objRefs = props.get("refs");
+        if(objRefs != null) {
+            refs.addAll(Arrays.asList(objRefs.toString().split("::"))
+                    .stream()
+                    .filter(ref -> !ref.isBlank())
+                    .toList());
+        }
+        return refs;
+    }
+    
+    
+    
+    
+    
     /*
     ************************************************************
     ******************  TESTES DE ENTIDADE   *******************
@@ -1379,7 +1399,7 @@ public class Bottle {
         List<String> ids = reader.listAllIds(classe);
         List<T> list = new ArrayList<>();
         for(String id : ids) {
-            Bottle bottle = new Bottle(classe, id, ROOT_STAGE, loader);
+            Bottle bottle = new Bottle(classe, id, ROOT_STAGE);
             if(filter != null) {
                 if(filter.filter(bottle.entity)) {
                     list.add((T) bottle.entity);
