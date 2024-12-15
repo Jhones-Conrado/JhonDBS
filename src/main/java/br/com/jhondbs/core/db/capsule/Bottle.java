@@ -235,13 +235,13 @@ public class Bottle {
             Properties props = new Properties();
             props.load(new FileInputStream(new File(path)));
             this.props = props;
-            String refs = props.get("refs").toString();
+            String refs = props.getProperty("refs").toString();
             if(!refs.isBlank()) {
-                List<String> refPairs = reader.splitCapsules(refs);
-                for(String ref : refPairs) {
-                    Ref refz = new Ref(refs.toString());
-                    this.referencias.add(refz);
-                }
+                this.referencias.addAll(Arrays.asList(refs.split("::"))
+                        .stream()
+                        .filter(str -> !str.isBlank())
+                        .map(str -> new Ref(str))
+                        .toList());
             }
         }
     }
@@ -644,15 +644,24 @@ public class Bottle {
         Properties tester = new Properties();
         tester.load(new FileInputStream(new File(Assist.getPathFromRef(new Ref(entity), TEMP_DB))));
         if(!tester.containsKey("exclude")) {
-            List<Ref> enties = Assist.getEnties(build().get("fields").toString());
-            String id = entity.getId();
-            enties = enties.stream()
-                    .filter(ref -> !ref.getKey().equals(id))
-                    .toList();
+            List<Ref> toClean = new ArrayList<>();
             
+            String id = entity.getId();
+            toClean.addAll(Assist.getEnties(build().get("fields").toString())
+                    .stream()
+                    .filter(ref -> !ref.getKey().equals(id))
+                    .toList());
+            
+            // Adiciona os referenciadores na lista de entidades para limpeza.
+            toClean.addAll(Arrays.asList(build().getProperty("refs").toString().split("::"))
+                    .stream()
+                    .filter(str -> !str.isBlank())
+                    .map(str -> new Ref(str))
+                    .toList());
+                    
             // Remove a entidade atual das subentidades.
             Ref toRemove = new Ref(entity);
-            for(Ref ref : enties) {
+            for(Ref ref : toClean) {
                 Assist.removeExistence(toRemove, ref, TEMP_DB);
             }
 
@@ -662,7 +671,7 @@ public class Bottle {
             prop.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
             
             // Busca as entidades que ficaram órfãs e tem cascata para exlusão.
-            for(Ref ref : enties) {
+            for(Ref ref : toClean) {
                 Properties p = new Properties();
                 p.load(new FileInputStream(new File(Assist.getPathFromRef(ref, TEMP_DB))));
                 if(!p.containsKey("exclude")) {

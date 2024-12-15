@@ -100,12 +100,15 @@ public class Assist {
         Class clazz = ClassDictionary.fromIndex(getRemoved.getValue());
         String path = temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+getRemoved.getKey();
         
+        System.out.println("REMOVENDO DE: "+clazz.getName());
+        
         Properties p = new Properties();
         p.load(new FileInputStream(new File(path)));
         
         String refToRemove = "{"+String.valueOf(toRemove.getValue())+":"+toRemove.getKey()+"}";
+        String refToRemove2 = "{"+String.valueOf(toRemove.getValue())+"\\:"+toRemove.getKey()+"}";
         String strFields = p.get("fields").toString();
-        strFields = strFields.replace(refToRemove, "");
+        strFields = strFields.replace(refToRemove, "").replace(refToRemove2, "");
         
         p.put("fields", strFields);
         
