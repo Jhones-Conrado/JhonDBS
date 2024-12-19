@@ -99,9 +99,11 @@ public class Bottle {
     
     public Entity entity;
 
-    private boolean isSub = false;
+    public boolean isSub = false;
     
-    private Properties props = new Properties();
+    public Properties props = new Properties();
+    
+    public boolean cascate = false;
     
     /**
      * Construtor útil para carregar uma entidade a partir de seu ID e Classe, quando não
@@ -158,7 +160,7 @@ public class Bottle {
         cleanFolders();
     }
     
-    private Bottle(Class clazz, String id, int modoOperacional, String root, String temp) throws Exception {
+    public Bottle(Class clazz, String id, int modoOperacional, String root, String temp) throws Exception {
         this.modoOperacional = modoOperacional;
         this.ROOT_DB = root;
         this.TEMP_DB = temp;
@@ -172,7 +174,7 @@ public class Bottle {
         load(clazz, id, loader);
     }
     
-    private Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
+    public Bottle(Class clazz, String id, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
         this.modoOperacional = modoOperacional;
         this.bottles = bottles;
         this.bottles.put(id, this);
@@ -187,7 +189,7 @@ public class Bottle {
         load(clazz, id, loader);
     }
     
-    private Bottle(Entity entity, String root, String temp) throws Exception {
+    public Bottle(Entity entity, String root, String temp) throws Exception {
         this.entity = entity;
         this.loader = this.getClass().getClassLoader();
         this.modoOperacional = ROOT_STAGE;
@@ -202,7 +204,7 @@ public class Bottle {
         loadRefs();
     }
     
-    private Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
+    public Bottle(Entity entity, Map<String, Bottle> bottles, int modoOperacional, String root, String temp) throws Exception {
         this.entity = entity;
         this.bottles = bottles;
         this.loader = Thread.currentThread().getContextClassLoader();
@@ -301,6 +303,9 @@ public class Bottle {
         props.put("fields", fields.toString());
         props.put("refs", refs.toString());
         props.put("stamp", String.valueOf(System.nanoTime()));
+        if(this.cascate) {
+            props.put("cascate", "true");
+        }
         return props;
     }
     
@@ -324,8 +329,10 @@ public class Bottle {
                     lock(toLock);
                     
                     if(oldState != null) {
-                        List<String> excludeds = excludeds(oldState);
-                        removeRefs(excludeds, oldState);
+                        List<Ref> removeds = Assist.removedsBetweenStates(this);
+                        for(Ref ref : removeds) {
+                            Assist.removeExistenceFromBottle(this, ref);
+                        }
                     }
                     
                     List<File> imgsToDelete = new ArrayList<>();
@@ -727,9 +734,9 @@ public class Bottle {
                                 sb.append(encapsulePrimitive(valor));
                             } else if(Reflection.isArrayMap(field.getType()) || Reflection.isArrayMap(valor)) {
                                 if(Reflection.isInstance(valor.getClass(), List.class)) {
-                                    List l = (List) valor;
-                                    if(!l.isEmpty()) {
-                                        sb.append(encapsuleArray(l, field.isAnnotationPresent(Cascate.class)));
+                                    List list = (List) valor;
+                                    if(!list.isEmpty()) {
+                                        sb.append(encapsuleArray(list, field.isAnnotationPresent(Cascate.class)));
                                     } else {
                                         sb.append("{list:{}}");
                                     }
@@ -748,6 +755,7 @@ public class Bottle {
                                     bottle.engarafar();
                                     if(field.isAnnotationPresent(Cascate.class)) {
                                         bottle.props.put("cascate", "true");
+                                        bottle.cascate = true;
                                     }
                                 }
                                 bottles.get(ente.getId()).putRef(this.entity);
@@ -806,10 +814,12 @@ public class Bottle {
             } else if(Reflection.isInstance(objeto.getClass(), Entity.class)) {
                 Entity ente = (Entity) objeto;
                 if(!bottles.containsKey(ente.getId())) {
-                    Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-                    bottle.engarafar();
-                    bottle.putRef(this.entity);
-                    bottle.props.put("cascate", String.valueOf(cascate));
+                    Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+//                    Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
+//                    bottle.engarafar();
+//                    bottle.putRef(this.entity);
+//                    bottle.props.put("cascate", String.valueOf(cascate));
+//                    bottle.cascate = cascate;
                 }
                 return encapsuleId(ente);
             } else if(objeto instanceof File) {
@@ -952,9 +962,14 @@ public class Bottle {
                 } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
                     Entity ente = (Entity) obj;
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-                        bottle.engarafar();
-                        bottle.putRef(this.entity);
+                        Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+//                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
+//                        bottle.engarafar();
+//                        bottle.putRef(this.entity);
+//                        if(cascate) {
+//                            bottle.props.put("cascate", "true");
+//                            bottle.cascate = true;
+//                        }
                     }
                     sb.append(encapsuleId(ente));
                 } else {
@@ -972,9 +987,14 @@ public class Bottle {
                 } else if(Reflection.isInstance(key.getClass(), Entity.class)) {
                     Entity ente = (Entity) key;
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-                        bottle.engarafar();
-                        bottle.putRef(this.entity);
+                        Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+//                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
+//                        bottle.engarafar();
+//                        bottle.putRef(this.entity);
+//                        if(cascate) {
+//                            bottle.props.put("cascate", "true");
+//                            bottle.cascate = true;
+//                        }
                     }
                     sb.append(encapsuleId(ente));
                 } else {
@@ -987,9 +1007,14 @@ public class Bottle {
                 } else if(Reflection.isInstance(map.get(key).getClass(), Entity.class)) {
                     Entity ente = (Entity) map.get(key);
                     if(!bottles.containsKey(ente.getId())) {
-                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-                        bottle.engarafar();
-                        bottle.putRef(this.entity);
+                        Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+//                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
+//                        bottle.engarafar();
+//                        bottle.putRef(this.entity);
+//                        if(cascate) {
+//                            bottle.props.put("cascate", "true");
+//                            bottle.cascate = true;
+//                        }
                     }
                     sb.append(encapsuleId(ente));
                 } else {
@@ -1055,6 +1080,12 @@ public class Bottle {
             props.load(new FileInputStream(new File(path)));
             
             this.props = props;
+            
+            if(props.containsKey("cascate")) {
+                if(props.getProperty("cascate").toString().equals("true")) {
+                    this.cascate = true;
+                }
+            }
             
             List<String> fields = new ArrayList<>();
             String fieldStream = props.get("fields").toString();

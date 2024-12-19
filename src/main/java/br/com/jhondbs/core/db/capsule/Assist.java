@@ -23,6 +23,7 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import java.io.File;
 import java.io.FileInputStream;
@@ -100,8 +101,6 @@ public class Assist {
         Class clazz = ClassDictionary.fromIndex(getRemoved.getValue());
         String path = temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+getRemoved.getKey();
         
-        System.out.println("REMOVENDO DE: "+clazz.getName());
-        
         Properties p = new Properties();
         p.load(new FileInputStream(new File(path)));
         
@@ -122,6 +121,12 @@ public class Assist {
                 });
         p.put("refs", sb.toString());
         p.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
+    }
+    
+    public static void removeExistenceFromBottle(Bottle bottle, Ref getRemoved) throws Exception {
+        for(Bottle b : bottle.bottles.values()) {
+            removeExistence(new Ref(b.entity), getRemoved, b.TEMP_DB);
+        }
     }
     
     public static void sendToTemp(Ref reference, String temp) throws Exception {
@@ -170,6 +175,17 @@ public class Assist {
     public static String getPathFromRef(Ref ref, String temp_db) {
         Class clazz = ClassDictionary.fromIndex(ref.getValue());
         return temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+ref.getKey();
+    }
+    
+    public static Bottle createBottle(Entity ente, Map<String, Bottle> bottles, int modoOperacional, String ROOT_DB, String TEMP_DB, Entity referencia, boolean cascate) throws Exception {
+        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
+        bottle.engarafar();
+        bottle.putRef(referencia);
+        if(cascate) {
+            bottle.props.put("cascate", "true");
+            bottle.cascate = true;
+        }
+        return bottle;
     }
     
 }
