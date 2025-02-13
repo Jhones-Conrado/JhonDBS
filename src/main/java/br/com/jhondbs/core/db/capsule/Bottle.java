@@ -803,6 +803,13 @@ public class Bottle {
                     } else {
                         return "{list:{}}";
                     }
+                } else if(Reflection.isInstance(objeto.getClass(), Set.class)) {
+                  Set set = (Set) objeto;
+                  if(!set.isEmpty()) {
+                      return encapsuleArray(objeto, cascate);
+                  } else {
+                      return "{list:{}}";
+                  }
                 } else if(Reflection.isInstance(objeto.getClass(), Map.class)) {
                     Map m = (Map) objeto;
                     if(!m.isEmpty()) {
@@ -815,11 +822,6 @@ public class Bottle {
                 Entity ente = (Entity) objeto;
                 if(!bottles.containsKey(ente.getId())) {
                     Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
-//                    Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-//                    bottle.engarafar();
-//                    bottle.putRef(this.entity);
-//                    bottle.props.put("cascate", String.valueOf(cascate));
-//                    bottle.cascate = cascate;
                 }
                 return encapsuleId(ente);
             } else if(objeto instanceof File) {
@@ -963,13 +965,6 @@ public class Bottle {
                     Entity ente = (Entity) obj;
                     if(!bottles.containsKey(ente.getId())) {
                         Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
-//                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-//                        bottle.engarafar();
-//                        bottle.putRef(this.entity);
-//                        if(cascate) {
-//                            bottle.props.put("cascate", "true");
-//                            bottle.cascate = true;
-//                        }
                     }
                     sb.append(encapsuleId(ente));
                 } else {
@@ -988,13 +983,6 @@ public class Bottle {
                     Entity ente = (Entity) key;
                     if(!bottles.containsKey(ente.getId())) {
                         Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
-//                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-//                        bottle.engarafar();
-//                        bottle.putRef(this.entity);
-//                        if(cascate) {
-//                            bottle.props.put("cascate", "true");
-//                            bottle.cascate = true;
-//                        }
                     }
                     sb.append(encapsuleId(ente));
                 } else {
@@ -1008,13 +996,6 @@ public class Bottle {
                     Entity ente = (Entity) map.get(key);
                     if(!bottles.containsKey(ente.getId())) {
                         Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
-//                        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
-//                        bottle.engarafar();
-//                        bottle.putRef(this.entity);
-//                        if(cascate) {
-//                            bottle.props.put("cascate", "true");
-//                            bottle.cascate = true;
-//                        }
                     }
                     sb.append(encapsuleId(ente));
                 } else {
@@ -1171,6 +1152,15 @@ public class Bottle {
         }
     }
     
+    /**
+     * 
+     * @param indice O número de índice da classe ou também o tipo de contéudo,
+     * como "list", "map", "img", "file" e possíveis outros futuros.
+     * @param conteudo A cápsula de conteúdo.
+     * @param loader Classloader para permitir compatibilidade com SpringBoot DevTools.
+     * @return Objeto recuperado.
+     * @throws Exception 
+     */
     private Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
         Class classe_do_objeto = null;
         

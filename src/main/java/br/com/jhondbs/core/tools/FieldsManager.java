@@ -251,6 +251,16 @@ public class FieldsManager {
         for(Field f : fields){
             if(f.getName().equals(fieldName)){
                 f.setAccessible(true);
+                
+                if(Reflection.isInstance(f.getType(), Set.class)) {
+                    if(Reflection.isInstance(value.getClass(), List.class)) {
+                        Set set = new HashSet();
+                        set.addAll((List) value);
+                        f.set(receptor, set);
+                        break;
+                    }
+                }
+                
                 f.set(receptor, value);
                 break;
            }
