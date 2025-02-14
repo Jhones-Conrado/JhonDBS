@@ -27,6 +27,7 @@ import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
 import br.com.jhondbs.core.db.obj.ColdEntity;
+import br.com.jhondbs.core.tools.Reflection;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -37,12 +38,15 @@ import java.time.LocalTime;
 import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -72,6 +76,8 @@ public class EnteA implements Entity{
     
     public List<ObjetoA> lista = new ArrayList<>();
     
+    public Set<Object> setList = new HashSet<>();
+    
     public Map<String, Object> mapa = new HashMap<>();
     
     public Date date = new Date();
@@ -87,6 +93,8 @@ public class EnteA implements Entity{
     @Cascate
     public EnteB enteb;
     
+    public ObjetoA subObjeto = new ObjetoA("sub objeto");
+    
     public ColdEntity cold;
     
     public File file;
@@ -97,6 +105,16 @@ public class EnteA implements Entity{
 
     public EnteA(String name) {
         this.name = name;
+        String[] a = {"carro", "bike", "moto", "casa"};
+        setList.addAll(Arrays.asList(a));
+        
+        lista.add(new ObjetoA("tomate"));
+        lista.add(new ObjetoA("cereja"));
+        lista.add(new ObjetoA("alface"));
+        lista.add(new ObjetoA("coentro"));
+        
+        System.out.println("SUB ESTÁ SAINDO COMO LISTA?");
+        System.out.println(Reflection.isArrayMap(subObjeto));
     }
 
     public EnteA(String name, Endereco endereco) {

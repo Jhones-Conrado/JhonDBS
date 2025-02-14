@@ -77,7 +77,7 @@ import javax.imageio.ImageIO;
  * Versão 4
  * @author jhones
  */
-public class Bottle {
+public final class Bottle {
     
     public String ROOT_DB = "./db/";
     public String TEMP_DB = "./temp/";
@@ -220,11 +220,21 @@ public class Bottle {
         loadRefs();
     }
     
+    /**
+     * Adicionar uma entidade como referenciador desta.
+     * @param entity
+     * @throws Exception
+     */
     public void putRef(Entity entity) throws Exception {
         Ref ref = new Ref(entity);
         this.referencias.add(ref);
     }
     
+    /**
+     * Remove uma entidade da lista de referenciadores.
+     * @param entity
+     * @throws Exception 
+     */
     public void removeRef(Entity entity) throws Exception {
         Ref ref = new Ref(entity);
         this.referencias.remove(ref);
@@ -234,10 +244,10 @@ public class Bottle {
         String path = getPath(this.entity);
         File file = new File(path);
         if(file.exists()) {
-            Properties props = new Properties();
-            props.load(new FileInputStream(new File(path)));
-            this.props = props;
-            String refs = props.getProperty("refs").toString();
+            Properties currentProps = new Properties();
+            currentProps.load(new FileInputStream(new File(path)));
+            this.props = currentProps;
+            String refs = currentProps.getProperty("refs").toString();
             if(!refs.isBlank()) {
                 this.referencias.addAll(Arrays.asList(refs.split("::"))
                         .stream()
@@ -248,6 +258,9 @@ public class Bottle {
         }
     }
     
+    /**
+     * Utilizado para definir a pasta temporária utilizada para serialização.
+     */
     private void defineTemp() {
         String identity = this.toString().replace(this.getClass().getName(), "");
         this.TEMP_DB = this.TEMP_DB + identity +"/";
@@ -255,6 +268,11 @@ public class Bottle {
         this.writer = new Writer(ROOT_DB, TEMP_DB);
     }
     
+    /**
+     * Inicia as pastas temporárias para realizar serialização.
+     * @throws URISyntaxException
+     * @throws IOException 
+     */
     private void initFolders() throws URISyntaxException, IOException {
         List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
         for(String path : all) {
@@ -263,6 +281,9 @@ public class Bottle {
         }
     }
     
+    /**
+     * Deleta a pasta temporária após a serialização.
+     */
     public void cleanFolders() {
         File directory = new File(TEMP_DB);
         if (directory.exists()) {
@@ -271,6 +292,10 @@ public class Bottle {
         }
     }
     
+    /**
+     * Deleta o contéudo de uma pasta, utilizado para limpar as pastas temporárias.
+     * @param file 
+     */
     private void deleteContents(File file) {
         if (file.isDirectory()) {
             File[] contents = file.listFiles();
@@ -289,6 +314,11 @@ public class Bottle {
     ************************************************************
     */
     
+    /**
+     * Transforma todos os campos serializados em Properties que representa a
+     * entidade encapsulada.
+     * @return 
+     */
     public Properties build() {
         StringBuffer fields = new StringBuffer();
         for(String s : bottledFields) {
@@ -309,6 +339,11 @@ public class Bottle {
         return props;
     }
     
+    /**
+     * Realiza as verificações de unicidade e consistência de valores e depois grava
+     * todas as entidades no banco de dados.
+     * @throws Exception 
+     */
     public void flush() throws Exception {
         initFolders();
         writer.initDb();
@@ -361,6 +396,12 @@ public class Bottle {
         }
     }
     
+    /**
+     * Carrega o estado atual da entidade atualmente no banco de dados.
+     * Usado para comparação entre o estado de memória atual e o estado permanente.
+     * @return
+     * @throws Exception 
+     */
     private Bottle loadOldState() throws Exception {
         Reader reader = new Reader(ROOT_STAGE);
         Writer writer = new Writer(ROOT_STAGE);
@@ -373,78 +414,69 @@ public class Bottle {
         return null;
     }
     
-    private void removeRefs(List<String> excludeds, Bottle oldState) throws Exception {
-        
-        for(String id : excludeds) {
-            Bottle get = oldState.bottles.get(id);
-            String path = getPath(get.entity);
-            
-            Properties props = new Properties();
-            props.load(new FileInputStream(new File(path)));
-            
-            String r = props.get("refs").toString();
-            if(r.endsWith("::")) {
-                r = r.substring(0, r.length()-"::".length());
-            }
-            
-            List<String> refs = new ArrayList<>();
-            
-            if(r != null && !r.isBlank()) {
-                refs.addAll(Arrays.asList(r.split("::"))
-                        .stream()
-                        .filter(ref -> !ref.isBlank())
-                        .toList());
-            }
-            
-            List<String> filtered = refs.stream().filter(ref -> this.bottles.keySet().stream().noneMatch(idd -> ref.contains(idd))).toList();
-            refs.clear();
-            refs.addAll(filtered);
-            
-            StringBuffer refBuffer = new StringBuffer();
-            
-            for(String s : refs) {
-                refBuffer.append(s).append("::");
-            }
-            
-            props.put("refs", refBuffer.toString());
-            props.put("stamp", String.valueOf(System.nanoTime()));
-            
-            if(filtered.isEmpty()) {
-                if(props.get("cascate").equals("true")) {
-                    props.put("exclude", "true");
-                }
-            }
-            
-            String tempPath = getTempPath(get.entity);
-            props.store(new FileOutputStream(new File(tempPath)), "JhonDBS Entity");
-        }
-        
-    }
-    
+    /**
+     * Retorna o caminho para a entidade dentro do Banco de Dados.
+     * @param entity
+     * @return
+     * @throws Exception 
+     */
     public String getRootPath(Entity entity) throws Exception {
         return getRootPath(entity.getClass(), entity.getId());
     }
     
+    /**
+     * Retorna o caminho para a entidade no diretório temporário.
+     * @param entity
+     * @return
+     * @throws Exception 
+     */
     public String getTempPath(Entity entity) throws Exception {
         return getTempPath(entity.getClass(), entity.getId());
     }
     
+    /**
+     * Retorna o caminho para a entidade dentro do Banco de Dados.
+     * @param classe
+     * @param id
+     * @return
+     * @throws Exception 
+     */
     public String getRootPath(Class classe, String id) throws Exception {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         path = ROOT_DB+path;
         return path;
     }
     
+    /**
+     * Retorna o caminho para a entidade no diretório temporário.
+     * @param classe
+     * @param id
+     * @return
+     * @throws Exception 
+     */
     public String getTempPath(Class classe, String id) throws Exception {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         path = TEMP_DB+path;
         return path;
     }
     
+    /**
+     * Retorna o caminho para a entidade de acordo com o modo operacional da capsula.
+     * @param entity
+     * @return
+     * @throws Exception 
+     */
     public String getPath(Entity entity) throws Exception {
         return getPath(entity.getClass(), entity.getId());
     }
     
+    /**
+     * Retorna o caminho para a entidade de acordo com o modo operacional da capsula.
+     * @param classe
+     * @param id
+     * @return
+     * @throws Exception 
+     */
     public String getPath(Class classe, String id) throws Exception {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         if(modoOperacional == 0) {
@@ -455,28 +487,43 @@ public class Bottle {
         return path;
     }
     
-    private List<String> excludeds(Bottle oldState) {
-        return oldState.bottles.keySet().stream()
-                .filter(id -> !this.bottles.keySet().contains(id))
-                .toList();
-    }
-    
+    /**
+     * Preenche a lista de IDs a serem bloqueados para leitura e gravação.
+     * @param toLock
+     * @throws Exception 
+     */
     private void fillLock(Set<String> toLock) throws Exception {
         fillLock(toLock, this);
     }
     
+    /**
+     * Preenche a lista de IDs a serem bloqueados para leitura e gravação.
+     * @param toLock
+     * @param rootBottle
+     * @throws Exception 
+     */
     private void fillLock(Set<String> toLock, Bottle rootBottle) throws Exception {
         for (Bottle b : rootBottle.bottles.values()) {
             toLock.add(b.entity.getId());
         }
     }
     
+    /**
+     * Chamado após o "fillLock" para trancar 
+     * @param toLock 
+     */
     private void lock(Set<String> toLock) {
         for (String s : toLock) {
             IO.io().lockWrite(s);
         }
     }
     
+    /**
+     * Aplica as alterações no Banco de Dados.
+     * @param imgsToDelete
+     * @param filesToDelete
+     * @throws IOException 
+     */
     private void applyChanges(List<File> imgsToDelete, List<File> filesToDelete) throws IOException {
         deleteFilesEndingWithDelete();
         moveDirectory();
@@ -504,6 +551,12 @@ public class Bottle {
         
     }
     
+    /**
+     * Grava todas as novas imagens no banco de dados.
+     * @param bottle
+     * @param imgsToDelete
+     * @throws Exception 
+     */
     private void flushImgs(Bottle bottle, List<File> imgsToDelete) throws Exception {
         File folder = new File(TEMP_DB+"imgs/"+bottle.entity.getId());
         File prodFolder = new File(ROOT_DB+"imgs/"+bottle.entity.getId());
@@ -529,7 +582,13 @@ public class Bottle {
             }
         }
     }
-
+    
+    /**
+     * Grava todos os novos arquivos no banco de dados.
+     * @param bottle
+     * @param filesToDelete
+     * @throws Exception 
+     */
     private void flushFiles(Bottle bottle, List<File> filesToDelete) throws Exception {
         File fileFolder = new File(TEMP_DB+"files/"+bottle.entity.getId());
         File prodFileFolder = new File(ROOT_DB+"files/"+bottle.entity.getId());
@@ -561,6 +620,10 @@ public class Bottle {
         }
     }
     
+    /**
+     * Move os diretórios da pasta temporária para a pasta de produção.
+     * @throws IOException 
+     */
     public void moveDirectory() throws IOException {
         Path sourceDir = Paths.get(this.TEMP_DB);
         Path targetDir = Paths.get(this.ROOT_DB);
@@ -586,6 +649,10 @@ public class Bottle {
         });
     }
     
+    /**
+     * Faz a limpeza dos arquivos marcados para exclusão.
+     * @throws IOException 
+     */
     public void deleteFilesEndingWithDelete() throws IOException {
         Path sourceDir = Paths.get(this.TEMP_DB);
         Path targetDir = Paths.get(this.ROOT_DB);
@@ -633,6 +700,13 @@ public class Bottle {
         });
     }
     
+    /**
+     * Deleta uma entidade e todas as subentidades cascata.
+     * @return
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws Exception 
+     */
     public boolean delete() throws IllegalArgumentException, IllegalAccessException, Exception {
         try {
             List<File> imgsToDelete = new ArrayList<>();
@@ -645,6 +719,12 @@ public class Bottle {
         return true;
     }
     
+    /**
+     * Método secundário utilizado para exlcuir subentidades.
+     * @param sub
+     * @return
+     * @throws Exception 
+     */
     public boolean delete(boolean sub) throws Exception {
         Assist.sendToTemp(new Ref(entity), TEMP_DB);
         
@@ -707,6 +787,12 @@ public class Bottle {
     ************************************************************
     */
     
+    /**
+     * Serializa a entidade encapsulando seus campos.
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws Exception 
+     */
     public void engarafar() throws IllegalArgumentException, IllegalAccessException, Exception {
         
         bottledFields.clear();
@@ -733,21 +819,24 @@ public class Bottle {
                             if(Reflection.isPrimitive(valor) || Reflection.isNumerical(valor.getClass()) || Reflection.isDate(valor)) {
                                 sb.append(encapsulePrimitive(valor));
                             } else if(Reflection.isArrayMap(field.getType()) || Reflection.isArrayMap(valor)) {
-                                if(Reflection.isInstance(valor.getClass(), List.class)) {
-                                    List list = (List) valor;
-                                    if(!list.isEmpty()) {
-                                        sb.append(encapsuleArray(list, field.isAnnotationPresent(Cascate.class)));
-                                    } else {
-                                        sb.append("{list:{}}");
-                                    }
-                                } else if(Reflection.isInstance(valor.getClass(), Map.class)) {
-                                    Map m = (Map) valor;
-                                    if(!m.isEmpty()) {
-                                        sb.append(encapsuleArray(m, field.isAnnotationPresent(Cascate.class)));
-                                    } else {
-                                        sb.append("{map:{}}");
-                                    }
-                                }
+                                sb.append(encapsuleArray(valor, field.isAnnotationPresent(Cascate.class)));
+                                
+//                                if(Reflection.isInstance(valor.getClass(), List.class) || Reflection.isInstance(valor.getClass(), Set.class)) {
+//                                    List list = (List) valor;
+//                                    if(!list.isEmpty()) {
+//                                        sb.append(encapsuleArray(list, field.isAnnotationPresent(Cascate.class)));
+//                                    } else {
+//                                        sb.append("{list:{}}");
+//                                    }
+//                                }
+//                                else if(Reflection.isInstance(valor.getClass(), Map.class)) {
+//                                    Map m = (Map) valor;
+//                                    if(!m.isEmpty()) {
+//                                        sb.append(encapsuleArray(m, field.isAnnotationPresent(Cascate.class)));
+//                                    } else {
+//                                        sb.append("{map:{}}");
+//                                    }
+//                                }
                             } else if(Reflection.isInstance(field.getType(), Entity.class) || Reflection.isInstance(valor.getClass(), Entity.class)) {
                                 Entity ente = (Entity) valor;
                                 if(!bottles.containsKey(ente.getId())) {
@@ -773,10 +862,22 @@ public class Bottle {
         }
     }
     
+    /**
+     * Envia uma entidade para a pasta temporária para que sejam realizadas tarefas
+     * de serialização.
+     * @param entity
+     * @throws Exception 
+     */
     private void sendToTemp(Entity entity) throws Exception {
         sendToTemp(entity.getClass(), entity.getId());
     }
     
+    /**
+     * Envia uma entidade para a pasta temporária para que sejam realizadas tarefas
+     * de serialização.
+     * @param entity
+     * @throws Exception 
+     */
     private void sendToTemp(Class clazz, String id) throws Exception {
         File temp = new File(getTempPath(clazz, id));
         if(!temp.exists()) {
@@ -789,6 +890,13 @@ public class Bottle {
         
     }
     
+    /**
+     * Encapsula um objeto.
+     * @param objeto Objeto a ser encapsulado.
+     * @param cascate Marca se é um objeto ou entidade em cascata.
+     * @return String da capsula.
+     * @throws Exception 
+     */
     public String encapsularObjeto(Object objeto, boolean cascate) throws Exception {
         if(objeto.getClass().isEnum()) {
             return encapsuleEnum((Enum) objeto);
@@ -940,26 +1048,55 @@ public class Bottle {
         return sb.toString();
     }
     
+    /**
+     * Encapsula listas, sets, mapas e arrays.
+     * @param object Objeto a ser encapsulado.
+     * @param cascate Se as subentidades terão marca de cascata.
+     * @return
+     * @throws Exception 
+     */
     private String encapsuleArray(Object object, boolean cascate) throws Exception {
         if(object == null) {
             return "{}";
         }
+        
+        int l = 0, s = 1, m = 2;
+        int type = 0;
+        
+        if(Reflection.isInstance(object.getClass(), Set.class)) {
+            type = 1;
+        } else if(Reflection.isInstance(object.getClass(), Map.class)) {
+            type = 2;
+        }
+        
         StringBuilder sb = new StringBuilder();
-        if(Reflection.isInstance(object.getClass(), List.class) || Reflection.isInstance(object.getClass(), Set.class) || object.getClass().getName().contains("[")) {
+        if(type != 2 || object.getClass().getName().contains("[")) {
             sb.append("{")
                 .append("list")
                 .append(":");
-        } else if (Reflection.isInstance(object.getClass(), Map.class)) {
+        } else {
             sb.append("{")
                 .append("map")
                 .append(":");
         }
-        if(Reflection.isInstance(object.getClass(), List.class) || Reflection.isInstance(object.getClass(), Set.class) || object.getClass().getName().contains("[")) {
-            List list = asList(object);
+        
+        if(type != 2 || object.getClass().getName().contains("[")) {
+            List list = new ArrayList();
+            
+            if(object.getClass().getName().contains("[")) {
+                list.addAll(Arrays.asList(object));
+            } else if(type == 0) {
+                list.addAll((List) object);
+            } else if(type == 1) {
+                Set set = (Set) object;
+                list.addAll(set);
+            }
+            
             for(Object obj : list) {
+                
                 if(Reflection.isPrimitive(obj) || Reflection.isNumerical(obj.getClass()) || Reflection.isDate(obj.getClass())) {
                     sb.append(encapsulePrimitive(obj));
-                } else if(Reflection.isArrayMap(obj)) {
+                } else if(Reflection.isArrayMap(obj) && obj != object) {
                     sb.append(encapsuleArray(obj, cascate));
                 } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
                     Entity ente = (Entity) obj;
@@ -970,7 +1107,9 @@ public class Bottle {
                 } else {
                     sb.append(encapsularObjeto(obj, cascate));
                 }
+                
             }
+            
         } else if(Reflection.isInstance(object.getClass(), Map.class)) {
             Map map = (Map) object;
             Set keys = map.keySet();
@@ -1007,6 +1146,12 @@ public class Bottle {
         return sb.toString();
     }
     
+    /**
+     * Encapsula o ID de uma entidade, para ser usado como referência.
+     * @param entity Entidade a ter o ID extraído.
+     * @return Capsula de referência à entidade.
+     * @throws Exception 
+     */
     private String encapsuleId(Entity entity) throws Exception {
         if(entity == null) {
             return "{}";
@@ -1021,12 +1166,15 @@ public class Bottle {
     }
     
     private List asList(Object object) {
-        try {
+        if(Reflection.isInstance(object.getClass(), List.class)) {
             return (List) object;
-        } catch (Exception e) {
+        } else if(Reflection.isInstance(object.getClass(), Set.class)) {
+            List list = new ArrayList();
+            list.addAll((Set) object);
+        } else {
             try {
                 return Arrays.asList(object);
-            } catch (Exception ex) {
+            } catch (Exception e) {
             }
         }
         return new ArrayList();

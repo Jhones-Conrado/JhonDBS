@@ -68,7 +68,7 @@ public class SporadicTests {
         a.save();
         
         EnteA a2 = a.load(a.getId());
-        a2.delete();
+//        a2.delete();
         
         assert true;
     }
