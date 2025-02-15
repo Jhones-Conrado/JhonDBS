@@ -57,14 +57,11 @@ O parâmetro boleano passando em "new Filter(boolean)" é utilizado para saber q
 - false -> Basta que a entidade passe em pelo menos uma das condições.
 
 ### Deletando do banco de Dados
-Há duas maneiras de deletar uma entidade do Banco de Dados.
-- A primeira é deletando apenas a entidade solicitada.
-- A segunda é deletando em cascata, o que apagará todas as entidades marcadas como "Cascate".
+É tão simples quanto salvar, basta chamar o método "delete()".
 
 Para deletar use o exemplo a seguir:
 ```
 pessoa.delete();
-pessoa.deleteCascate();
 ```
 
 ### Marcando campos como Único ou Cascata.
@@ -90,3 +87,8 @@ public class Pessoa implements Entity {
     private Casa casa;
 }
 ```
+
+Se uma entidade anotada como Cascata estiver sendo referenciada por mais de uma entidade, todos os referenciadores
+precisam remover essa referência ou serem deletados para que a entidade suma de forma automática.
+Ou seja, uma vez que uma entidade for marcada como Cascata, tão logo ela deixe de ser referenciada por outras, ela
+será automaticamente removida.
