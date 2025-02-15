@@ -1032,10 +1032,6 @@ public final class Bottle {
         return new ArrayList();
     }
     
-    
-    
-    
-    
     /*
     ************************************************************
     ***************  RECUPERAÇÃO DE ENTIDADE   *****************
@@ -1199,6 +1195,7 @@ public final class Bottle {
                 return bottles.get(id).entity;
             } else {
                 Bottle bottle = new Bottle.BottleBuilder()
+                        .loader(loader)
                         .entityClass(classe_do_objeto)
                         .id(id)
                         .bottles(bottles)
@@ -1562,8 +1559,8 @@ public final class Bottle {
             
             if(this.index != -1 && !this.id.isBlank()) {
                 try {
-                    bottle.load(ClassDictionary.fromIndex(index), id, loader);
                     bottle.bottles.put(id, bottle);
+                    bottle.load(ClassDictionary.fromIndex(index), id, loader);
                 } catch (Exception ex) {
                     Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, null, ex);
                     throw new Exception("Erro ao carregar entidade: Classe -> "+ClassDictionary.fromIndex(index)+" | ID -> "+id+"\n", ex);

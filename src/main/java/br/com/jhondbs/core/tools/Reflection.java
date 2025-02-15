@@ -357,7 +357,6 @@ public final class Reflection {
                 selectedConstructor.setAccessible(true); // Garante acesso ao construtor, mesmo que ele seja privado
                 Class<?>[] types = selectedConstructor.getParameterTypes();
                 Object ins = loadedClass.getConstructor(types).newInstance(paramObjects);
-
                 return (T) ins;
             } catch (Exception ex) {
                 ex.printStackTrace();
