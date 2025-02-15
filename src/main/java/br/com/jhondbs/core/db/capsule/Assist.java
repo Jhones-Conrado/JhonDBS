@@ -95,8 +95,6 @@ public class Assist {
      * @throws Exception 
      */
     public static void removeExistence(Ref toRemove, Ref getRemoved, String temp_db) throws Exception {
-        Reader reader = new Reader();
-        
         sendToTemp(getRemoved, temp_db);
         Class clazz = ClassDictionary.fromIndex(getRemoved.getValue());
         String path = temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+getRemoved.getKey();
@@ -111,7 +109,7 @@ public class Assist {
         
         p.put("fields", strFields);
         
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         String refsStr = p.get("refs").toString();
         Arrays.asList(refsStr.split("::"))
                 .stream()
@@ -150,23 +148,16 @@ public class Assist {
         
         Class clazz = bottle.entity.getClass();
         String tempPath = bottle.TEMP_DB+clazz.getName().replace(".class", "").replace(".", "/")+"/"+bottle.entity.getId();
-        String dbPath = bottle.ROOT_DB+clazz.getName().replace(".class", "").replace(".", "/")+"/"+bottle.entity.getId();
         
         File tempFile = new File(tempPath);
-        File dbFile = new File(dbPath);
         
         if(tempFile.exists()) {
-            Bottle db = new Bottle(clazz, bottle.entity.getId(), Bottle.ROOT_STAGE);
+            Bottle db = new Bottle.BottleBuilder().entityClass(clazz).id(bottle.entity.getId()).modoOperacional(Bottle.ROOT_STAGE).build();
             Map<String, Bottle> map = db.bottles;
             
             bottle.bottles.keySet().stream().forEach(id -> {
                 map.remove(id);
             });
-            
-            map.keySet().stream()
-                    .forEach(id -> {
-                        Ref ref = new Ref(id, ClassDictionary.getIndex(map.get(id).entity.getClass()));
-                    });
         }
         
         return list;
@@ -178,7 +169,14 @@ public class Assist {
     }
     
     public static Bottle createBottle(Entity ente, Map<String, Bottle> bottles, int modoOperacional, String ROOT_DB, String TEMP_DB, Entity referencia, boolean cascate) throws Exception {
-        Bottle bottle = new Bottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB);
+        Bottle bottle = new Bottle.BottleBuilder()
+                .entity(ente)
+                .bottles(bottles)
+                .modoOperacional(modoOperacional)
+                .rootDB(ROOT_DB)
+                .tempDB(TEMP_DB)
+                .build();
+        
         bottle.engarafar();
         bottle.putRef(referencia);
         if(cascate) {

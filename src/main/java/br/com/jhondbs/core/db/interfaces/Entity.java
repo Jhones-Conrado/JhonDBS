@@ -110,18 +110,6 @@ public interface Entity extends Serializable, Cloneable{
     
     /**
      * ENGLISH<br>
-     * THIS METHOD MUST NOT BE USED DIRECTLY! CALL METHOD setID!</br>
-     * It must be implemented in a way to store the value in an ID variable.
-     * <br><br>
-     * PORTUGUÊS<br>
-     * ESTE MÉTODO NÃO DEVE SER USADO DE FORMA DIRETA! CHAME O MÉTODO setID!</br>
-     * Deve ser implementado de forma a armazenar o valor em uma variável de ID.
-     * @param id Novo ID.
-     */
-//    void onSetId(long id);
-    
-    /**
-     * ENGLISH<br>
      * Save this entity to the database, ensuring that no values annotated with 
      * @throws java.lang.Exception
      * @throws br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException
@@ -135,7 +123,7 @@ public interface Entity extends Serializable, Cloneable{
      * the getId and onSetId methods.
      */
     default boolean save() throws Exception, DuplicatedUniqueFieldException {
-        Bottle bottle = new Bottle(this);
+        Bottle bottle = new Bottle.BottleBuilder().entity(this).build();
         try {
             bottle.flush();
             return true;
@@ -157,7 +145,7 @@ public interface Entity extends Serializable, Cloneable{
      */
     default <T extends Entity> T load(String id) throws Exception{
         try {
-            Bottle bottle = new Bottle(this.getClass(), id, Bottle.ROOT_STAGE);
+            Bottle bottle = new Bottle.BottleBuilder().entityClass(this.getClass()).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
             return (T) bottle.entity;
         } catch (Exception e) {
             e.printStackTrace();
@@ -218,7 +206,7 @@ public interface Entity extends Serializable, Cloneable{
      * @throws java.lang.Exception
      */
     default boolean delete() throws Exception{
-        Bottle b = new Bottle(this);
+        Bottle b = new Bottle.BottleBuilder().entity(this).build();
         b.engarafar();
         return b.delete();
     }

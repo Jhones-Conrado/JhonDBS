@@ -27,7 +27,6 @@ import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
 import br.com.jhondbs.core.db.obj.ColdEntity;
-import br.com.jhondbs.core.tools.Reflection;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -112,9 +111,6 @@ public class EnteA implements Entity{
         lista.add(new ObjetoA("cereja"));
         lista.add(new ObjetoA("alface"));
         lista.add(new ObjetoA("coentro"));
-        
-        System.out.println("SUB ESTÁ SAINDO COMO LISTA?");
-        System.out.println(Reflection.isArrayMap(subObjeto));
     }
 
     public EnteA(String name, Endereco endereco) {

@@ -38,8 +38,6 @@ public class ColdEntity {
     private int index;
     private String id;
     
-    private ClassLoader loader;
-    
     public ColdEntity() {
     }
     
@@ -57,7 +55,7 @@ public class ColdEntity {
     
     public <T extends Entity>T get() throws Exception {
         if(this.entity == null) {
-            Bottle bottle = new Bottle(ClassDictionary.fromIndex(index), id, Bottle.ROOT_STAGE);
+            Bottle bottle = new Bottle.BottleBuilder().entityClass(ClassDictionary.fromIndex(index)).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
             this.entity = bottle.entity;
         }
         return (T) this.entity;
