@@ -56,8 +56,10 @@ public class Assist {
                 }
                 String uuid = cap.substring(found+1, end);
                 String[] split = uuid.split(":");
-                Ref ref = new Ref(split[1], Integer.valueOf(split[0]));
-                list.add(ref);
+                if(ClassDictionary.fromIndex(Integer.parseInt(split[0])).isAssignableFrom(Entity.class)) {
+                    Ref ref = new Ref(split[1], Integer.valueOf(split[0]));
+                    list.add(ref);
+                }
                 cap = cap.replace(uuid, "");
             }
         }

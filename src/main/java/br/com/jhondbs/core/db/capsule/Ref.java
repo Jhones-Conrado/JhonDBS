@@ -47,6 +47,10 @@ public class Ref extends Pairing<String, Integer>{
         setValue(Integer.valueOf(split[0]));
     }
     
+    public Class recoverClass() {
+        return ClassDictionary.fromIndex(getValue());
+    }
+    
     @Override
     public String toString() {
         return getValue()+":"+getKey();

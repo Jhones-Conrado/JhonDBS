@@ -407,24 +407,6 @@ public class Reader {
         return new ArrayList<>();
     }
     
-//    public List<Entity> listExcludeds(Bottle bottle) throws Exception {
-//        List<Entity> list = new ArrayList<>();
-//        
-//        try {
-//            Bottle bot = new Bottle(bottle.entity.getClass(), bottle.entity.getId(), Bottle.ROOT_STAGE, ROOT_DB, TEMP_DB);
-//            if(bot.entity != null) {
-//                for(String id : bot.bottles.keySet()) {
-//                    if(!bottle.bottles.containsKey(id)) {
-//                        list.add(bot.bottles.get(id).entity);
-//                    }
-//                }
-//            }
-//        } catch (Exception e) {
-//        }
-//        
-//        return list;
-//    }
-    
     /**
      * Recebe uma entidade e busca por subentidades anotadas como cascata.
      * @param entity
