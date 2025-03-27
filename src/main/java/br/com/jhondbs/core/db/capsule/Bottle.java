@@ -434,6 +434,7 @@ public final class Bottle {
      * @throws Exception 
      */
     public void flushFiles() throws IOException, NoSuchAlgorithmException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+        System.out.println("FLUSHANDO ARQUIVOS: "+this.files.size());
         File tempFolder = new File(TEMP_DB+"files/"+this.entity.getId());
         File prodFolder = new File(ROOT_DB+"files/"+this.entity.getId());
         if(!this.files.isEmpty()) {
@@ -451,6 +452,8 @@ public final class Bottle {
                 for(String name : this.files.keySet()) {
                     if(!prodNames.contains(name+".bak")) {
                         File out = new File(tempFolder.getPath()+"/"+name);
+                        System.out.println("ARQUIVO: "+this.files.get(name));
+                        if(!this.files.get(name).exists()) throw new FileNotFoundException(name);
                         Files.copy(this.files.get(name).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     } else {
                         // Caso exista um arquivo em produção com o mesmo nome, compara os hashs.
@@ -671,6 +674,7 @@ public final class Bottle {
                     if(valor instanceof File f) {
                         if(!f.exists()) {
                             condicional = false;
+                            throw new FileNotFoundException(f.getPath());
                         }
                     }
                     if(condicional) {

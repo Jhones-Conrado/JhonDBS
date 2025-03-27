@@ -128,6 +128,10 @@ public class Transaction {
             // Cria backup do estado atual
             backupCurrentState();
             rootBottle.delete(true);
+            
+            committed = true;
+            LOGGER.log(Level.INFO, "Transaction committed: {0}", transactionId);
+            System.out.println("");
         } catch (EntityIdBadImplementationException | IOException | IllegalAccessException | IllegalArgumentException | InterruptedException e) {
             rollback();
             throw e;
@@ -263,6 +267,7 @@ public class Transaction {
             
             committed = true;
             LOGGER.log(Level.INFO, "Transaction committed: {0}", transactionId);
+            System.out.println("");
             
         } catch (Exception e) {
             rollback();

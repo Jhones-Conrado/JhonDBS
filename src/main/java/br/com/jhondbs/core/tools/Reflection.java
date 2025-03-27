@@ -206,6 +206,12 @@ public final class Reflection {
                 } else {
                     return null;
                 }
+            } catch (Throwable t) {
+                if(className.contains(".")){
+                    className = className.substring(className.indexOf(".")+1);
+                } else {
+                    return null;
+                }
             }
         }
         return null;

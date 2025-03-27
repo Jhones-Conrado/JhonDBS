@@ -113,7 +113,8 @@ public class ClassDictionary {
                 dictionary.forEach((k, v) -> {
                     try {
                         int index = Integer.parseInt(v.toString());
-                        REVERSE.putIfAbsent(index, Reflection.makeClass(k.toString()));
+                        Class mc = Reflection.makeClass(k.toString());
+                        if(mc != null) REVERSE.putIfAbsent(index, mc);
                     } catch (NumberFormatException e) {
                         Logger.getLogger(ClassDictionary.class.getName()).log(Level.WARNING, 
                             "Valor inválido no dicionário para a classe " + k, e);

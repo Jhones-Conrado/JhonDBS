@@ -75,7 +75,7 @@ public class Assist {
                     if (clazz != null && Entity.class.isAssignableFrom(clazz)) {
                         list.add(new Ref(uuid, index));
                     } else {
-                        LOGGER.log(Level.WARNING, "Classe inválida para índice {0} em cápsula: {1}", new Object[]{index, cap});
+//                        LOGGER.log(Level.WARNING, "Classe inválida para índice {0} em cápsula: {1}", new Object[]{index, cap});
                     }
                 } catch (NumberFormatException e) {
                     LOGGER.log(Level.WARNING, "Formato inválido de índice em cápsula: {0}", matcher.group(0));

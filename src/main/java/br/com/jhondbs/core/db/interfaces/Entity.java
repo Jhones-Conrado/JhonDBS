@@ -36,13 +36,13 @@ import java.lang.reflect.Field;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.UUID;
-import br.com.jhondbs.core.db.filter.GenericFilterCondition;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
+import java.util.ArrayList;
 
 /**
  * ENGLISH<br>
@@ -78,7 +78,8 @@ public interface Entity extends Serializable, Cloneable{
      * It should be implemented in order to retrieve the entity ID from some variable.<br><br>
      * Deverá ser implementado de forma a resgatar de alguma variável o ID da entidade.
      * @return ID da entidade.
-     * @throws java.lang.Exception
+     * @throws java.lang.IllegalAccessException
+     * @throws br.com.jhondbs.core.db.errors.EntityIdBadImplementationException
      */
     default String getId() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         
@@ -189,6 +190,7 @@ public interface Entity extends Serializable, Cloneable{
      */
     default List<String> getAllIds(){
         Reader reader = new Reader();
+        reader.modoOperacional = Bottle.ROOT_STAGE;
         return reader.listAllIds(this.getClass());
     }
     
@@ -273,17 +275,31 @@ public interface Entity extends Serializable, Cloneable{
     }
     
     default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        GenericFilterCondition condition = new GenericFilterCondition(fieldname, value.toString(), false);
-        Filter filter = new Filter();
-        filter.addCondition(condition);
-        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
+        List<Field> fields = FieldsManager.getAllFields(this);
+        if(fields.stream().noneMatch(field -> field.getName().equals(fieldname))) throw new IllegalArgumentException(fieldname +" does not exists.");
+        Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();
+        field.setAccessible(true);
+        List<T> list = new ArrayList<>();
+        for(String id : getAllIds()) {
+            Entity load = load(id);
+            Object fValue = field.get(load);
+            if(fValue.toString().equals(value.toString())) list.add((T) load);
+        }
+        return list;
     }
     
     default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, ParseException, IOException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        GenericFilterCondition condition = new GenericFilterCondition(fieldname, value.toString(), true);
-        Filter filter = new Filter();
-        filter.addCondition(condition);
-        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
+        List<Field> fields = FieldsManager.getAllFields(this);
+        if(fields.stream().noneMatch(field -> field.getName().equals(fieldname))) throw new IllegalArgumentException(fieldname +" does not exists.");
+        Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();
+        field.setAccessible(true);
+        List<T> list = new ArrayList<>();
+        for(String id : getAllIds()) {
+            Entity load = load(id);
+            Object fValue = field.get(load);
+            if(fValue.toString().toLowerCase().equals(value.toString().toLowerCase())) list.add((T) load);
+        }
+        return list;
     }
     
 }
