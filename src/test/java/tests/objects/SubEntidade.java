@@ -24,33 +24,57 @@
 package tests.objects;
 
 import br.com.jhondbs.core.db.interfaces.Entity;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
  * @author jhones
  */
-public class EnteB implements Entity {
+public class SubEntidade implements Entity {
     
     private String id;
     
+    private char character = 'a';
+    private short s = 1;
+    private int i = 32;
+    private long l = 15000l;
+    private float f = 13.233f;
+    private double d = 67236.2345d;
+    private List<String> strList = new ArrayList<>();
+    private String[] arrayStr = {"Casa", "Abelha", "Mariposa"};
+    private Map<String, Integer> mapa = new HashMap();
+    private List<ObjetoComplexo> subEntes = new ArrayList<>();
+    
     private String type;
 
-    public EnteA dono;
+    public EntidadePrincipal dono;
     
-    private MeuEnum meu;
+    private EnumBasico meu;
     
-    public EnteB() {
-        this.meu = MeuEnum.USUARIO;
+    public SubEntidade() {
+        this.meu = EnumBasico.USUARIO;
+        populate();
     }
 
-    public EnteB(String type) {
-        this.meu = MeuEnum.USUARIO;
+    public SubEntidade(String type) {
+        this.meu = EnumBasico.USUARIO;
         this.type = type;
+        populate();
     }
 
-    public EnteB(String id, String type) {
+    public SubEntidade(String id, String type) {
         this.id = id;
         this.type = type;
+        populate();
+    }
+    
+    private void populate() {
+        subEntes.add(new ObjetoComplexo("cachorro"));
+        subEntes.add(new ObjetoComplexo("esposa"));
+        subEntes.add(new ObjetoComplexo("barco"));
     }
     
 }

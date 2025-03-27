@@ -16,18 +16,32 @@
  */
 package tests.objects;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  *
  * @author jhones
  */
-public class ObjetoA {
+public class ObjetoComplexo {
     
-    private String nome;
-
-    public ObjetoA() {
+    private String nome = "";
+    private char character = 'a';
+    private short s = 1;
+    private int i = 32;
+    private long l = 15000l;
+    private float f = 13.233f;
+    private double d = 67236.2345d;
+    private List<String> strList = new ArrayList<>();
+    private String[] arrayStr = {"Casa", "Abelha", "Mariposa"};
+    private Map<String, Integer> mapa = new HashMap();
+    
+    public ObjetoComplexo() {
     }
 
-    public ObjetoA(String nome) {
+    public ObjetoComplexo(String nome) {
         this.nome = nome;
     }
     

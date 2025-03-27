@@ -21,39 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package br.com.jhondbs.core.db.capsule;
-
-import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
-import br.com.jhondbs.core.db.interfaces.Entity;
-import br.com.jhondbs.core.tools.ClassDictionary;
+package tests.objects;
 
 /**
  *
  * @author jhones
  */
-public class Ref extends Pairing<String, Integer>{
-    
-    public Ref(String key, Integer value) {
-        super(key, value);
-    }
-    
-    public Ref(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        super(entity.getId(), ClassDictionary.getIndex(entity.getClass()));
-    }
-
-    public Ref(String pair) {
-        String[] split = pair.split(":");
-        setKey(split[1]);
-        setValue(Integer.valueOf(split[0]));
-    }
-    
-    public Class recoverClass() {
-        return ClassDictionary.fromIndex(getValue());
-    }
-    
-    @Override
-    public String toString() {
-        return getValue()+":"+getKey();
-    }
-    
+public enum EnumBasico {
+    USUARIO, ADMIN;
 }

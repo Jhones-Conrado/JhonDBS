@@ -51,14 +51,14 @@ import java.util.Set;
  *
  * @author jhonessales
  */
-public class EnteA implements Entity{
+public class EntidadePrincipal implements Entity{
     
     private String id;
     
     @Unique
     public final String name;
     
-    public MeuEnum em;
+    public EnumBasico em;
     
     public char character = 'x';
     public short curto = 5;
@@ -73,7 +73,7 @@ public class EnteA implements Entity{
     
     public Endereco endereco;
     
-    public List<ObjetoA> lista = new ArrayList<>();
+    public List<ObjetoComplexo> lista = new ArrayList<>();
     
     public Set<Object> setList = new HashSet<>();
     
@@ -90,30 +90,30 @@ public class EnteA implements Entity{
     public Period period = Period.between(localDate, localDate.plusMonths(4));
     
     @Cascate
-    public EnteB enteb;
+    public SubEntidade enteb;
     
-    public ObjetoA subObjeto = new ObjetoA("sub objeto");
+    public ObjetoComplexo subObjeto = new ObjetoComplexo("sub objeto");
     
     public ColdEntity cold;
     
     public File file;
     
-    public EnteA() {
+    public EntidadePrincipal() {
         this.name = null;
     }
 
-    public EnteA(String name) {
+    public EntidadePrincipal(String name) {
         this.name = name;
         String[] a = {"carro", "bike", "moto", "casa"};
         setList.addAll(Arrays.asList(a));
         
-        lista.add(new ObjetoA("tomate"));
-        lista.add(new ObjetoA("cereja"));
-        lista.add(new ObjetoA("alface"));
-        lista.add(new ObjetoA("coentro"));
+        lista.add(new ObjetoComplexo("tomate"));
+        lista.add(new ObjetoComplexo("cereja"));
+        lista.add(new ObjetoComplexo("alface"));
+        lista.add(new ObjetoComplexo("coentro"));
     }
 
-    public EnteA(String name, Endereco endereco) {
+    public EntidadePrincipal(String name, Endereco endereco) {
         this.name = name;
         this.endereco = endereco;
     }

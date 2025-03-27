@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2024 jhones.
+ * Copyright 2024 Jhones Sales.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,12 +21,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package tests.objects;
+package br.com.jhondbs.core.db.errors;
 
 /**
- *
- * @author jhones
+ * Error thrown in case an attribute was not found in a given class.<br>
+ * Erro lançado em caso de um atribute não ter sido encontrado em uma determinada
+ * classe.
+ * @author jhonesconrado
  */
-public enum MeuEnum {
-    USUARIO, ADMIN;
+public class AttributeNotFindException extends Exception {
+
+    /**
+     * Creates a new instance of <code>AttributeNotFind</code> without
+     * detail message.
+     */
+    public AttributeNotFindException() {
+    }
+
+    /**
+     * Constructs an instance of <code>AttributeNotFind</code> with the
+     * specified detail message.
+     *
+     * @param msg the detail message.
+     */
+    public AttributeNotFindException(String msg) {
+        super(msg);
+    }
 }

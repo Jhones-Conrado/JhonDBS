@@ -23,8 +23,9 @@
  */
 package br.com.jhondbs.core.tools;
 
-import br.com.jhondbs.core.db.interfaces.Entity;
+import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.interfaces.Unique;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
@@ -98,38 +99,35 @@ public class FieldsManager {
      * Retorna o field de ID da classe.
      * @param clazz
      * @return 
-     * @throws java.lang.Exception 
+     * @throws br.com.jhondbs.core.db.errors.EntityIdBadImplementationException 
      */
-    public static Field getFieldId(Class clazz) throws Exception {
-        if(Reflection.isInstance(clazz, Entity.class)) {
-            List<Field> ids = FieldsManager.getAllFields(clazz).parallelStream()
-                .filter(field -> (field.getType().getName().contains("String")))
-                .filter(field -> (field.getName().toUpperCase().contains("ID")))
-                .toList();
-            if(!ids.isEmpty()){
-                Field selected = null;
-                List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
-                        .toList();
+    public static Field getFieldId(Class clazz) throws EntityIdBadImplementationException {
+        List<Field> ids = FieldsManager.getAllFields(clazz).parallelStream()
+            .filter(field -> (field.getType().isAssignableFrom(String.class)))
+            .filter(field -> (field.getName().toUpperCase().contains("ID")))
+            .toList();
+        if(!ids.isEmpty()){
+            Field selected = null;
+            List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
+                    .toList();
+            if(toList.size() == 1){
+                selected = toList.get(0);
+            } else {
+                toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
+                    .toList();
                 if(toList.size() == 1){
                     selected = toList.get(0);
                 } else {
-                    toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
-                        .toList();
-                    if(toList.size() == 1){
-                        selected = toList.get(0);
-                    } else {
-                        selected = ids.get(0);
-                    }
-                }
-                if(selected != null){
-                    return selected;
-                } else {
-                    throw new Exception("The entity does not have a String type variable for the ID.");
+                    selected = ids.get(0);
                 }
             }
-            throw new Exception("The entity does not have a String type variable for the ID.");
+            if(selected != null){
+                return selected;
+            } else {
+                throw new EntityIdBadImplementationException();
+            }
         }
-        throw new Exception("A classe não é uma entidade");
+        throw new EntityIdBadImplementationException();
     }
     
     public static List<Field> getSerializableFields(Object obj){
@@ -259,12 +257,100 @@ public class FieldsManager {
                         f.set(receptor, set);
                         break;
                     }
+                } else if(f.getType().getName().startsWith("[")) {
+                    Object array = createArrayFromList(f, (List) value);
+                    f.set(receptor, array);
+                    break;
                 }
                 
                 f.set(receptor, value);
                 break;
            }
         }
+    }
+    
+
+    /**
+     * Cria um novo array do mesmo tipo que field.getType(), populado com os valores de um ArrayList.
+     *
+     * @param field O Field cujo tipo de array será usado (ex.: String[], byte[], etc.).
+     * @param list  O ArrayList contendo os valores a serem inseridos no novo array.
+     * @return Um novo array do tipo identificado, preenchido com os valores da lista.
+     * @throws IllegalArgumentException Se o tipo do field não for um array ou se os valores da lista forem incompatíveis.
+     */
+    public static Object createArrayFromList(Field field, List<?> list) {
+        // Verifica se o tipo do field é um array
+        Class<?> fieldType = field.getType();
+        if (!fieldType.isArray()) {
+            throw new IllegalArgumentException("O tipo do field deve ser um array: " + fieldType.getName());
+        }
+
+        // Obtém o tipo dos elementos do array (ex.: String para String[], byte para byte[])
+        Class<?> componentType = fieldType.getComponentType();
+        int length = list.size();
+
+        // Cria um novo array com o mesmo tipo e tamanho da lista
+        Object newArray = Array.newInstance(componentType, length);
+
+        // Popula o array com os valores da lista
+        if (componentType.isPrimitive()) {
+            // Tratamento para arrays de tipos primitivos
+            if (componentType == byte.class) {
+                byte[] array = (byte[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = ((Number) list.get(i)).byteValue(); // Converte para byte
+                }
+            } else if (componentType == short.class) {
+                short[] array = (short[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = ((Number) list.get(i)).shortValue();
+                }
+            } else if (componentType == int.class) {
+                int[] array = (int[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = ((Number) list.get(i)).intValue();
+                }
+            } else if (componentType == long.class) {
+                long[] array = (long[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = ((Number) list.get(i)).longValue();
+                }
+            } else if (componentType == float.class) {
+                float[] array = (float[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = ((Number) list.get(i)).floatValue();
+                }
+            } else if (componentType == double.class) {
+                double[] array = (double[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = ((Number) list.get(i)).doubleValue();
+                }
+            } else if (componentType == char.class) {
+                char[] array = (char[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = (Character) list.get(i); // Unboxing direto
+                }
+            } else if (componentType == boolean.class) {
+                boolean[] array = (boolean[]) newArray;
+                for (int i = 0; i < length; i++) {
+                    array[i] = (Boolean) list.get(i);
+                }
+            }
+        } else {
+            // Tratamento para arrays de objetos (String[], Object[], etc.)
+            for (int i = 0; i < length; i++) {
+                Object value = list.get(i);
+                if (value != null && !componentType.isAssignableFrom(value.getClass())) {
+                    throw new IllegalArgumentException(
+                        "Elemento na posição " + i + " (" + value.getClass().getName() + 
+                        ") não é compatível com o tipo do array: " + componentType.getName()
+                    );
+                }
+                Array.set(newArray, i, value);
+            }
+        }
+
+        return newArray;
     }
     
     /**

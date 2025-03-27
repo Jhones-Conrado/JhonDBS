@@ -24,27 +24,32 @@
 package br.com.jhondbs.core.db.errors;
 
 /**
- * Error thrown in case an attribute was not found in a given class.<br>
- * Erro lançado em caso de um atribute não ter sido encontrado em uma determinada
- * classe.
+ * ENGLISH<br>
+ * Error thrown if an object that implements Entity does not have an adequate
+ * implementation of the getId and setId methods, where the value returned for
+ * the ID variable will always be -1l.<br><br>
+ * PORTUGUÊS<br>
+ * Erro lançado caso um objeto que implemente Entidade não possua uma
+ * implementação adequada dos métodos getId e setId, onde o valor retornado para
+ * a variável ID será sempre -1l.
  * @author jhonesconrado
  */
-public class AttributeNotFind extends Exception {
+public class EntityIdBadImplementationException extends Exception {
 
     /**
-     * Creates a new instance of <code>AttributeNotFind</code> without
+     * Creates a new instance of <code>EntIdBadImplementation</code> without
      * detail message.
      */
-    public AttributeNotFind() {
+    public EntityIdBadImplementationException() {
     }
 
     /**
-     * Constructs an instance of <code>AttributeNotFind</code> with the
+     * Constructs an instance of <code>EntIdBadImplementation</code> with the
      * specified detail message.
      *
      * @param msg the detail message.
      */
-    public AttributeNotFind(String msg) {
+    public EntityIdBadImplementationException(String msg) {
         super(msg);
     }
 }

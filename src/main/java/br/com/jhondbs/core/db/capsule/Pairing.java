@@ -23,6 +23,8 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import java.util.Objects;
+
 /**
  *
  * @author jhones
@@ -33,7 +35,13 @@ public class Pairing<K, V> {
     private K key;
     private V value;
 
+    public Pairing() {
+    }
+
     public Pairing(K key, V value) {
+        if (key == null || value == null) {
+            throw new IllegalArgumentException("Chave e valor não podem ser nulos");
+        }
         this.key = key;
         this.value = value;
     }
@@ -61,7 +69,19 @@ public class Pairing<K, V> {
 
     @Override
     public boolean equals(Object obj) {
-        return obj.toString().equals(toString());
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof Pairing)) {
+            return false;
+        }
+        Pairing<?, ?> other = (Pairing<?, ?>) obj;
+        return Objects.equals(this.key, other.key) && Objects.equals(this.value, other.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, value);
     }
     
 }

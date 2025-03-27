@@ -23,18 +23,30 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
+import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -43,24 +55,31 @@ import java.util.regex.Pattern;
  */
 public class Assist {
     
-    public static List<Ref> getEnties(String capsules) {
+    private static final Logger LOGGER = Logger.getLogger(Assist.class.getName());
+    
+    public static List<Ref> getEntities(String capsules) {
         List<Ref> list = new ArrayList<>();
+        if (capsules == null || capsules.trim().isEmpty()) {
+            return list;
+        }
         Reader reader = new Reader();
         List<String> caps = reader.splitCapsules(capsules);
-        for(String cap : caps) {
-            while(findUUID(cap) != -1) {
-                int found = findUUID(cap);
-                int end = found + 36;
-                while(cap.charAt(found) != '{') {
-                    found--;
+        Pattern pattern = Pattern.compile("\\{(\\d+):([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})\\}");
+        for (String cap : caps) {
+            Matcher matcher = pattern.matcher(cap);
+            while (matcher.find()) {
+                try {
+                    int index = Integer.parseInt(matcher.group(1));
+                    String uuid = matcher.group(2);
+                    Class<?> clazz = ClassDictionary.fromIndex(index);
+                    if (clazz != null && Entity.class.isAssignableFrom(clazz)) {
+                        list.add(new Ref(uuid, index));
+                    } else {
+                        LOGGER.log(Level.WARNING, "Classe inválida para índice {0} em cápsula: {1}", new Object[]{index, cap});
+                    }
+                } catch (NumberFormatException e) {
+                    LOGGER.log(Level.WARNING, "Formato inválido de índice em cápsula: {0}", matcher.group(0));
                 }
-                String uuid = cap.substring(found+1, end);
-                String[] split = uuid.split(":");
-                if(ClassDictionary.fromIndex(Integer.parseInt(split[0])).isAssignableFrom(Entity.class)) {
-                    Ref ref = new Ref(split[1], Integer.valueOf(split[0]));
-                    list.add(ref);
-                }
-                cap = cap.replace(uuid, "");
             }
         }
         return list;
@@ -96,47 +115,57 @@ public class Assist {
      * @param temp_db Diretório temporário para executar a ação.
      * @throws Exception 
      */
-    public static void removeExistence(Ref toRemove, Ref getRemoved, String temp_db) throws Exception {
+    public static void removeExistence(Ref toRemove, Ref getRemoved, String temp_db) throws IOException {
+        if (toRemove == null || getRemoved == null) {
+            throw new IllegalArgumentException("Referências 'toRemove' e 'getRemoved' não podem ser nulas");
+        }
+        
         sendToTemp(getRemoved, temp_db);
-        Class clazz = ClassDictionary.fromIndex(getRemoved.getValue());
-        String path = temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+getRemoved.getKey();
-        
+        String path = getPathFromRef(getRemoved, temp_db);
+        File file = new File(path);
+        if (!file.exists()) throw new FileNotFoundException("Arquivo temporário não encontrado: " + path);
+
         Properties p = new Properties();
-        p.load(new FileInputStream(new File(path)));
-        
-        String refToRemove = "{"+String.valueOf(toRemove.getValue())+":"+toRemove.getKey()+"}";
-        String refToRemove2 = "{"+String.valueOf(toRemove.getValue())+"\\:"+toRemove.getKey()+"}";
+        p.load(new FileInputStream(file));
+
+        String refPattern = String.format("\\{%d:%s\\}", toRemove.getValue(), Pattern.quote(toRemove.getKey()));
         String strFields = p.get("fields").toString();
-        strFields = strFields.replace(refToRemove, "").replace(refToRemove2, "");
-        
+        strFields = strFields.replaceAll(refPattern, "");
         p.put("fields", strFields);
-        
-        StringBuilder sb = new StringBuilder();
+
         String refsStr = p.get("refs").toString();
-        Arrays.asList(refsStr.split("::"))
-                .stream()
+        String updatedRefs = Arrays.stream(refsStr.split("::"))
                 .filter(ref -> !ref.contains(toRemove.getKey()) && !ref.isBlank())
-                .forEach(ref -> {
-                    sb.append(ref).append("::");
-                });
-        p.put("refs", sb.toString());
-        p.store(new FileOutputStream(new File(path)), "JhonDBS Entity");
+                .collect(Collectors.joining("::"));
+        p.put("refs", updatedRefs);
+
+        p.store(new FileOutputStream(file), "JhonDBS Entity");
     }
     
-    public static void removeExistenceFromBottle(Bottle bottle, Ref getRemoved) throws Exception {
-        for(Bottle b : bottle.bottles.values()) {
+    public static void removeExistenceFromBottle(Bottle bottle, Ref getRemoved) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+        if (bottle == null || bottle.bottles.isEmpty()) {
+            LOGGER.log(Level.FINE, "Nenhuma sub-bottle para remover existência: {0}", getRemoved);
+            return;
+        }
+        for (Bottle b : bottle.bottles.values()) {
             removeExistence(new Ref(b.entity), getRemoved, b.TEMP_DB);
         }
     }
     
-    public static void sendToTemp(Ref reference, String temp) throws Exception {
+    public static void sendToTemp(Ref reference, String temp) throws FileNotFoundException, IOException {
         Class clazz = ClassDictionary.fromIndex(reference.getValue());
         String path = temp+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
         File tempFile = new File(path);
+        
         if(!tempFile.exists()) {
             tempFile.getParentFile().mkdirs();
             String dbPath = "./db/"+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
             File root = new File(dbPath);
+            
+            if(!root.exists()) {
+                root = new File(dbPath+".bak");
+            }
+            
             if(root.exists()) {
                 Properties p = new Properties();
                 p.load(new FileInputStream(root));
@@ -145,23 +174,35 @@ public class Assist {
         }
     }
     
-    public static List<Ref> removedsBetweenStates(Bottle bottle) throws Exception {
+    public static List<Ref> removedsBetweenStates(Bottle bottle) throws IOException, EntityIdBadImplementationException, IllegalArgumentException, IllegalAccessException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+        
         List<Ref> list = new ArrayList<>();
-        
         Class clazz = bottle.entity.getClass();
-        String tempPath = bottle.TEMP_DB+clazz.getName().replace(".class", "").replace(".", "/")+"/"+bottle.entity.getId();
-        
+        String tempPath = bottle.TEMP_DB + clazz.getName().replace(".class", "").replace(".", "/") + "/" + bottle.entity.getId();
         File tempFile = new File(tempPath);
-        
-        if(tempFile.exists()) {
-            Bottle db = new Bottle.BottleBuilder().entityClass(clazz).id(bottle.entity.getId()).modoOperacional(Bottle.ROOT_STAGE).build();
+
+        if (tempFile.exists()) {
+            Bottle db = new Bottle.BottleBuilder()
+                    .entityClass(clazz)
+                    .id(bottle.entity.getId())
+                    .modoOperacional(Bottle.ROOT_STAGE)
+                    .build();
             Map<String, Bottle> map = db.bottles;
-            
-            bottle.bottles.keySet().stream().forEach(id -> {
-                map.remove(id);
-            });
+            for (String id : map.keySet()) {
+                if (!bottle.bottles.containsKey(id)) {
+                    list.add(new Ref(id, ClassDictionary.getIndex(clazz)));
+                }
+            }
         }
-        
+        return list;
+    }
+    
+    public static List<Ref> removedsBetweenStates(Bottle old, Bottle actual) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+        List<Ref> list = new ArrayList<>();
+        for(String id : old.bottles.keySet().stream()
+                .filter(id -> !actual.bottles.containsKey(id)).toList()) {
+            list.add(new Ref(old.bottles.get(id).entity));
+        }
         return list;
     }
     
@@ -170,7 +211,13 @@ public class Assist {
         return temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+ref.getKey();
     }
     
-    public static Bottle createBottle(Entity ente, Map<String, Bottle> bottles, int modoOperacional, String ROOT_DB, String TEMP_DB, Entity referencia, boolean cascate) throws Exception {
+    public static Bottle createBottle(Entity ente, Map<String, Bottle> bottles, int modoOperacional, String ROOT_DB, String TEMP_DB, Entity referencia, boolean cascate) throws IOException, EntityIdBadImplementationException, IllegalArgumentException, IllegalAccessException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException {
+        if (ente == null) {
+            throw new IllegalArgumentException("Entidade não pode ser nula");
+        }
+        if (bottles == null) {
+            bottles = new HashMap<>();
+        }
         Bottle bottle = new Bottle.BottleBuilder()
                 .entity(ente)
                 .bottles(bottles)
@@ -178,10 +225,12 @@ public class Assist {
                 .rootDB(ROOT_DB)
                 .tempDB(TEMP_DB)
                 .build();
-        
+
         bottle.engarafar();
-        bottle.putRef(referencia);
-        if(cascate) {
+        if (referencia != null) {
+            bottle.putRef(referencia);
+        }
+        if (cascate) {
             bottle.props.put("cascate", "true");
             bottle.cascate = true;
         }

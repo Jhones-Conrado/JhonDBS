@@ -23,6 +23,7 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
@@ -32,6 +33,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
@@ -41,8 +43,10 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -59,6 +63,12 @@ public class Reader {
     }
     
     public Reader(String root, String temp) {
+        if (root == null || root.trim().isEmpty()) {
+            throw new IllegalArgumentException("ROOT_DB não pode ser nulo ou vazio");
+        }
+        if (temp == null || temp.trim().isEmpty()) {
+            throw new IllegalArgumentException("TEMP_DB não pode ser nulo ou vazio");
+        }
         this.ROOT_DB = root;
         this.TEMP_DB = temp;
     }
@@ -74,26 +84,33 @@ public class Reader {
     }
     
     
-    public String readFile(Entity entity) throws IOException, Exception {
+    public String readFile(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return readFile(entity.getClass(), entity.getId());
     }
     
     public String readFile(Class classe, String id) throws IOException {
-        String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
-        if(modoOperacional == 0) {
-            path = ROOT_DB+path;
+        if (classe == null) {
+            throw new IllegalArgumentException("Classe não pode ser nula");
+        }
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("ID não pode ser nulo ou vazio");
+        }
+        String path = classe.getName().replace(".class", "").replace(".", "/") + "/" + id;
+        if (modoOperacional == Bottle.ROOT_STAGE) {
+            path = ROOT_DB + path;
         } else {
-            path = TEMP_DB+path;
+            path = TEMP_DB + path;
         }
-        
         File file = new File(path);
-        if(file.exists()) {
-            return Files.readString(file.toPath());
+        if (file.exists()) {
+            try (var reader = Files.newBufferedReader(file.toPath())) {
+                return reader.lines().collect(Collectors.joining("\n"));
+            }
         }
-        throw new FileNotFoundException("Arquivo inexistente: "+path);
+        throw new FileNotFoundException("Arquivo inexistente: " + path);
     }
     
-    public String readContent(Entity entity) throws IOException, Exception {
+    public String readContent(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         String content = readFile(entity);
         if(content.contains("ref::")) {
             return content.substring(0, content.indexOf("ref::"));
@@ -101,7 +118,7 @@ public class Reader {
         return content;
     }
     
-    public String readContent(Class classe, String id) throws IOException, Exception {
+    public String readContent(Class classe, String id) throws IOException {
         String content = readFile(classe, id);
         if(content.contains("ref::")) {
             return content.substring(0, content.indexOf("ref::"));
@@ -109,7 +126,7 @@ public class Reader {
         return content;
     }
     
-    public String readReferences(Entity entity) throws IOException, Exception {
+    public String readReferences(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         String refs = readFile(entity);
         if(refs.contains("ref::")) {
             return refs.substring(refs.indexOf("ref::")+"ref::".length());
@@ -117,7 +134,7 @@ public class Reader {
         return "";
     }
     
-    public String readReferences(Class classe, String id) throws IOException, Exception {
+    public String readReferences(Class classe, String id) throws IOException {
         String refs = readFile(classe, id);
         if(refs.contains("ref::")) {
             return refs.substring(refs.indexOf("ref::")+"ref::".length());
@@ -125,11 +142,11 @@ public class Reader {
         return "";
     }
     
-    public List<String> spliteredReferences(Entity entity) throws IOException, Exception {
+    public List<String> spliteredReferences(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return spliteredReferences(entity.getClass(), entity.getId());
     }
     
-    public List<String> spliteredReferences(Class classe, String id) throws IOException, Exception {
+    public List<String> spliteredReferences(Class classe, String id) throws IOException {
         List<String> list = new ArrayList<>();
         String refs = readReferences(classe, id);
         if(refs.contains("::")) {
@@ -191,32 +208,37 @@ public class Reader {
     
     public List<String> splitCapsules(String str) {
         List<String> list = new ArrayList<>();
-        if(str.equals("{}")) {
+        if (str == null || str.equals("{}")) {
             return list;
         }
-        while(str.contains("{") && str.contains("}")) {
-            int a = str.indexOf("{");
-            int b = a+1;
-            int count = 1;
-            while(count != 0 || b > str.length()) {
-                if(str.charAt(b) == '{') {
-                    count++;
-                } else if(str.charAt(b) == '}') {
-                    count--;
+        Stack<Integer> stack = new Stack<>();
+        int start = -1;
+
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (c == '{') {
+                if (stack.isEmpty()) {
+                    start = i;
                 }
-                b++;
+                stack.push(i);
+            } else if (c == '}') {
+                if (stack.isEmpty()) {
+                    return null; // Desbalanceado
+                }
+                stack.pop();
+                if (stack.isEmpty() && start != -1) {
+                    list.add(str.substring(start, i + 1));
+                    start = -1;
+                }
             }
-            if(count == 0) {
-                list.add(str.substring(a, b));
-                str = str.substring(b);
-            } else {
-                return null;
-            }
+        }
+        if (!stack.isEmpty()) {
+            return null; // Desbalanceado
         }
         return list;
     }
     
-    public Calendar parseCalendarFromString(String calendarString, ClassLoader loader) throws Exception {
+    public Calendar parseCalendarFromString(String calendarString, ClassLoader loader) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
         Pattern patternYear = Pattern.compile("YEAR=(\\d+)");
         Pattern patternMonth = Pattern.compile("MONTH=(\\d+)");
         Pattern patternDayOfMonth = Pattern.compile("DAY_OF_MONTH=(\\d+)");
@@ -248,42 +270,27 @@ public class Reader {
         return calendar;
     }
 
-    public Object parseDateTimeFromString(String dateTimeString, Class<?> type, ClassLoader loader) throws Exception {
+    public Object parseDateTimeFromString(String dateTimeString, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         switch (type.getName()) {
             case "java.time.LocalDate" -> {
-                try {
-                    Class<?> localDateClass = Class.forName("java.time.LocalDate", true, loader);
-                    return localDateClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
-                } catch (DateTimeParseException e) {
-                }
+                Class<?> localDateClass = Class.forName("java.time.LocalDate", true, loader);
+                return localDateClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
             }
             case "java.time.LocalTime" -> {
-                try {
-                    Class<?> localTimeClass = Class.forName("java.time.LocalTime", true, loader);
-                    return localTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
-                } catch (DateTimeParseException e) {
-                }
+                Class<?> localTimeClass = Class.forName("java.time.LocalTime", true, loader);
+                return localTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
             }
             case "java.time.LocalDateTime" -> {
-                try {
-                    Class<?> localDateTimeClass = Class.forName("java.time.LocalDateTime", true, loader);
-                    return localDateTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
-                } catch (DateTimeParseException e) {
-                }
+                Class<?> localDateTimeClass = Class.forName("java.time.LocalDateTime", true, loader);
+                return localDateTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
             }
             case "java.time.ZonedDateTime" -> {
-                try {
-                    Class<?> zonedDateTimeClass = Class.forName("java.time.ZonedDateTime", true, loader);
-                    return zonedDateTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
-                } catch (DateTimeParseException e) {
-                }
+                Class<?> zonedDateTimeClass = Class.forName("java.time.ZonedDateTime", true, loader);
+                return zonedDateTimeClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
             }
             case "java.time.Instant" -> {
-                try {
-                    Class<?> instantClass = Class.forName("java.time.Instant", true, loader);
-                    return instantClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
-                } catch (DateTimeParseException e) {
-                }
+                Class<?> instantClass = Class.forName("java.time.Instant", true, loader);
+                return instantClass.getMethod("parse", CharSequence.class).invoke(null, dateTimeString);
             }
             default -> {
             }
@@ -291,19 +298,17 @@ public class Reader {
         throw new IllegalArgumentException("Formato de data/tempo desconhecido: " + dateTimeString);
     }
 
-    public Period parsePeriodFromString(String periodString, ClassLoader loader) {
+    public Period parsePeriodFromString(String periodString, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         try {
             Class<?> periodClass = Class.forName("java.time.Period", true, loader);
             Object period = periodClass.getMethod("parse", CharSequence.class).invoke(null, periodString);
             return (Period) period;
         } catch (DateTimeParseException e) {
             throw new IllegalArgumentException("Formato de período desconhecido: " + periodString, e);
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao tentar parsear o período: " + periodString, e);
         }
     }
 
-    public Object parsePrimitiveFromString(String input, Class<?> type, ClassLoader loader) throws Exception {
+    public Object parsePrimitiveFromString(String input, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         if (type == String.class) {
             return input; // A string já é o valor
         }
@@ -346,7 +351,7 @@ public class Reader {
         }
     }
     
-    public Map<String, String> readUniqueFieldsAsMap(Class entityClass, String id) throws Exception {
+    public Map<String, String> readUniqueFieldsAsMap(Class entityClass, String id) throws IOException {
         Map<String, String> map = new HashMap<>();
         String capsule = readContent(entityClass, id);
         String campos = getValueFromCapsule(capsule);
@@ -379,15 +384,11 @@ public class Reader {
         return 0; // valor padrão se o campo não for encontrado
     }
 
-    public String extractString(Pattern pattern, String text, ClassLoader loader) {
-        try {
-            Class<?> matcherClass = Class.forName("java.util.regex.Matcher", true, loader);
-            Matcher matcher = pattern.matcher(text);
-            if ((boolean) matcherClass.getMethod("find").invoke(matcher)) {
-                return (String) matcherClass.getMethod("group", int.class).invoke(matcher, 1);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao tentar extrair a string: " + text, e);
+    public String extractString(Pattern pattern, String text, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        Class<?> matcherClass = Class.forName("java.util.regex.Matcher", true, loader);
+        Matcher matcher = pattern.matcher(text);
+        if ((boolean) matcherClass.getMethod("find").invoke(matcher)) {
+            return (String) matcherClass.getMethod("group", int.class).invoke(matcher, 1);
         }
         return "GMT"; // valor padrão se o campo não for encontrado
     }
@@ -509,7 +510,7 @@ public class Reader {
                 }
             }
         }
-        return null;
+        return entes;
     }
     
     /**

@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -58,44 +59,29 @@ import java.util.logging.Logger;
  */
 public class ClassDictionary {
     
-    private static Properties dictionary;
+    private static volatile Properties dictionary;
+    private static ConcurrentHashMap<Integer, Class> REVERSE = new ConcurrentHashMap<>();
+    private static final Object LOCK = new Object();
     
     public static int getIndex(Class clazz){
-        if(get().containsKey(clazz.getName())){
-            return Integer.valueOf(get().getProperty(clazz.getName()));
-        }
-        return -1;
+        return Integer.valueOf(get().getOrDefault(clazz.getName(), "-1").toString());
     }
     
     public static Class fromIndex(int index){
-        Set<Object> keySet = get().keySet();
-        for(Object key : keySet){
-            int i = Integer.parseInt(get().getProperty((String) key).toString());
-            if(i == index){
-                try {
-                    try {
-                        return Class.forName((String) key);
-                    } catch (Exception e) {
-                        return Thread.currentThread().getContextClassLoader().loadClass((String) key);
-                    }
-                } catch (ClassNotFoundException ex) {
-                    Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, null, ex);
-                } catch (Exception ex) {
-                    Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-        }
-        return null;
+        get();
+        return REVERSE.getOrDefault(index, null);
     }
     
-    public static Properties get(){
-        if(dictionary == null){
-            try {
-                startDictionary();
-            } catch (IOException ex) {
-                Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (URISyntaxException ex) {
-                Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, null, ex);
+    public static Properties get() {
+        if (dictionary == null) {
+            synchronized (LOCK) {
+                if (dictionary == null) {
+                    try {
+                        startDictionary();
+                    } catch (IOException | URISyntaxException ex) {
+                        Logger.getLogger(ClassDictionary.class.getName()).log(Level.SEVERE, "Erro ao inicializar o dicionário", ex);
+                    }
+                }
             }
         }
         return dictionary;
@@ -106,74 +92,94 @@ public class ClassDictionary {
      * @throws IOException 
      */
     private static void startDictionary() throws IOException, URISyntaxException{
-        if(dictionary == null){
-            File dic = new File("db/dictionary.dic");
-            if(dic.exists()){
+        synchronized (ClassDictionary.class) {
+            if (dictionary == null) {
                 dictionary = new Properties();
-                dictionary.load(new FileInputStream(dic));
-            } else {
-                /**
-                 * Classes padrões suportadas pelo banco de dados.
-                 */
-                dictionary = new Properties();
-                
-                /*
-                Primitivos.
-                */
-                dictionary.put(Boolean.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Byte.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Short.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Integer.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Long.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Float.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Double.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(String.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Character.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(BigInteger.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(BigDecimal.class.getName(), String.valueOf(dictionary.size()));
-                
-                /*
-                Datas.
-                */
-                dictionary.put(Date.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Calendar.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(GregorianCalendar.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Temporal.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(LocalDate.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(LocalTime.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(LocalDateTime.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(ZonedDateTime.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Instant.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(ChronoPeriod.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Period.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(TemporalAmount.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Duration.class.getName(), String.valueOf(dictionary.size()));
-                
-                /*
-                Listas, arrays e mapas.
-                */
-                dictionary.put(List.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Map.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Set.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(Properties.class.getName(), String.valueOf(dictionary.size()));
-                
-                /*
-                Imagens e arquivos.
-                */
-                dictionary.put(Image.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(BufferedImage.class.getName(), String.valueOf(dictionary.size()));
-                dictionary.put(File.class.getName(), String.valueOf(dictionary.size()));
-                
-            }
-            List<String> all = Reflection.allImplementsNotAbstract(Object.class);
-            all.forEach(cl -> {
-                if(!dictionary.containsKey(cl)){
-                    dictionary.put(cl, String.valueOf(dictionary.size()));
+                boolean save = false;
+
+                File dic = new File("db/dictionary.dic");
+                if(dic.exists()){
+                    try (FileInputStream fis = new FileInputStream(dic)) {
+                        dictionary.load(fis);
+                    }
+                } else {
+                    standardClasses();
+                    save = true;
                 }
-            });
-            new File("db").mkdirs();
-            dictionary.store(new FileOutputStream(dic), "JhonDBS Class Dictionary");
+
+                int i = dictionary.size();
+                List<Class<?>> all = Reflection.allImplementsNotAbstract(Object.class);
+                all.forEach(cl -> dictionary.putIfAbsent(cl.getName(), String.valueOf(dictionary.size())));
+                dictionary.forEach((k, v) -> {
+                    try {
+                        int index = Integer.parseInt(v.toString());
+                        REVERSE.putIfAbsent(index, Reflection.makeClass(k.toString()));
+                    } catch (NumberFormatException e) {
+                        Logger.getLogger(ClassDictionary.class.getName()).log(Level.WARNING, 
+                            "Valor inválido no dicionário para a classe " + k, e);
+                    }
+                });
+                if(i < dictionary.size()) {
+                    save = true;
+                }
+
+                if(save) {
+                    new File("db").mkdirs();
+                    try (FileOutputStream fos = new FileOutputStream(dic)) {
+                        dictionary.store(fos, "JhonDBS Class Dictionary");
+                    }
+                }
+            }
         }
+    }
+    
+    private static void standardClasses() {
+        /*
+        Primitivos.
+        */
+        dictionary.put(Boolean.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Byte.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Short.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Integer.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Long.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Float.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Double.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(String.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Character.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(BigInteger.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(BigDecimal.class.getName(), String.valueOf(dictionary.size()));
+
+        /*
+        Datas.
+        */
+        dictionary.put(Date.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Calendar.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(GregorianCalendar.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Temporal.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(LocalDate.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(LocalTime.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(LocalDateTime.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(ZonedDateTime.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Instant.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(ChronoPeriod.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Period.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(TemporalAmount.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Duration.class.getName(), String.valueOf(dictionary.size()));
+
+        /*
+        Listas, arrays e mapas.
+        */
+        dictionary.put(List.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Map.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Set.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(Properties.class.getName(), String.valueOf(dictionary.size()));
+
+        /*
+        Imagens e arquivos.
+        */
+        dictionary.put(Image.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(BufferedImage.class.getName(), String.valueOf(dictionary.size()));
+        dictionary.put(File.class.getName(), String.valueOf(dictionary.size()));
     }
     
 }

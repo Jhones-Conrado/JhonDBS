@@ -48,9 +48,11 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -72,92 +74,135 @@ import java.util.logging.Logger;
  */
 public final class Reflection {
     
-    private static List<String> array;
+    private static final Set<Class<?>> PRIMITIVE_TYPES = Set.of(
+        byte.class, Byte.class,
+        short.class, Short.class,
+        int.class, Integer.class,
+        long.class, Long.class,
+        float.class, Float.class,
+        double.class, Double.class,
+        boolean.class, Boolean.class,
+        char.class, Character.class,
+        String.class
+    );
+    
+    private static final Set<Class<?>> TINY_NUMERICAL = Set.of(
+            short.class,
+            int.class,
+            long.class,
+            float.class,
+            double.class
+    );
+    
+    private static final Set<Class<?>> ARRAY_TYPES = Set.of(
+            List.class,
+            Set.class,
+            Map.class
+    );
+    
+    private static final Set<Class<?>> DATE_TYPES = Set.of(
+            Date.class,
+            Calendar.class,
+            Temporal.class,
+            Instant.class,
+            Period.class,
+            ChronoPeriod.class
+    );
+    
+    private static volatile List<String> array; // volatile para thread-safety
     private static List<String> notAbstracts;
+    
+    private static ConcurrentHashMap<String, Class<?>> CLASSES;
+    
+    static {
+        if(CLASSES == null) {
+            CLASSES = new ConcurrentHashMap<>();
+        }
+        
+        if (CLASSES.isEmpty()) {
+            synchronized (Reflection.class) {
+                if (CLASSES.isEmpty()) {
+                    try {
+                        List<String> classList = new ArrayList<>();
+                        ClassLoader classLoader = Reflection.class.getClassLoader();
+                        
+                        // Obtém todos os recursos disponíveis no classpath
+                        Enumeration<URL> resources = classLoader.getResources("");
+                        while (resources.hasMoreElements()) {
+                            URL resource = resources.nextElement();
+                            String protocol = resource.getProtocol();
+                            
+                            if ("file".equals(protocol)) {
+                                // Diretório de classes no sistema de arquivos
+                                File directory = new File(resource.getPath());
+                                getFiles(classList, directory);
+                            } else if ("jar".equals(protocol)) {
+                                // Classes dentro de um JAR
+                                try (FileSystem fileSystem = FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap())) {
+                                    Path myPath = fileSystem.getPath("/");
+                                    Files.walk(myPath, 100).forEach(path -> classList.add(path.toString()));
+                                } catch (Exception e) {
+                                    Logger.getLogger(Reflection.class.getName(), protocol).log(Level.SEVERE, null, e);
+                                }
+                            }
+                        }
+                        
+                        classList.stream()
+                                .filter(item -> item.endsWith(".class"))
+                                .toList()
+                                .forEach(path -> {
+                                    Class<?> instance = makeClass(path);
+                                    if (instance != null) {
+                                        CLASSES.putIfAbsent(path, instance);
+                                    }
+                                });
+                    } catch (IOException ex) {
+                        Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                }
+            }
+        }
+    }
+    
     
     /**
      * Creates a new instance of Reflection.
      * This class serves to quickly and easily reflect all the files
      * inside the jar or project.
      * <br><br>
- Cria uma nova instância de Reflection. Essa classe serve para reflect de
- forma rápida e fácil todos os arquivos dentro do jar ou projeto.
+     * Cria uma nova instância de Reflection. Essa classe serve para reflect de
+     * forma rápida e fácil todos os arquivos dentro do jar ou projeto.
      * @throws IOException 
      */
     public Reflection() throws IOException {
     }
     
     /**
-     * Brings a list of all files inside the jar or project.<br>
-     * Traz uma lista com todos os arquivos dentro do jar ou projeto.
-     * @return Lista com todos os arquivos do jar ou projeto.
-     * @throws URISyntaxException
-     * @throws IOException 
-     */
-    public static List<String> reflect() throws IOException {
-        if (array == null) {
-            List<String> classList = new ArrayList<>();
-            ClassLoader classLoader = Reflection.class.getClassLoader();
-
-            // Obtém todos os recursos disponíveis no classpath
-            Enumeration<URL> resources = classLoader.getResources("");
-            while (resources.hasMoreElements()) {
-                URL resource = resources.nextElement();
-                String protocol = resource.getProtocol();
-
-                if ("file".equals(protocol)) {
-                    // Diretório de classes no sistema de arquivos
-                    File directory = new File(resource.getPath());
-                    getFiles(classList, directory);
-                } else if ("jar".equals(protocol)) {
-                    // Classes dentro de um JAR
-                    try (FileSystem fileSystem = FileSystems.newFileSystem(resource.toURI(), Collections.emptyMap())) {
-                        Path myPath = fileSystem.getPath("/");
-                        Files.walk(myPath, 100).forEach(path -> classList.add(path.toString()));
-                    } catch (Exception e) {
-                        System.err.println("Erro ao processar JAR: " + e.getMessage());
-                    }
-                }
-            }
-
-            List<String> pronta = new ArrayList<>();
-            
-            classList.stream()
-                    .filter(item -> item.endsWith(".class"))
-                    .toList()
-                    .forEach(p -> {
-                        Class<?> s = makeClass(p);
-                        if (s != null) {
-                            pronta.add(s.getName());
-                        }
-                    });
-            array = pronta;
-        }
-        return array;
-    }
-
-    
-    /**
      * Tenta criar uma instância de classe a partir do caminho de classe.
-     * @param str Caminho da classe.
+     * @param className Caminho da classe.
      * @return Instância da classe.
      */
-    private static Class makeClass(String str){
-        str = str.replace(".class", "").replace("/", ".");
+    public static Class makeClass(String className) {
+        className = className.trim();
+        if(className.charAt(0) == '.' && className.length() > 1) className = className.substring(1);
+        
+        if(CLASSES.containsKey(className)) {
+            return CLASSES.get(className);
+        } else if(CLASSES.containsKey(className.replace(".class", "").replace("/", ".")+".class")) {
+            return CLASSES.get(className.replace(".class", "").replace("/", ".")+".class");
+        }
+        
+        if(className.endsWith(".class")) className = className.substring(0, className.length() - ".class".length());
+        className = className.replace("/", ".");
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
-        while(!str.isBlank()){
+        while(!className.isBlank()){
             try {
-                if(str.startsWith(".")) {
-                    str = str.substring(1);
-                }
-                Class c;
-                c = cl.loadClass(str);
-                if(c != null){
-                    return c;
-                }
-            } catch (Throwable e) {
-                if(str.contains(".")){
-                    str = str.substring(str.indexOf(".")+1);
+                if(className.startsWith(".")) className = className.substring(1);
+                Class c = cl.loadClass(className);
+                if(c != null) return c;
+            } catch (ClassNotFoundException e) {
+                if(className.contains(".")){
+                    className = className.substring(className.indexOf(".")+1);
                 } else {
                     return null;
                 }
@@ -203,23 +248,8 @@ public final class Reflection {
      * @param classe A ser pesquisada por implementações ou extensões.
      * @return Lista de extensões e implementações.
      */
-    public static List<String> allImplements(Class classe){
-        List<String> retorno = new ArrayList<>();
-        try {
-            List<String> reflexo = reflect();
-            return reflexo.stream().filter(path -> {
-                try {
-                    return isInstance(makeClass(path), classe);
-                } catch (Exception ex) {
-//                    Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
-                }
-                return false;
-            })
-                    .toList();
-        } catch (IOException ex) {
-            Logger.getLogger(Reflection.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return retorno;
+    public static List<Class<?>> allImplements(Class classe) throws IOException {
+        return classe == null ? new ArrayList<>() : CLASSES.values().stream().filter(cl -> classe.isAssignableFrom(cl)).toList();
     }
     
     /**
@@ -237,23 +267,11 @@ public final class Reflection {
      * @param classe
      * @return 
      */
-    public static List<String> allImplementsNotAbstract(Class classe) throws URISyntaxException, IOException{
-        if(notAbstracts == null) {
-            notAbstracts = reflect().stream().filter(path -> {
-                try {
-                    return !Modifier.isAbstract(makeClass(path).getModifiers());
-                } catch (Exception e) {
-                    return false;
-                }
-            }).toList();
-        }
-        return notAbstracts.stream().filter(path -> {
-            try {
-                return isInstance(makeClass(path), classe);
-            } catch (Exception e) {
-                return false;
-            }
-        }).toList();
+    public static List<Class<?>> allImplementsNotAbstract(Class classe) throws URISyntaxException, IOException{
+        return classe == null ? new ArrayList<>() : allImplements(classe)
+                .stream()
+                .filter(c -> !Modifier.isAbstract(c.getModifiers()))
+                .toList();
     }
     
     /**
@@ -272,96 +290,46 @@ public final class Reflection {
      * @throws InstantiationException
      * @throws IllegalAccessException 
      */
-    public static <T extends Object> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, Exception{
-        if(!className.isBlank()){
-            ClassLoader cl = Thread.currentThread().getContextClassLoader();
-            try {
-                return (T) cl.loadClass(className).newInstance();
-            } catch (Exception e) {
-                try {
-                    return (T) Class.forName(className).newInstance();
-                } catch (Exception ex) {
-                    List<String> list = reflect().stream().filter(classPath -> (classPath.replaceAll(".class", "").endsWith(className))).toList();
-                    if(list.size() > 0){
-                        String path = list.get(0);
-                        return getNewInstance(makeClass(path));
-                    }
-                }
-            }
+    public static <T> T getNewInstance(String className) throws URISyntaxException, IOException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException{
+        if(className == null || className.isBlank()) {
+            throw new NullPointerException("className não pode nulo ou branco.");
         }
-        throw new ClassNotFoundException("Blank path or not found.");
+        
+        Class found = makeClass(className);
+        return getNewInstance(found);
     }
     
-    public static <T extends Object> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException{
-        Constructor[] constructors = Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).getDeclaredConstructors();
-
-        Constructor a = null;
-        for(Constructor c : constructors){
-            if(a == null){
-                a = c;
-            }
-            if(c.getParameterCount() < a.getParameterCount()){
-                a = c;
-            }
-        }
-
-        List<Object> paramObjects = new ArrayList<>();
-        Parameter[] parameters = a.getParameters();
-
-        if(parameters.length == 0){
-            return (T) Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).newInstance();
-        }
-
-        for(Parameter p : parameters){
-            if(Reflection.isInstance(p.getType(), Number.class)){
-                if(Reflection.isInstance(p.getType(), BigInteger.class)){
-                    paramObjects.add(new BigInteger("0"));
-                } else if(Reflection.isInstance(p.getType(), BigDecimal.class)){
-                    paramObjects.add(new BigDecimal(0));
-                } else {
-                    paramObjects.add(Integer.valueOf("0"));
-                }
-            } else if(Reflection.isInstance(p.getType(), String.class)){
-                paramObjects.add("");
-            } else if(Reflection.isTinyNumerical(p.getType())){
-                paramObjects.add(Short.valueOf("0"));
-            } else {
-                paramObjects.add(null);
-            }
-        }
-        return (T) a.newInstance(paramObjects.toArray());
+    public static <T> T getNewInstance(Class clazz) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException, NoSuchMethodException{
+        return (T) getNewInstance(clazz, Thread.currentThread().getContextClassLoader());
     }
     
     public static <T> T getNewInstance(Class<T> clazz, ClassLoader loader) 
             throws InstantiationException, IllegalAccessException, IllegalArgumentException, 
                    InvocationTargetException, ClassNotFoundException, NoSuchMethodException {
+        if(clazz == null) throw new IllegalArgumentException("A classe não pode ser nula.");
         
         // Carrega a classe usando o ClassLoader fornecido
         Class<?> loadedClass = Class.forName(clazz.getName(), true, loader);
         
+        Constructor[] constructors = Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).getDeclaredConstructors();
+        Constructor constructor = null;
+        for (Constructor c : constructors) {
+            if (constructor == null || c.getParameterCount() < constructor.getParameterCount()) {
+                constructor = c;
+            }
+        }
+        
         try {
             return (T) loadedClass.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            try {
-                Constructor<?>[] constructors = loadedClass.getDeclaredConstructors();
-                Constructor<?> selectedConstructor = null;
-                for (Constructor<?> constructor : constructors) {
-                    if (selectedConstructor == null || constructor.getParameterCount() < selectedConstructor.getParameterCount()) {
-                        selectedConstructor = constructor;
-                    }
-                }
-                if (selectedConstructor == null) {
-                    throw new NoSuchMethodException("Nenhum construtor encontrado para a classe: " + clazz.getName());
-                }
-                Object[] paramObjects = prepareConstructorParameters(selectedConstructor.getParameters());
-                selectedConstructor.setAccessible(true); // Garante acesso ao construtor, mesmo que ele seja privado
-                Class<?>[] types = selectedConstructor.getParameterTypes();
-                Object ins = loadedClass.getConstructor(types).newInstance(paramObjects);
-                return (T) ins;
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                throw new ClassCastException();
+        } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
+            if (constructor == null) {
+                throw new NoSuchMethodException("Nenhum construtor encontrado para a classe: " + clazz.getName());
             }
+            constructor.setAccessible(true); // Garante acesso ao construtor, mesmo que ele seja privado
+            Object[] paramObjects = prepareConstructorParameters(constructor.getParameters());
+            Class<?>[] types = constructor.getParameterTypes();
+            Object ins = loadedClass.getConstructor(types).newInstance(paramObjects);
+            return (T) ins;
         }
     }
 
@@ -401,9 +369,6 @@ public final class Reflection {
      */
     public static boolean isInstance(Class son, Class dad){
         if(son != null && dad != null){
-            if(son.getName().contains(dad.getName())) {
-                return true;
-            }
             if(dad.isAssignableFrom(son)) {
                 return true;
             }
@@ -446,23 +411,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isPrimitive(Class clazz){
-        return  isInstance(clazz, Byte.class) ||
-                isInstance(clazz, Short.class) ||
-                isInstance(clazz, Integer.class) ||
-                isInstance(clazz, Long.class) ||
-                isInstance(clazz, Float.class) ||
-                isInstance(clazz, Double.class) ||
-                isInstance(clazz, Boolean.class) ||
-                isInstance(clazz, Character.class) ||
-                isInstance(clazz, String.class) ||
-                isInstance(clazz, byte.class) ||
-                isInstance(clazz, char.class) ||
-                isInstance(clazz, short.class) ||
-                isInstance(clazz, int.class) ||
-                isInstance(clazz, long.class) ||
-                isInstance(clazz, float.class) ||
-                isInstance(clazz, double.class) ||
-                isInstance(clazz, boolean.class);
+        return clazz != null && PRIMITIVE_TYPES.contains(clazz);
     }
     
     /**
@@ -472,12 +421,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isTinyNumerical(Object object){
-        Class<? extends Object> aClass = object.getClass();
-        return isInstance(aClass, short.class) ||
-                isInstance(aClass, int.class) ||
-                isInstance(aClass, long.class) ||
-                isInstance(aClass, float.class) ||
-                isInstance(aClass, double.class);
+        return object == null ? false : isTinyNumerical(object.getClass());
     }
     
     /**
@@ -487,11 +431,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isTinyNumerical(Class clazz){
-        return isInstance(clazz, short.class) ||
-                isInstance(clazz, int.class) ||
-                isInstance(clazz, long.class) ||
-                isInstance(clazz, float.class) ||
-                isInstance(clazz, double.class);
+        return clazz != null && TINY_NUMERICAL.contains(clazz);
     }
     
     /**
@@ -500,7 +440,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isNumerical(Class clazz){
-        return isInstance(clazz, Number.class);
+        return Number.class.isAssignableFrom(clazz);
     }
     
     /**
@@ -509,19 +449,12 @@ public final class Reflection {
      * @return 
      */
     public static boolean isArrayMap(Object object){
-        boolean um = object.getClass().toString().contains(List.class.getName()) || object.toString().contains(Map.class.getName());
-        boolean dois = false;
-        
-        if(object instanceof Class) {
-            dois = ((Class) object).getName().contains("[");
-        }
-        
-        return
-                isInstance(object.getClass(), List.class) ||
-                isInstance(object.getClass(), Set.class) ||
-                isInstance(object.getClass(), Map.class) ||
-                object.getClass().getName().contains("[") ||
-                um || dois;
+        if(object == null) return false;
+        return isArrayMap(object.getClass());
+    }
+    
+    public static boolean isArrayMap(Class clazz) {
+        return clazz == null ? false : (clazz.getName().startsWith("[") || ARRAY_TYPES.stream().anyMatch(c -> c.isAssignableFrom(clazz)));
     }
     
     /**
@@ -530,10 +463,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isDate(Object object) {
-        if(object instanceof Class) {
-            return isDate((Class) object);
-        }
-        return isDate(object.getClass());
+        return object == null ? false : isDate(object.getClass());
     }
     
     /**
@@ -542,13 +472,7 @@ public final class Reflection {
      * @return 
      */
     public static boolean isDate(Class clazz){
-        return
-                isInstance(clazz, Date.class) ||
-                isInstance(clazz, Calendar.class) ||
-                isInstance(clazz, Temporal.class) ||
-                isInstance(clazz, Instant.class) ||
-                isInstance(clazz, Period.class) ||
-                isInstance(clazz, ChronoPeriod.class);
+        return clazz == null ? false : DATE_TYPES.stream().anyMatch(c -> c.isAssignableFrom(clazz));
     }
     
     /**

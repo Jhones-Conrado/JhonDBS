@@ -24,6 +24,8 @@
 package br.com.jhondbs.core.db.capsule;
 
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
+import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
+import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
@@ -41,10 +43,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystemException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -55,6 +59,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Period;
 import java.time.temporal.Temporal;
@@ -64,13 +69,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 
 /**
@@ -87,8 +91,8 @@ public final class Bottle {
     
     public int modoOperacional = TEMP_STAGE;
     
-    private Writer writer;
-    private Reader reader;
+    public Writer writer;
+    public Reader reader;
     
     public Map<String, Bottle> bottles = new HashMap<>();
     public List<String> bottledFields = new ArrayList<>();
@@ -114,7 +118,7 @@ public final class Bottle {
      * @param entity
      * @throws Exception
      */
-    public void putRef(Entity entity) throws Exception {
+    public void putRef(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         Ref ref = new Ref(entity);
         this.referencias.add(ref);
     }
@@ -124,7 +128,7 @@ public final class Bottle {
      * @param entity
      * @throws Exception 
      */
-    public void removeRef(Entity entity) throws Exception {
+    public void removeRef(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         Ref ref = new Ref(entity);
         this.referencias.remove(ref);
     }
@@ -133,7 +137,7 @@ public final class Bottle {
      * Lê as referências do estado antigo da entidade.
      * @throws Exception 
      */
-    public void loadRefs() throws Exception {
+    public void loadRefs() throws FileNotFoundException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
         String path = getPath(this.entity);
         File file = new File(path);
         if(file.exists()) {
@@ -166,13 +170,13 @@ public final class Bottle {
      * @throws URISyntaxException
      * @throws IOException 
      */
-    private void initFolders() throws URISyntaxException, IOException {
-        List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
-        for(String path : all) {
-            File tempdb = new File(TEMP_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
-            tempdb.mkdirs();
-        }
-    }
+//    private void initFolders() throws URISyntaxException, IOException {
+//        List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
+//        for(String path : all) {
+//            File tempdb = new File(TEMP_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
+//            tempdb.mkdirs();
+//        }
+//    }
     
     /**
      * Deleta a pasta temporária após a serialização.
@@ -237,53 +241,16 @@ public final class Bottle {
      * todas as entidades no banco de dados.
      * @throws Exception 
      */
-    public void flush() throws Exception {
-        initFolders();
-        writer.initDb();
-        if (bottledFields.isEmpty()) {
-            engarafar();
+    public void flush() throws URISyntaxException, IOException, IllegalAccessException, IllegalArgumentException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, DuplicatedUniqueFieldException, Exception {
+        Transaction tx = Transaction.begin(ROOT_DB);
+
+        if (bottledFields.isEmpty()) engarafar();
+        if (!todosCamposSaoUnicos()) {
+            throw new DuplicatedUniqueFieldException("Unique field violation detected");
         }
-        Set<String> toLock = new HashSet<>();
         try {
-            if (todosCamposSaoUnicos()) {
-                fillLock(toLock);
-                
-                Bottle oldState = loadOldState();
-                if(oldState != null) {
-                    fillLock(toLock, oldState);
-                }
-                
-                try {
-                    lock(toLock);
-                    
-                    if(oldState != null) {
-                        List<Ref> removeds = Assist.removedsBetweenStates(this);
-                        for(Ref ref : removeds) {
-                            Assist.removeExistenceFromBottle(this, ref);
-                        }
-                    }
-                    
-                    List<File> imgsToDelete = new ArrayList<>();
-                    List<File> filesToDelete = new ArrayList<>();
-                    for (Bottle bottle : bottles.values()) {
-                        writer.write(bottle);
-                        flushImgs(bottle, imgsToDelete);
-                        flushFiles(bottle, filesToDelete);
-                    }
-                    
-                    applyChanges(imgsToDelete, filesToDelete);
-                } catch (Exception e) {
-                    e.printStackTrace(); // Exceção no processo de escrita
-                    throw e;
-                } finally {
-                    for (String s : toLock) {
-                        IO.io().unlockWrite(s);
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace(); // Exceção na verificação de campos únicos
-            throw e;
+            tx.add(this);
+            tx.commit();
         } finally {
             cleanFolders();
         }
@@ -295,7 +262,7 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    private Bottle loadOldState() throws Exception {
+    public Bottle loadOldState() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         String path = new Writer(ROOT_STAGE).getPath(this.entity);
         
         if(new File(path).exists()) {
@@ -311,8 +278,12 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    public String getTempPath(Entity entity) throws Exception {
+    public String getTempPath(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return getTempPath(entity.getClass(), entity.getId());
+    }
+    
+    public String getRootPath() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+        return getRootPath(this.entity.getClass(), this.entity.getId());
     }
     
     /**
@@ -322,7 +293,7 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    public String getRootPath(Class classe, String id) throws Exception {
+    public String getRootPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         path = ROOT_DB+path;
         return path;
@@ -335,7 +306,7 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    public String getTempPath(Class classe, String id) throws Exception {
+    public String getTempPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         path = TEMP_DB+path;
         return path;
@@ -347,7 +318,7 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    public String getPath(Entity entity) throws Exception {
+    public String getPath(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return getPath(entity.getClass(), entity.getId());
     }
     
@@ -358,7 +329,7 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    public String getPath(Class classe, String id) throws Exception {
+    public String getPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         if(modoOperacional == 0) {
             path = ROOT_DB+path;
@@ -373,7 +344,7 @@ public final class Bottle {
      * @param toLock
      * @throws Exception 
      */
-    private void fillLock(Set<String> toLock) throws Exception {
+    private void fillLock(Set<String> toLock) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         fillLock(toLock, this);
     }
     
@@ -383,7 +354,7 @@ public final class Bottle {
      * @param rootBottle
      * @throws Exception 
      */
-    private void fillLock(Set<String> toLock, Bottle rootBottle) throws Exception {
+    private void fillLock(Set<String> toLock, Bottle rootBottle) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         for (Bottle b : rootBottle.bottles.values()) {
             toLock.add(b.entity.getId());
         }
@@ -406,30 +377,8 @@ public final class Bottle {
      * @throws IOException 
      */
     private void applyChanges(List<File> imgsToDelete, List<File> filesToDelete) throws IOException {
-        deleteFilesEndingWithDelete();
+        deleteFilesWithDelete();
         moveDirectory();
-        for(File f : imgsToDelete) {
-            if(f.exists()) {
-                f.delete();
-            }
-        }
-        for(File f : filesToDelete) {
-            if(f.exists()) {
-                f.delete();
-            }
-        }
-
-        for(File f : imgsToDelete) {
-            if(f.getParentFile().list().length == 0) {
-                f.getParentFile().delete();
-            }
-        }
-        for(File f : filesToDelete) {
-            if(f.getParentFile().list().length == 0) {
-                f.getParentFile().delete();
-            }
-        }
-        
     }
     
     /**
@@ -438,28 +387,42 @@ public final class Bottle {
      * @param imgsToDelete
      * @throws Exception 
      */
-    private void flushImgs(Bottle bottle, List<File> imgsToDelete) throws Exception {
-        File folder = new File(TEMP_DB+"imgs/"+bottle.entity.getId());
-        File prodFolder = new File(ROOT_DB+"imgs/"+bottle.entity.getId());
-        if(!bottle.imgs.isEmpty()) {
-            folder.mkdirs();
-            prodFolder.mkdirs();
-            
-            List<String> hashs = Arrays.asList(prodFolder.list());
-            for(String hash : bottle.imgs.keySet()) {
-                if(!hashs.contains(hash)) {
-                    File out = new File(folder.getPath()+"/"+hash);
-                    ImageIO.write((RenderedImage) bottle.imgs.get(hash), "png", out);
+    public void flushImgs() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
+        File tempFolder = new File(TEMP_DB+"imgs/"+this.entity.getId());
+        File prodFolder = new File(ROOT_DB+"imgs/"+this.entity.getId());
+        if(!this.imgs.isEmpty()) {
+            if(!props.containsKey("exclude")) {
+                tempFolder.mkdirs();
+                prodFolder.mkdirs();
+
+                Set<String> hashsProducao = Set.copyOf(Arrays.asList(prodFolder.list()));
+
+                /*
+                Percorre as imagens atuais comparando com a lista de imagens em produção.
+                Se na pasta de produção não tiver uma imagem com o mesmo hash, então
+                a imagem atual será salva.
+                */
+                for(String hash : this.imgs.keySet()) {
+                    if(!hashsProducao.contains(hash+".bak")) {
+                        File out = new File(tempFolder.getPath()+"/"+hash);
+                        ImageIO.write((RenderedImage) this.imgs.get(hash), "png", out);
+                    }
                 }
-            }
-            for(String hash : hashs) {
-                if(!bottle.imgs.containsKey(hash)) {
-                    File del = new File(prodFolder.getPath()+"/"+hash);
-                    imgsToDelete.add(del);
+
+                /*
+                Percorre a lista de imagens na pasta de produção após gravar as novas
+                imagens (se houverem).
+                Localiza imagens que existam na produção mas que precisam ser deletadas.
+                */
+                for(String hash : hashsProducao) {
+                    if(!this.imgs.containsKey(hash.replace(".bak", ""))) {
+                        File del = new File(prodFolder.getPath()+"/"+hash);
+                        File marked = new File(del.getPath()+".del");
+                        if(!del.renameTo(marked)) {
+                            throw new FileSystemException("Erro ao renomear o arquivo para exclusão");
+                        }
+                    }
                 }
-            }
-            if(prodFolder.list().length == 0 && folder.list().length == 0) {
-                prodFolder.delete();
             }
         }
     }
@@ -470,33 +433,49 @@ public final class Bottle {
      * @param filesToDelete
      * @throws Exception 
      */
-    private void flushFiles(Bottle bottle, List<File> filesToDelete) throws Exception {
-        File fileFolder = new File(TEMP_DB+"files/"+bottle.entity.getId());
-        File prodFileFolder = new File(ROOT_DB+"files/"+bottle.entity.getId());
-        if(!bottle.files.isEmpty()) {
-            fileFolder.mkdirs();
-            prodFileFolder.mkdirs();
-            List<String> fileHashs = Arrays.asList(prodFileFolder.list());
-            for(String hash : bottle.files.keySet()) {
-                if(!fileHashs.contains(hash)) {
-                    File out = new File(fileFolder.getPath()+"/"+hash);
-                    Files.copy(bottle.files.get(hash).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                } else {
-                    File antigo = new File(prodFileFolder.getPath()+"/"+hash);
-                    File novo = bottle.files.get(hash);
-                    if(!areFilesEquals(antigo, novo)) {
-                        Files.copy(novo.toPath(), antigo.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    public void flushFiles() throws IOException, NoSuchAlgorithmException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+        File tempFolder = new File(TEMP_DB+"files/"+this.entity.getId());
+        File prodFolder = new File(ROOT_DB+"files/"+this.entity.getId());
+        if(!this.files.isEmpty()) {
+            if(!props.containsKey("exclude")) {
+                tempFolder.mkdirs();
+                prodFolder.mkdirs();
+
+                Set<String> prodNames = Set.copyOf(Arrays.asList(prodFolder.list()));
+                
+                /*
+                Percorre os arquivos atuais comparando com a lista de arquivos em produção.
+                Se na pasta de produção não tiver um arquivo com o mesmo hash, então
+                o arqiuvo atual será salvo.
+                */
+                for(String name : this.files.keySet()) {
+                    if(!prodNames.contains(name+".bak")) {
+                        File out = new File(tempFolder.getPath()+"/"+name);
+                        Files.copy(this.files.get(name).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } else {
+                        // Caso exista um arquivo em produção com o mesmo nome, compara os hashs.
+                        File antigo = new File(prodFolder.getPath()+"/"+name+".bak");
+                        File novo = this.files.get(name);
+                        if(!areFilesEquals(antigo, novo)) {
+                            Files.copy(novo.toPath(), new File(prodFolder.getPath()+"/"+name).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        }
                     }
                 }
-            }
-            for(String hash : fileHashs) {
-                if(!bottle.files.containsKey(hash)) {
-                    File antigo = new File(prodFileFolder.getPath()+"/"+hash);
-                    filesToDelete.add(antigo);
+
+                /*
+                Percorre a lista de arquivos na pasta de produção após gravar os novos
+                arquivos (se houverem).
+                Localiza arquivos que existam na produção mas que precisam ser deletados.
+                */
+                for(String hash : prodNames) {
+                    if(!this.files.containsKey(hash.replace(".bak", ""))) {
+                        File antigo = new File(prodFolder.getPath()+"/"+hash);
+                        File marked = new File(antigo.getPath()+".del");
+                        if(!antigo.renameTo(marked)) {
+                            throw new FileSystemException("Erro ao renomear o arquivo para exclusão");
+                        }
+                    }
                 }
-            }
-            if(prodFileFolder.list().length == 0 && fileFolder.list().length == 0) {
-                prodFileFolder.delete();
             }
         }
     }
@@ -534,7 +513,7 @@ public final class Bottle {
      * Faz a limpeza dos arquivos marcados para exclusão.
      * @throws IOException 
      */
-    public void deleteFilesEndingWithDelete() throws IOException {
+    public void deleteFilesWithDelete() throws IOException {
         Path sourceDir = Paths.get(this.TEMP_DB);
         Path targetDir = Paths.get(this.ROOT_DB);
         // Walk through the file tree starting from the source directory
@@ -588,82 +567,82 @@ public final class Bottle {
      * @throws IllegalAccessException
      * @throws Exception 
      */
-    public boolean delete() throws IllegalArgumentException, IllegalAccessException, Exception {
+    public boolean delete() throws IllegalArgumentException, IllegalAccessException, IOException, EntityIdBadImplementationException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, Exception {
+        Transaction tx = Transaction.begin(ROOT_DB);
         try {
-            List<File> imgsToDelete = new ArrayList<>();
-            List<File> filesToDelete = new ArrayList<>();
-            delete(true);
-            applyChanges(imgsToDelete, filesToDelete);
+            tx.add(this);
+            tx.commitDel();
+            return true;
         } finally {
             cleanFolders();
         }
-        return true;
+    }
+    
+    private void collectCascadingDeletes(Set<Bottle> toDelete) {
+        toDelete.add(this);
+        for (Bottle bottle : bottles.values()) {
+            if (bottle.cascate && !toDelete.contains(bottle)) {
+                bottle.collectCascadingDeletes(toDelete);
+            }
+        }
     }
     
     /**
      * Método secundário utilizado para exlcuir subentidades.
      * @param sub
-     * @return
-     * @throws Exception 
+     * @return 
      */
-    public boolean delete(boolean sub) throws Exception {
+    public boolean delete(boolean sub) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         Assist.sendToTemp(new Ref(entity), TEMP_DB);
-        
+
         Properties tester = new Properties();
         tester.load(new FileInputStream(new File(Assist.getPathFromRef(new Ref(entity), TEMP_DB))));
-        if(!tester.containsKey("exclude")) {
+        if (!tester.containsKey("exclude")) {
             List<Ref> toClean = new ArrayList<>();
-            
+
             String id = entity.getId();
-            toClean.addAll(Assist.getEnties(build().get("fields").toString())
+            toClean.addAll(Assist.getEntities(build().get("fields").toString())
                     .stream()
                     .filter(ref -> !ref.getKey().equals(id))
                     .toList());
-            
-            // Adiciona os referenciadores na lista de entidades para limpeza.
+
             toClean.addAll(Arrays.asList(build().getProperty("refs").toString().split("::"))
                     .stream()
                     .filter(str -> !str.isBlank())
                     .map(str -> new Ref(str))
                     .toList());
-                    
-            // Remove a entidade atual das subentidades.
+
             Ref toRemove = new Ref(entity);
-            for(Ref ref : toClean) {
+            for (Ref ref : toClean) {
                 Assist.removeExistence(toRemove, ref, TEMP_DB);
             }
 
-            // Marca a entidade atual para exclusão.
             Properties prop = new Properties();
             prop.put("exclude", "true");
             prop.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
-            
-            // Busca as entidades que ficaram órfãs e tem cascata para exlusão.
-            for(Ref ref : toClean) {
+
+            for (Ref ref : toClean) {
                 Properties p = new Properties();
                 p.load(new FileInputStream(new File(Assist.getPathFromRef(ref, TEMP_DB))));
-                if(!p.containsKey("exclude")) {
-                    
-                    // Carrega a lista atual de referências da entidade atualizada.
+                if (!p.containsKey("exclude")) {
                     List<String> refs = Arrays.asList(p.getProperty("refs").toString().split("::"))
                             .stream().filter(r -> !r.isBlank())
                             .toList();
-                    // Verifica se ficou órfã.
-                    if(refs.isEmpty()) {
-                        if(p.containsKey("cascate")) {
-                            // Deleta a entidade em casa de orfandade e cascata.
-                            Bottle bottle = new Bottle.BottleBuilder()
-                                    .entityClass(ClassDictionary.fromIndex((ref.getValue())))
-                                    .id(ref.getKey())
-                                    .modoOperacional(Bottle.TEMP_STAGE)
-                                    .tempDB(TEMP_DB)
-                                    .build();
-                            bottle.delete(true);
+                    if (refs.isEmpty() && p.containsKey("cascate")) {
+                        if(this.bottles.containsKey(ref.getKey())) {
+                            
                         }
+                        Bottle bottle = new Bottle.BottleBuilder()
+                                .entityClass(ClassDictionary.fromIndex(ref.getValue()))
+                                .id(ref.getKey())
+                                .modoOperacional(Bottle.TEMP_STAGE)
+                                .tempDB(TEMP_DB)
+                                .build();
+                        bottle.delete(true); // Exclusão recursiva
                     }
                 }
             }
-        }        
+        }
         return true;
     }
     
@@ -679,7 +658,7 @@ public final class Bottle {
      * @throws IllegalAccessException
      * @throws Exception 
      */
-    public void engarafar() throws IllegalArgumentException, IllegalAccessException, Exception {
+    public void engarafar() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, URISyntaxException, IOException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         
         bottledFields.clear();
         List<Field> fields = FieldsManager.getAllSerializebleFields(this.entity.getClass());
@@ -704,7 +683,7 @@ public final class Bottle {
                             if(Reflection.isPrimitive(valor) || Reflection.isNumerical(valor.getClass()) || Reflection.isDate(valor)) {
                                 sb.append(encapsulePrimitive(valor));
                             } else if(Reflection.isArrayMap(field.getType()) || Reflection.isArrayMap(valor)) {
-                                sb.append(encapsuleArray(valor, field.isAnnotationPresent(Cascate.class)));
+                                sb.append(encapsularObjeto(valor, field.isAnnotationPresent(Cascate.class)));
                             } else if(Reflection.isInstance(field.getType(), Entity.class) || Reflection.isInstance(valor.getClass(), Entity.class)) {
                                 Entity ente = (Entity) valor;
                                 if(!bottles.containsKey(ente.getId())) {
@@ -737,13 +716,17 @@ public final class Bottle {
         }
     }
     
+    public void sendToTemp() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
+        sendToTemp(this.entity.getClass(), this.entity.getId());
+    }
+    
     /**
      * Envia uma entidade para a pasta temporária para que sejam realizadas tarefas
      * de serialização.
      * @param entity
      * @throws Exception 
      */
-    private void sendToTemp(Class clazz, String id) throws Exception {
+    private void sendToTemp(Class clazz, String id) throws FileNotFoundException, IOException {
         File temp = new File(getTempPath(clazz, id));
         if(!temp.exists()) {
             temp.getParentFile().mkdirs();
@@ -762,7 +745,7 @@ public final class Bottle {
      * @return String da capsula.
      * @throws Exception 
      */
-    public String encapsularObjeto(Object objeto, boolean cascate) throws Exception {
+    public String encapsularObjeto(Object objeto, boolean cascate) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, URISyntaxException, IOException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         if(objeto.getClass().isEnum()) {
             return encapsuleEnum((Enum) objeto);
         } else {
@@ -789,6 +772,13 @@ public final class Bottle {
                         return encapsuleArray(objeto, cascate);
                     } else {
                         return "{map:{}}";
+                    }
+                } else {
+                    ArrayList<Object> list = toArrayList(objeto);
+                    if(!list.isEmpty()) {
+                        return encapsuleArray(list, cascate);
+                    } else {
+                        return "{list:{}}";
                     }
                 }
             } else if(Reflection.isInstance(objeto.getClass(), Entity.class)) {
@@ -835,7 +825,76 @@ public final class Bottle {
                 return sb.toString();
             }
         }
-        throw new Exception("Objeto não serializável: "+objeto.getClass());
+    }
+    
+    @SuppressWarnings("unchecked")
+    private <T> ArrayList<T> toArrayList(Object array) {
+        // Validação de entrada
+        if (array == null) {
+            throw new IllegalArgumentException("O array não pode ser null");
+        }
+        if (!array.getClass().isArray()) {
+            throw new IllegalArgumentException("O argumento deve ser um array");
+        }
+
+        // Obtém o tipo do componente do array
+        Class<?> componentType = array.getClass().getComponentType();
+        int length = Array.getLength(array);
+
+        // Cria o ArrayList com o tipo apropriado
+        ArrayList<T> result = new ArrayList<>(length);
+
+        // Trata arrays de tipos primitivos e objetos
+        if (componentType.isPrimitive()) {
+            // Conversão manual para tipos primitivos
+            if (componentType == int.class) {
+                int[] intArray = (int[]) array;
+                for (int i : intArray) {
+                    result.add((T) Integer.valueOf(i)); // Boxing manual
+                }
+            } else if (componentType == double.class) {
+                double[] doubleArray = (double[]) array;
+                for (double d : doubleArray) {
+                    result.add((T) Double.valueOf(d));
+                }
+            } else if (componentType == boolean.class) {
+                boolean[] boolArray = (boolean[]) array;
+                for (boolean b : boolArray) {
+                    result.add((T) Boolean.valueOf(b));
+                }
+            } else if (componentType == byte.class) {
+                byte[] byteArray = (byte[]) array;
+                for (byte b : byteArray) {
+                    result.add((T) Byte.valueOf(b));
+                }
+            } else if (componentType == char.class) {
+                char[] charArray = (char[]) array;
+                for (char c : charArray) {
+                    result.add((T) Character.valueOf(c));
+                }
+            } else if (componentType == float.class) {
+                float[] floatArray = (float[]) array;
+                for (float f : floatArray) {
+                    result.add((T) Float.valueOf(f));
+                }
+            } else if (componentType == long.class) {
+                long[] longArray = (long[]) array;
+                for (long l : longArray) {
+                    result.add((T) Long.valueOf(l));
+                }
+            } else if (componentType == short.class) {
+                short[] shortArray = (short[]) array;
+                for (short s : shortArray) {
+                    result.add((T) Short.valueOf(s));
+                }
+            }
+        } else {
+            // Arrays de objetos (String[], Object[], etc.)
+            T[] objArray = (T[]) array;
+            result.addAll(Arrays.asList(objArray));
+        }
+
+        return result;
     }
     
     private byte[] getImageData(Image image) {
@@ -919,7 +978,7 @@ public final class Bottle {
      * @return
      * @throws Exception 
      */
-    private String encapsuleArray(Object object, boolean cascate) throws Exception {
+    private String encapsuleArray(Object object, boolean cascate) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, URISyntaxException, IOException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         if(object == null) {
             return "{}";
         }
@@ -943,24 +1002,25 @@ public final class Bottle {
                 .append(":");
         }
         
-        if(type != 2 || object.getClass().getName().contains("[")) {
-            List list = asList(object);
-            for(Object obj : list) {
-                if(Reflection.isPrimitive(obj) || Reflection.isNumerical(obj.getClass()) || Reflection.isDate(obj.getClass())) {
-                    sb.append(encapsulePrimitive(obj));
-                } else if(Reflection.isArrayMap(obj) && obj != object) {
-                    sb.append(encapsuleArray(obj, cascate));
-                } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
-                    Entity ente = (Entity) obj;
-                    if(!bottles.containsKey(ente.getId())) {
-                        Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+        if(type == 0) {
+            List list = (List) object;
+            if(!list.isEmpty()) {
+                for(Object obj : list) {
+                    if(Reflection.isPrimitive(obj) || Reflection.isNumerical(obj.getClass()) || Reflection.isDate(obj.getClass())) {
+                        sb.append(encapsulePrimitive(obj));
+                    } else if(Reflection.isArrayMap(obj) && obj != object) {
+                        sb.append(encapsuleArray(obj, cascate));
+                    } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
+                        Entity ente = (Entity) obj;
+                        if(!bottles.containsKey(ente.getId())) {
+                            Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+                        }
+                        sb.append(encapsuleId(ente));
+                    } else {
+                        sb.append(encapsularObjeto(obj, cascate));
                     }
-                    sb.append(encapsuleId(ente));
-                } else {
-                    sb.append(encapsularObjeto(obj, cascate));
                 }
             }
-            
         } else if(Reflection.isInstance(object.getClass(), Map.class)) {
             Map map = (Map) object;
             Set keys = map.keySet();
@@ -1003,7 +1063,7 @@ public final class Bottle {
      * @return Capsula de referência à entidade.
      * @throws Exception 
      */
-    private String encapsuleId(Entity entity) throws Exception {
+    private String encapsuleId(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         if(entity == null) {
             return "{}";
         }
@@ -1038,104 +1098,79 @@ public final class Bottle {
     ************************************************************
     */
     
-    private void load(Class clazz, String id, ClassLoader loader) throws Exception {
-        if(!isSub) {
-            IO.io().lockRead(id);
+    private void load(Class clazz, String id, ClassLoader loader) throws IOException, EntityIdBadImplementationException, ClassNotFoundException, IllegalAccessException, IllegalArgumentException, InstantiationException, InvocationTargetException, NoSuchMethodException, ObjectNotDesserializebleException, URISyntaxException, ParseException {
+        IO io = IO.io();
+        if (!isSub) {
+            io.lockRead(id);
         }
         try {
             this.entity = (Entity) Reflection.getNewInstance(clazz, loader);
-            
             List<String> actualFieldsList = FieldsManager.getAllFields(this.entity.getClass())
                     .stream()
-                    .map(field -> field.getName())
+                    .map(Field::getName)
                     .toList();
-            
+
             sendToTemp(clazz, id);
-            
+
             Properties props = new Properties();
             String path = getPath(clazz, id);
-            props.load(new FileInputStream(new File(path)));
-            
-            this.props = props;
-            
-            if(props.containsKey("cascate")) {
-                if(props.getProperty("cascate").toString().equals("true")) {
-                    this.cascate = true;
-                }
+            File file = new File(path);
+            if (!file.exists()) {
+                throw new FileNotFoundException("Entidade não encontrada: " + path);
             }
-            
+            props.load(new FileInputStream(file));
+
+            this.props = props;
+
+            if (props.containsKey("cascate") && "true".equals(props.getProperty("cascate"))) {
+                this.cascate = true;
+            }
+
             List<String> fields = new ArrayList<>();
             String fieldStream = props.get("fields").toString();
-            if(fieldStream.endsWith("::")) {
-                fieldStream = fieldStream.substring(0, fieldStream.length()-"::".length());
+            if (fieldStream.endsWith("::")) {
+                fieldStream = fieldStream.substring(0, fieldStream.length() - "::".length());
             }
             fields.addAll(reader.splitCapsules(fieldStream));
-            
-            Field entityIdField = null;
 
-            List<Field> ids = FieldsManager.getAllFields(this.entity).parallelStream()
-            .filter(field -> (field.getType().getName().contains("String")))
-            .filter(field -> (field.getName().toUpperCase().contains("ID")))
-            .toList();
-            if(!ids.isEmpty()){
-                Field selected = null;
-                List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
-                        .toList();
-                if(toList.size() == 1){
-                    selected = toList.get(0);
-                } else {
-                    toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
-                        .toList();
-                    if(toList.size() == 1){
-                        selected = toList.get(0);
-                    } else {
-                        selected = ids.get(0);
-                    }
-                }
-                if(selected != null){
-                    entityIdField = selected;
-                }
-            }
-
+            Field entityIdField = FieldsManager.getFieldId(this.entity.getClass());
             String idName = entityIdField.getName();
 
-            for(String campo : fields) {
-                if(campo.substring(1, campo.indexOf(":")).equals(idName)) {
+            // Usar Iterator para evitar ConcurrentModificationException
+            for (Iterator<String> it = fields.iterator(); it.hasNext();) {
+                String campo = it.next();
+                if (campo.substring(1, campo.indexOf(":")).equals(idName)) {
                     inserir(this.entity, campo, loader);
                     this.bottledFields.add(campo);
-                    fields.remove(campo);
+                    it.remove();
                     break;
                 }
             }
-            
-            for(String campo : fields) {
-                if(actualFieldsList.contains(campo.substring(1, campo.indexOf(":")))) {
+
+            for (String campo : fields) {
+                if (actualFieldsList.contains(campo.substring(1, campo.indexOf(":")))) {
                     inserir(this.entity, campo, loader);
                     this.bottledFields.add(campo);
                 }
             }
 
             String refs = props.get("refs").toString();
-            if(!refs.isBlank()) {
-                for(String ref : refs.split("::")) {
-                    if(!ref.isBlank()) {
-                        Ref r = new Ref(ref);
-                        this.referencias.add(r);
+            if (!refs.isBlank()) {
+                for (String ref : refs.split("::")) {
+                    if (!ref.isBlank()) {
+                        this.referencias.add(new Ref(ref));
                     }
                 }
             }
-            
-        } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException | NoSuchMethodException ex) {
-            Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, null, ex);
-            throw new Exception("Erro ao ler a entidade: "+clazz+" -> "+id);
         } finally {
-            if(!isSub) {
-                IO.io().unlockRead(id);
+            if (!isSub) {
+                io.unlockRead(id);
+                cleanFolders();
             }
         }
     }
     
-    private void inserir(Object receptor, String capsule, ClassLoader loader) throws Exception {
+    private void inserir(Object receptor, String capsule, ClassLoader loader) throws ClassNotFoundException, IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InstantiationException, InvocationTargetException, NoSuchMethodException, URISyntaxException, ParseException, ObjectNotDesserializebleException {
         String nome_campo = reader.getKeyFromCapsule(capsule);
         String sub_capsula = reader.getValueFromCapsule(capsule);
         
@@ -1157,7 +1192,7 @@ public final class Bottle {
      * @return Objeto recuperado.
      * @throws Exception 
      */
-    private Object recuperar(String indice, String conteudo, ClassLoader loader) throws Exception {
+    private Object recuperar(String indice, String conteudo, ClassLoader loader) throws ClassNotFoundException, IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InstantiationException, InvocationTargetException, NoSuchMethodException, URISyntaxException, ParseException, ObjectNotDesserializebleException {
         Class classe_do_objeto = null;
         
         classe_do_objeto = switch (indice) {
@@ -1187,6 +1222,8 @@ public final class Bottle {
             } 
             else if (Reflection.isInstance(classe_do_objeto, Period.class)) {
                 return reader.parsePeriodFromString(conteudo, loader);
+            } else {
+                throw new ObjectNotDesserializebleException("Objeto de data não reconhecido.");
             }
         } 
         else if (Reflection.isInstance(classe_do_objeto, Entity.class)) {
@@ -1248,11 +1285,9 @@ public final class Bottle {
                 return o;
             }
         }
-        
-        throw new Exception("Não foi possível distinguir o tipo de objeto -> "+conteudo);
     }
     
-    public File getFile(String name) throws Exception {
+    public File getFile(String name) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         if(!this.files.containsKey(name)) {
             File file = new File(ROOT_DB+"files/"+this.entity.getId()+"/"+name);
             if(!file.exists()) {
@@ -1263,7 +1298,7 @@ public final class Bottle {
         return this.files.get(name);
     }
     
-    public Image getImg(String hash, ClassLoader loader) throws ClassNotFoundException, Exception {
+    public Image getImg(String hash, ClassLoader loader) throws ClassNotFoundException, IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         if(!this.imgs.containsKey(hash)) {
             File imageFile = new File(ROOT_DB+"imgs/"+this.entity.getId()+"/"+hash);
             if (!imageFile.exists()) {
@@ -1275,7 +1310,7 @@ public final class Bottle {
         return this.imgs.get(hash);
     }
     
-    public List parseListFromString(String str, ClassLoader loader) throws Exception {
+    public List parseListFromString(String str, ClassLoader loader) throws ClassNotFoundException, IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InstantiationException, InvocationTargetException, NoSuchMethodException, URISyntaxException, ParseException, ObjectNotDesserializebleException {
         List list = new ArrayList();
         List<String> objetos = reader.splitCapsules(str);
         for(String objeto : objetos) {
@@ -1288,7 +1323,7 @@ public final class Bottle {
         return list;
     }
     
-    public Map parseMapFromString(String str, ClassLoader loader) throws Exception {
+    public Map parseMapFromString(String str, ClassLoader loader) throws ClassNotFoundException, IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InstantiationException, InvocationTargetException, NoSuchMethodException, URISyntaxException, ParseException, ObjectNotDesserializebleException {
         Map<Object, Object> map = new HashMap<>();
         List<String> objetos = reader.splitCapsules(str);
         if (objetos == null || objetos.isEmpty()) {
@@ -1319,28 +1354,20 @@ public final class Bottle {
     ************************************************************
     */
     
-    private boolean todosCamposSaoUnicos() throws Exception {
+    private boolean todosCamposSaoUnicos() throws EntityIdBadImplementationException, DuplicatedUniqueFieldException, IllegalAccessException, IllegalArgumentException, IOException {
         for (Bottle bottle : bottles.values()) {
-            try {
-                if (!uniqueFieldTest(bottle.entity)) {
-                    return false;
-                }
-            } catch (DuplicatedUniqueFieldException ex) {
-                Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, "Duplicated unique field for entity: " + bottle.entity + " -> " + bottle.entity.getId(), ex);
-                throw new DuplicatedUniqueFieldException("Duplicated unique field for entity: " + bottle.entity + " -> " + bottle.entity.getId() + ex);
-            } catch (Exception ex) {
-                Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, "Error during unique field validation", ex);
-                throw new Exception("Erro durante a verificação de unicidade de campos das entidades a serem gravadas -> "+ex);
+            if (!uniqueFieldTest(bottle.entity)) {
+                return false;
             }
         }
         return true;
     }
     
-    private boolean uniqueFieldTest(Entity entity) throws Exception {
+    private boolean uniqueFieldTest(Entity entity) throws IllegalAccessException, EntityIdBadImplementationException, DuplicatedUniqueFieldException, IllegalArgumentException, IOException {
         return testeDeUnicidade(entity, ROOT_STAGE) && testeDeUnicidade(entity, TEMP_STAGE);
     }
     
-    private boolean testeDeUnicidade(Entity entity, int modoOperacional) throws Exception {
+    private boolean testeDeUnicidade(Entity entity, int modoOperacional) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, DuplicatedUniqueFieldException, IOException {
         if (entity == null) {
             throw new NullPointerException("Entidade nula para teste de unicidade.");
         }
@@ -1395,15 +1422,15 @@ public final class Bottle {
     ************************************************************
     */
     
-    public static <T extends Entity> List<T> loadAll(Class classe) throws Exception {
+    public static <T extends Entity> List<T> loadAll(Class classe) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         return loadAll(classe, null, Thread.currentThread().getContextClassLoader());
     }
     
-    public static <T extends Entity> List<T> loadAll(Class classe, ClassLoader loader) throws Exception {
+    public static <T extends Entity> List<T> loadAll(Class classe, ClassLoader loader) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         return loadAll(classe, null, loader);
     }
     
-    public static <T extends Entity> List<T> loadAll(Class classe, Filter filter, ClassLoader loader) throws Exception {
+    public static <T extends Entity> List<T> loadAll(Class classe, Filter filter, ClassLoader loader) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         Writer w = new Writer();
         w.initDb();
         Reader reader = new Reader(ROOT_STAGE);
@@ -1530,7 +1557,7 @@ public final class Bottle {
             return this;
         }
         
-        public Bottle build() throws Exception {
+        public Bottle build() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
             Bottle bottle = new Bottle();
             bottle.loader = this.loader;
             bottle.entity = this.entity;
@@ -1552,24 +1579,19 @@ public final class Bottle {
             
             if(this.TEMP_DB.equals("./temp/")) {
                 bottle.defineTemp();
-                bottle.initFolders();
+//                bottle.initFolders();
             } else {
                 sub = true;
             }
             
             if(this.index != -1 && !this.id.isBlank()) {
-                try {
-                    bottle.bottles.put(id, bottle);
-                    bottle.load(ClassDictionary.fromIndex(index), id, loader);
-                } catch (Exception ex) {
-                    Logger.getLogger(Bottle.class.getName()).log(Level.SEVERE, null, ex);
-                    throw new Exception("Erro ao carregar entidade: Classe -> "+ClassDictionary.fromIndex(index)+" | ID -> "+id+"\n", ex);
-                }
+                bottle.bottles.put(id, bottle);
+                bottle.load(ClassDictionary.fromIndex(index), id, loader);
             } else if(this.entity != null) {
                 bottle.bottles.put(this.entity.getId(), bottle);
                 bottle.loadRefs();
             } else {
-                throw new Exception("Entidade não definida.\nPrecisa definir ou uma classe e id ou uma entidade");
+                throw new NullPointerException("Entidade não definida");
             }
 
             if(!sub) {

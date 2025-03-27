@@ -24,61 +24,101 @@
 package br.com.jhondbs.core.db.capsule;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author jhones
  */
 public class IO {
-    
     private static IO io;
-    
-    private ConcurrentHashMap<String, ReadWriteLock> lockMap = new ConcurrentHashMap<>();
-    
-    private IO(){}
-    
-    // Método para adquirir bloqueio de leitura
+    private ConcurrentHashMap<String, LockEntry> lockMap = new ConcurrentHashMap<>();
+    private static final Logger LOGGER = Logger.getLogger(IO.class.getName());
+
+    private static class LockEntry {
+        ReadWriteLock lock = new ReentrantReadWriteLock();
+        AtomicInteger refCount = new AtomicInteger(0);
+    }
+
+    private IO() {}
+
     public void lockRead(String id) {
-        getLock(id).readLock().lock();
+        if (id == null) {
+            throw new IllegalArgumentException("ID não pode ser nulo");
+        }
+        LockEntry entry = lockMap.computeIfAbsent(id, k -> new LockEntry());
+        entry.refCount.incrementAndGet();
+        LOGGER.log(Level.FINE, "Acquiring read lock for ID: {0}", id);
+        entry.lock.readLock().lock();
     }
-    
-    // Método para liberar bloqueio de leitura e remover o lock se não for mais necessário
+
     public void unlockRead(String id) {
-        getLock(id).readLock().unlock();
-        cleanUpLock(id);
+        LockEntry entry = lockMap.get(id);
+        if (entry == null) {
+            LOGGER.log(Level.WARNING, "Tentativa de desbloquear leitura sem bloqueio existente para ID: {0}", id);
+            throw new IllegalStateException("Nenhum bloqueio de leitura encontrado para o ID: " + id);
+        }
+        entry.lock.readLock().unlock();
+        LOGGER.log(Level.FINE, "Released read lock for ID: {0}", id);
+        cleanUpLock(id, entry);
     }
 
-    // Método para adquirir bloqueio de escrita
     public void lockWrite(String id) {
-        getLock(id).writeLock().lock();
+        LockEntry entry = lockMap.computeIfAbsent(id, k -> new LockEntry());
+        entry.lock.writeLock().lock();
+        entry.refCount.incrementAndGet();
     }
 
-    // Método para liberar bloqueio de escrita e remover o lock se não for mais necessário
     public void unlockWrite(String id) {
-        getLock(id).writeLock().unlock();
-        cleanUpLock(id);
+        LockEntry entry = lockMap.get(id);
+        if (entry == null) {
+            LOGGER.log(Level.WARNING, "Tentativa de desbloquear escrita sem bloqueio existente para ID: {0}", id);
+            throw new IllegalStateException("Nenhum bloqueio de escrita encontrado para o ID: " + id);
+        }
+        entry.lock.writeLock().unlock();
+        cleanUpLock(id, entry);
     }
-    
-    // Obtém ou cria o ReadWriteLock associado ao arquivo
-    private ReadWriteLock getLock(String id) {
-        return lockMap.computeIfAbsent(id, path -> new ReentrantReadWriteLock());
-    }
-    
-    // Verifica se o lock não está mais sendo utilizado e remove do mapa
-    private void cleanUpLock(String id) {
-        ReadWriteLock lock = getLock(id);
-        if (lock.writeLock().tryLock() && lock.readLock().tryLock()) {
+
+    private void cleanUpLock(String id, LockEntry entry) {
+        if (entry.refCount.decrementAndGet() == 0) {
             lockMap.remove(id);
         }
     }
     
-    public static IO io(){
-        if(io == null) {
-            io = new IO();
+    public boolean tryLockRead(String id, long timeout, TimeUnit unit) throws InterruptedException {
+        if (id == null) {
+            throw new IllegalArgumentException("ID não pode ser nulo");
+        }
+        LockEntry entry = lockMap.computeIfAbsent(id, k -> new LockEntry());
+        entry.refCount.incrementAndGet();
+        return entry.lock.readLock().tryLock(timeout, unit);
+    }
+    
+    public boolean tryLockWrite(String id, long timeout, TimeUnit unit) throws InterruptedException {
+        if (id == null) {
+            throw new IllegalArgumentException("ID não pode ser nulo");
+        }
+        LockEntry entry = lockMap.computeIfAbsent(id, k -> new LockEntry());
+        if (entry.lock.writeLock().tryLock(timeout, unit)) {
+            entry.refCount.incrementAndGet();
+            return true;
+        }
+        return false;
+    }
+
+    public static IO io() {
+        if (io == null) {
+            synchronized (IO.class) {
+                if (io == null) {
+                    io = new IO();
+                }
+            }
         }
         return io;
     }
-    
 }

@@ -23,8 +23,10 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.Reflection;
+import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -65,15 +67,18 @@ public class Writer {
         this.TEMP_DB = temp;
     }
     
-    public boolean write(Bottle bottle) throws Exception {
+    public boolean write(Bottle bottle) throws IOException, IllegalAccessException, EntityIdBadImplementationException {
         String path = getPath(bottle.entity);
         File file = new File(path);
+        file.getParentFile().mkdirs(); // Garantir diretórios
         Properties build = bottle.build();
-        build.store(new FileOutputStream(file), "JhonDBS Entity");
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file))) {
+            build.store(bos, "JhonDBS Entity");
+        }
         return true;
     }
     
-    public boolean writeText(Class classe, String id, String content) throws Exception {
+    public boolean writeText(Class classe, String id, String content) throws IOException {
         try(BufferedWriter w = Files.newBufferedWriter(Paths.get(getPath(classe, id)), StandardCharsets.UTF_8)) {
             w.write(content);
             w.flush();
@@ -96,19 +101,19 @@ public class Writer {
         }
         
         if(!file.exists()) {
-            List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
-            for(String path : all) {
-                File rootdb = new File(ROOT_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
+            List<Class<?>> all = Reflection.allImplementsNotAbstract(Entity.class);
+            for(Class path : all) {
+                File rootdb = new File(ROOT_DB+path.getName().replace(".class", "").replace(".", "/"));
                 rootdb.mkdirs();
             }
         }
     }
     
-    public String getPath(Entity entity) throws Exception {
+    public String getPath(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return getPath(entity.getClass(), entity.getId());
     }
     
-    public String getPath(Class classe, String id) throws Exception {
+    public String getPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
         if(modoOperacional == 0) {
             path = ROOT_DB+path;

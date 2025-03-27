@@ -27,6 +27,8 @@ import br.com.jhondbs.core.db.capsule.Bottle;
 import br.com.jhondbs.core.db.capsule.Reader;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
+import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
+import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.filter.Filter;
 import java.io.Serializable;
 import java.util.List;
@@ -35,6 +37,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.UUID;
 import br.com.jhondbs.core.db.filter.GenericFilterCondition;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
+import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 
 /**
  * ENGLISH<br>
@@ -72,7 +80,7 @@ public interface Entity extends Serializable, Cloneable{
      * @return ID da entidade.
      * @throws java.lang.Exception
      */
-    default String getId() throws Exception{
+    default String getId() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         
         List<Field> ids = FieldsManager.getAllFields(this).parallelStream()
                 .filter(field -> (field.getType().getName().contains("String")))
@@ -105,7 +113,7 @@ public interface Entity extends Serializable, Cloneable{
                 }
             }
         }
-        throw new Exception("The entity does not have a String type variable for the ID.");
+        throw new EntityIdBadImplementationException("The entity does not have a String type variable for the ID.");
     }
     
     /**
@@ -122,15 +130,10 @@ public interface Entity extends Serializable, Cloneable{
      * False if there were errors.
      * the getId and onSetId methods.
      */
-    default boolean save() throws Exception, DuplicatedUniqueFieldException {
+    default boolean save() throws DuplicatedUniqueFieldException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException, Exception {
         Bottle bottle = new Bottle.BottleBuilder().entity(this).build();
-        try {
-            bottle.flush();
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+        bottle.flush();
+        return true;
     }
     
     /**
@@ -143,14 +146,9 @@ public interface Entity extends Serializable, Cloneable{
      * @return Entity found in the database. Null for not found.<br>
      * Entity encontrada no banco de dados. Nulo para não encontrada.
      */
-    default <T extends Entity> T load(String id) throws Exception{
-        try {
-            Bottle bottle = new Bottle.BottleBuilder().entityClass(this.getClass()).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
-            return (T) bottle.entity;
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e;
-        }
+    default <T extends Entity> T load(String id) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
+        Bottle bottle = new Bottle.BottleBuilder().entityClass(this.getClass()).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
+        return (T) bottle.entity;
     }
     
     /**
@@ -166,7 +164,7 @@ public interface Entity extends Serializable, Cloneable{
      * @return List of entities of this type in the database.<br>
      * Lista com as entidades desse tipo no banco de dados.
      */
-    default <T extends Entity> List<T> loadAll() throws Exception{
+    default <T extends Entity> List<T> loadAll() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
         return Bottle.loadAll(this.getClass(), this.getClass().getClassLoader());
     }
     
@@ -180,7 +178,7 @@ public interface Entity extends Serializable, Cloneable{
      * @return List of entities that passed the test.<br>
      * Lista com as entidades que passaram no teste.
      */
-    default <T extends Entity> List<T> loadAll(Filter filter) throws Exception{
+    default <T extends Entity> List<T> loadAll(Filter filter) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
         return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
     }
     
@@ -189,7 +187,7 @@ public interface Entity extends Serializable, Cloneable{
      * Retorna uma lista com os IDs de todas as entidades salvas.
      * @return 
      */
-    default List<String> getAllIds() throws Exception{
+    default List<String> getAllIds(){
         Reader reader = new Reader();
         return reader.listAllIds(this.getClass());
     }
@@ -205,7 +203,7 @@ public interface Entity extends Serializable, Cloneable{
      * Verdadeiro para deletado com sucesso.
      * @throws java.lang.Exception
      */
-    default boolean delete() throws Exception{
+    default boolean delete() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException, Exception{
         Bottle b = new Bottle.BottleBuilder().entity(this).build();
         b.engarafar();
         return b.delete();
@@ -274,14 +272,14 @@ public interface Entity extends Serializable, Cloneable{
         return FieldsManager.getValueFrom(fieldName, this);
     }
     
-    default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws Exception{
+    default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
         GenericFilterCondition condition = new GenericFilterCondition(fieldname, value.toString(), false);
         Filter filter = new Filter();
         filter.addCondition(condition);
         return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
     }
     
-    default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws Exception{
+    default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, ParseException, IOException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
         GenericFilterCondition condition = new GenericFilterCondition(fieldname, value.toString(), true);
         Filter filter = new Filter();
         filter.addCondition(condition);

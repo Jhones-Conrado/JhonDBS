@@ -75,7 +75,7 @@ public class Starter {
             r.allImplementsNotAbstract(GlobalInterpreter.class).forEach(i -> {
                 try {
                     InterpreterBottle.addInterpretador(r.getNewInstance(i));
-                } catch (URISyntaxException | IOException | ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
+                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException ex) {
                     Logger.getLogger(Starter.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (Exception ex) {
                     Logger.getLogger(Starter.class.getName()).log(Level.SEVERE, null, ex);
