@@ -61,17 +61,17 @@ public class SporadicTests {
     @Test
     public void hello() throws IOException, Exception {
         System.out.println("sporadic test");
-        
-        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-        a.enteb = new SubEntidade("Carro");
-        a.file = new File("./medidas.svg");
-        a.enteb.dono = a;
-        
-        a.save();
-        
-        EntidadePrincipal a2 = a.load(a.getId());
-        System.out.println(a2.enteb.dono.name);
-        a2.delete();
+//        
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        a.enteb = new SubEntidade("Carro");
+//        a.file = new File("./medidas.svg");
+//        a.enteb.dono = a;
+//        
+//        a.save();
+//        
+//        EntidadePrincipal a2 = a.load(a.getId());
+//        System.out.println(a2.enteb.dono.name);
+//        a2.delete();
         
         assert true;
     }

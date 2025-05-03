@@ -166,19 +166,6 @@ public final class Bottle {
     }
     
     /**
-     * Inicia as pastas temporárias para realizar serialização.
-     * @throws URISyntaxException
-     * @throws IOException 
-     */
-//    private void initFolders() throws URISyntaxException, IOException {
-//        List<String> all = Reflection.allImplementsNotAbstract(Entity.class);
-//        for(String path : all) {
-//            File tempdb = new File(TEMP_DB+path.replaceAll(".class", "").replaceAll("[.]", "/"));
-//            tempdb.mkdirs();
-//        }
-//    }
-    
-    /**
      * Deleta a pasta temporária após a serialização.
      */
     public void cleanFolders() {
@@ -403,7 +390,11 @@ public final class Bottle {
                 a imagem atual será salva.
                 */
                 for(String hash : this.imgs.keySet()) {
-                    if(!hashsProducao.contains(hash+".bak")) {
+                    String fname = hash;
+                    if(!fname.endsWith(".bak")) {
+                        fname = fname+".bak";
+                    }
+                    if(!hashsProducao.contains(fname)) {
                         File out = new File(tempFolder.getPath()+"/"+hash);
                         ImageIO.write((RenderedImage) this.imgs.get(hash), "png", out);
                     }
@@ -414,8 +405,12 @@ public final class Bottle {
                 imagens (se houverem).
                 Localiza imagens que existam na produção mas que precisam ser deletadas.
                 */
+                Set<String> keySet = this.imgs.keySet();
                 for(String hash : hashsProducao) {
-                    if(!this.imgs.containsKey(hash.replace(".bak", ""))) {
+                    if(keySet.contains(hash.replace(".bak", ""))) {
+                        File toback = new File(prodFolder.getPath()+"/"+hash);
+                        Files.move(toback.toPath(), new File(prodFolder.getPath()+"/"+hash.replace(".bak", "")).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } else {
                         File del = new File(prodFolder.getPath()+"/"+hash);
                         File marked = new File(del.getPath()+".del");
                         if(!del.renameTo(marked)) {
@@ -471,10 +466,16 @@ public final class Bottle {
                 Localiza arquivos que existam na produção mas que precisam ser deletados.
                 */
                 for(String hash : prodNames) {
+                    if(this.files.containsKey(hash.replace(".bak", ""))) {
+                        File toback = new File(prodFolder.getPath()+"/"+hash);
+                        Files.move(toback.toPath(), new File(prodFolder.getPath()+"/"+hash.replace(".bak", "")).toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    } else {
+                        
+                    }
                     if(!this.files.containsKey(hash.replace(".bak", ""))) {
-                        File antigo = new File(prodFolder.getPath()+"/"+hash);
-                        File marked = new File(antigo.getPath()+".del");
-                        if(!antigo.renameTo(marked)) {
+                        File todel = new File(prodFolder.getPath()+"/"+hash);
+                        File marked = new File(todel.getPath().replace(".bak", ".del"));
+                        if(!todel.renameTo(marked)) {
                             throw new FileSystemException("Erro ao renomear o arquivo para exclusão");
                         }
                     }
