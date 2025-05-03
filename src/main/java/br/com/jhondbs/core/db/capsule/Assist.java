@@ -111,35 +111,35 @@ public class Assist {
      * Remove a existência de uma entidade em uma outra entidade. Ou seja, removerá ela de todos
      * os campos, listas, mapas, arrays e referências.
      * @param toRemove Entidade a ser removida.
-     * @param getRemoved Entitdade a ser limpa.
+     * @param toBeCleaned Entitdade a ser limpa.
      * @param temp_db Diretório temporário para executar a ação.
      * @throws Exception 
      */
-    public static void removeExistence(Ref toRemove, Ref getRemoved, String temp_db) throws IOException {
-        if (toRemove == null || getRemoved == null) {
+    public static void removeExistence(Ref toRemove, Ref toBeCleaned, String temp_db) throws IOException {
+        if (toRemove == null || toBeCleaned == null) {
             throw new IllegalArgumentException("Referências 'toRemove' e 'getRemoved' não podem ser nulas");
         }
         
-        sendToTemp(getRemoved, temp_db);
-        String path = getPathFromRef(getRemoved, temp_db);
+        sendToTemp(toBeCleaned, temp_db);
+        String path = getPathFromRef(toBeCleaned, temp_db);
         File file = new File(path);
         if (!file.exists()) throw new FileNotFoundException("Arquivo temporário não encontrado: " + path);
 
-        Properties p = new Properties();
-        p.load(new FileInputStream(file));
+        Properties props = new Properties();
+        props.load(new FileInputStream(file));
 
         String refPattern = String.format("\\{%d:%s\\}", toRemove.getValue(), Pattern.quote(toRemove.getKey()));
-        String strFields = p.get("fields").toString();
+        String strFields = props.get("fields").toString();
         strFields = strFields.replaceAll(refPattern, "");
-        p.put("fields", strFields);
+        props.put("fields", strFields);
 
-        String refsStr = p.get("refs").toString();
+        String refsStr = props.get("refs").toString();
         String updatedRefs = Arrays.stream(refsStr.split("::"))
                 .filter(ref -> !ref.contains(toRemove.getKey()) && !ref.isBlank())
                 .collect(Collectors.joining("::"));
-        p.put("refs", updatedRefs);
+        props.put("refs", updatedRefs);
 
-        p.store(new FileOutputStream(file), "JhonDBS Entity");
+        props.store(new FileOutputStream(file), "JhonDBS Entity");
     }
     
     public static void removeExistenceFromBottle(Bottle bottle, Ref getRemoved) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {

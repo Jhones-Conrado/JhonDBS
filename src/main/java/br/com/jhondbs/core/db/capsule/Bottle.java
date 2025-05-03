@@ -615,15 +615,15 @@ public final class Bottle {
                     .filter(str -> !str.isBlank())
                     .map(str -> new Ref(str))
                     .toList());
-
+            
             Ref toRemove = new Ref(entity);
-            for (Ref ref : toClean) {
-                Assist.removeExistence(toRemove, ref, TEMP_DB);
+            for (Ref toBeCleaned : toClean) {
+                Assist.removeExistence(toRemove, toBeCleaned, TEMP_DB);
             }
 
-            Properties prop = new Properties();
-            prop.put("exclude", "true");
-            prop.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
+            Properties props = new Properties();
+            props.put("exclude", "true");
+            props.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
 
             for (Ref ref : toClean) {
                 Properties p = new Properties();
@@ -633,9 +633,6 @@ public final class Bottle {
                             .stream().filter(r -> !r.isBlank())
                             .toList();
                     if (refs.isEmpty() && p.containsKey("cascate")) {
-                        if(this.bottles.containsKey(ref.getKey())) {
-                            
-                        }
                         Bottle bottle = new Bottle.BottleBuilder()
                                 .entityClass(ClassDictionary.fromIndex(ref.getValue()))
                                 .id(ref.getKey())

@@ -302,4 +302,15 @@ public interface Entity extends Serializable, Cloneable{
         return list;
     }
     
+    default boolean supEquals(Object obj) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+        if(String.class.isAssignableFrom(obj.getClass())) {
+            return ((String) obj).equals(getId());
+        } else if(obj.getClass().isAssignableFrom(Entity.class)) {
+            return ((Entity) obj).getId().equals(getId());
+        } else if(obj.toString().equals(getId())) {
+            return true;
+        }
+        return false;
+    }
+    
 }

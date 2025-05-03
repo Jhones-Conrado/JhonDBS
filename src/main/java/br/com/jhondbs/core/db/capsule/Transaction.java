@@ -129,6 +129,8 @@ public class Transaction {
             backupCurrentState();
             rootBottle.delete(true);
             
+            rootBottle.moveDirectory();
+            
             committed = true;
             LOGGER.log(Level.INFO, "Transaction committed: {0}", transactionId);
             System.out.println("");
