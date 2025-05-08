@@ -32,6 +32,9 @@ import br.com.jhondbs.core.tools.ClassDictionary;
  * @author jhones
  */
 public class Ref extends Pairing<String, Integer>{
+
+    public Ref() {
+    }
     
     public Ref(String key, Integer value) {
         super(key, value);

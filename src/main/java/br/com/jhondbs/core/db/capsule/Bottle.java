@@ -429,7 +429,6 @@ public final class Bottle {
      * @throws Exception 
      */
     public void flushFiles() throws IOException, NoSuchAlgorithmException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        System.out.println("FLUSHANDO ARQUIVOS: "+this.files.size());
         File tempFolder = new File(TEMP_DB+"files/"+this.entity.getId());
         File prodFolder = new File(ROOT_DB+"files/"+this.entity.getId());
         if(!this.files.isEmpty()) {
@@ -447,7 +446,6 @@ public final class Bottle {
                 for(String name : this.files.keySet()) {
                     if(!prodNames.contains(name+".bak")) {
                         File out = new File(tempFolder.getPath()+"/"+name);
-                        System.out.println("ARQUIVO: "+this.files.get(name));
                         if(!this.files.get(name).exists()) throw new FileNotFoundException(name);
                         Files.copy(this.files.get(name).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     } else {
@@ -1007,6 +1005,27 @@ public final class Bottle {
         if(type == 0) {
             List list = (List) object;
             if(!list.isEmpty()) {
+                for(Object obj : list) {
+                    if(Reflection.isPrimitive(obj) || Reflection.isNumerical(obj.getClass()) || Reflection.isDate(obj.getClass())) {
+                        sb.append(encapsulePrimitive(obj));
+                    } else if(Reflection.isArrayMap(obj) && obj != object) {
+                        sb.append(encapsuleArray(obj, cascate));
+                    } else if(Reflection.isInstance(obj.getClass(), Entity.class)) {
+                        Entity ente = (Entity) obj;
+                        if(!bottles.containsKey(ente.getId())) {
+                            Assist.createBottle(ente, bottles, modoOperacional, ROOT_DB, TEMP_DB, this.entity, cascate);
+                        }
+                        sb.append(encapsuleId(ente));
+                    } else {
+                        sb.append(encapsularObjeto(obj, cascate));
+                    }
+                }
+            }
+        } else if(type == 1) {
+          Set set = (Set) object;
+          List list = new ArrayList();
+          list.addAll(set);
+          if(!list.isEmpty()) {
                 for(Object obj : list) {
                     if(Reflection.isPrimitive(obj) || Reflection.isNumerical(obj.getClass()) || Reflection.isDate(obj.getClass())) {
                         sb.append(encapsulePrimitive(obj));
