@@ -469,7 +469,6 @@ public class Transaction {
         if (Files.exists(fileRoot)) {
             if(!ente.exists()) {
                 Files.walk(fileRoot).forEach(src -> {
-                    System.out.println("-> deletando "+src);
                     src.toFile().delete();
                 });
                 fileRoot.toFile().delete();

@@ -231,7 +231,7 @@ public final class Bottle {
     public void flush() throws URISyntaxException, IOException, IllegalAccessException, IllegalArgumentException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, DuplicatedUniqueFieldException, Exception {
         Transaction tx = Transaction.begin(ROOT_DB);
 
-        if (bottledFields.isEmpty()) engarafar();
+        if (bottledFields.isEmpty()) engarrafar();
         if (!todosCamposSaoUnicos()) {
             throw new DuplicatedUniqueFieldException("Unique field violation detected");
         }
@@ -239,7 +239,7 @@ public final class Bottle {
             tx.add(this);
             tx.commit();
         } finally {
-            cleanFolders();
+//            cleanFolders();
         }
     }
     
@@ -431,30 +431,27 @@ public final class Bottle {
     public void flushFiles() throws IOException, NoSuchAlgorithmException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         File tempFolder = new File(TEMP_DB+"files/"+this.entity.getId());
         File prodFolder = new File(ROOT_DB+"files/"+this.entity.getId());
+        
         if(!this.files.isEmpty()) {
             if(!props.containsKey("exclude")) {
                 tempFolder.mkdirs();
                 prodFolder.mkdirs();
 
-                Set<String> prodNames = Set.copyOf(Arrays.asList(prodFolder.list()));
+                Set<String> hashsProducao = Set.copyOf(Arrays.asList(prodFolder.list()));
                 
                 /*
                 Percorre os arquivos atuais comparando com a lista de arquivos em produção.
                 Se na pasta de produção não tiver um arquivo com o mesmo hash, então
                 o arqiuvo atual será salvo.
                 */
-                for(String name : this.files.keySet()) {
-                    if(!prodNames.contains(name+".bak")) {
-                        File out = new File(tempFolder.getPath()+"/"+name);
-                        if(!this.files.get(name).exists()) throw new FileNotFoundException(name);
-                        Files.copy(this.files.get(name).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                    } else {
-                        // Caso exista um arquivo em produção com o mesmo nome, compara os hashs.
-                        File antigo = new File(prodFolder.getPath()+"/"+name+".bak");
-                        File novo = this.files.get(name);
-                        if(!areFilesEquals(antigo, novo)) {
-                            Files.copy(novo.toPath(), new File(prodFolder.getPath()+"/"+name).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        }
+                for(String hash : this.files.keySet()) {
+                    String fname = hash;
+                    if(!fname.endsWith(".bak")) {
+                        fname = fname+".bak";
+                    }
+                    if(!hashsProducao.contains(fname)) {
+                        File out = new File(tempFolder.getPath()+"/"+hash);
+                        Files.move(this.files.get(hash).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }
 
@@ -463,17 +460,15 @@ public final class Bottle {
                 arquivos (se houverem).
                 Localiza arquivos que existam na produção mas que precisam ser deletados.
                 */
-                for(String hash : prodNames) {
-                    if(this.files.containsKey(hash.replace(".bak", ""))) {
+                Set<String> keySet = this.files.keySet();
+                for(String hash : hashsProducao) {
+                    if(keySet.contains(hash.replace(".bak", ""))) {
                         File toback = new File(prodFolder.getPath()+"/"+hash);
                         Files.move(toback.toPath(), new File(prodFolder.getPath()+"/"+hash.replace(".bak", "")).toPath(), StandardCopyOption.REPLACE_EXISTING);
                     } else {
-                        
-                    }
-                    if(!this.files.containsKey(hash.replace(".bak", ""))) {
-                        File todel = new File(prodFolder.getPath()+"/"+hash);
-                        File marked = new File(todel.getPath().replace(".bak", ".del"));
-                        if(!todel.renameTo(marked)) {
+                        File del = new File(prodFolder.getPath()+"/"+hash);
+                        File marked = new File(del.getPath()+".del");
+                        if(!del.renameTo(marked)) {
                             throw new FileSystemException("Erro ao renomear o arquivo para exclusão");
                         }
                     }
@@ -657,7 +652,7 @@ public final class Bottle {
      * @throws IllegalAccessException
      * @throws Exception 
      */
-    public void engarafar() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, URISyntaxException, IOException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    public void engarrafar() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, FileNotFoundException, NoSuchAlgorithmException, ObjectNotDesserializebleException, URISyntaxException, IOException, ParseException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         
         bottledFields.clear();
         List<Field> fields = FieldsManager.getAllSerializebleFields(this.entity.getClass());
@@ -695,7 +690,7 @@ public final class Bottle {
                                             .tempDB(TEMP_DB)
                                             .build();
                                     
-                                    bottle.engarafar();
+                                    bottle.engarrafar();
                                     if(field.isAnnotationPresent(Cascate.class)) {
                                         bottle.props.put("cascate", "true");
                                         bottle.cascate = true;
@@ -789,10 +784,8 @@ public final class Bottle {
                 return encapsuleId(ente);
             } else if(objeto instanceof File file) {
                 if(file.exists()) {
-                    if(!file.getPath().contains(ROOT_DB+"files/")) {
-                        if(!this.files.containsKey(file.getName())) {
-                            this.files.put(file.getName(), file);
-                        }
+                    if(!this.files.containsKey(file.getName())) {
+                        this.files.put(file.getName(), file);
                     }
                     return "{file:"+file.getName()+"}";
                 } else {
@@ -1600,7 +1593,6 @@ public final class Bottle {
             
             if(this.TEMP_DB.equals("./temp/")) {
                 bottle.defineTemp();
-//                bottle.initFolders();
             } else {
                 sub = true;
             }
@@ -1609,7 +1601,7 @@ public final class Bottle {
                 bottle.bottles.put(id, bottle);
                 bottle.load(ClassDictionary.fromIndex(index), id, loader);
             } else if(this.entity != null) {
-                bottle.bottles.put(this.entity.getId(), bottle);
+                this.bottles.put(this.entity.getId(), bottle);
                 bottle.loadRefs();
             } else {
                 throw new NullPointerException("Entidade não definida");

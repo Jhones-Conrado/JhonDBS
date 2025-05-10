@@ -133,6 +133,7 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean save() throws DuplicatedUniqueFieldException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException, Exception {
         Bottle bottle = new Bottle.BottleBuilder().entity(this).build();
+        bottle.engarrafar();
         bottle.flush();
         return true;
     }
@@ -207,7 +208,7 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean delete() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException, Exception{
         Bottle b = new Bottle.BottleBuilder().entity(this).build();
-        b.engarafar();
+        b.engarrafar();
         return b.delete();
     }
     
