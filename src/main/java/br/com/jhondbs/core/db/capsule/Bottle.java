@@ -584,6 +584,7 @@ public final class Bottle {
         }
     }
     
+    
     /**
      * Método secundário utilizado para exlcuir subentidades.
      * @param sub
@@ -613,7 +614,7 @@ public final class Bottle {
             for (Ref toBeCleaned : toClean) {
                 Assist.removeExistence(toRemove, toBeCleaned, TEMP_DB);
             }
-
+            
             Properties props = new Properties();
             props.put("exclude", "true");
             props.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
@@ -712,26 +713,32 @@ public final class Bottle {
     }
     
     public void sendToTemp() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
-        sendToTemp(this.entity.getClass(), this.entity.getId());
+        Assist.sendToTemp(new Ref(this.entity), TEMP_DB);
+//        sendToTemp(this.entity.getClass(), this.entity.getId());
     }
-    
-    /**
-     * Envia uma entidade para a pasta temporária para que sejam realizadas tarefas
-     * de serialização.
-     * @param entity
-     * @throws Exception 
-     */
-    private void sendToTemp(Class clazz, String id) throws FileNotFoundException, IOException {
-        File temp = new File(getTempPath(clazz, id));
-        if(!temp.exists()) {
-            temp.getParentFile().mkdirs();
-            File root = new File(getRootPath(clazz, id));
-            Properties p = new Properties();
-            p.load(new FileInputStream(root));
-            p.store(new FileOutputStream(temp), "JhonDBS Entity");
-        }
-        
-    }
+//    
+//    /**
+//     * Envia uma entidade para a pasta temporária para que sejam realizadas tarefas
+//     * de serialização.
+//     * @param entity
+//     * @throws Exception 
+//     */
+//    private void sendToTemp(Class clazz, String id) throws FileNotFoundException, IOException {
+//        File temp = new File(getTempPath(clazz, id));
+//        if(!temp.exists()) {
+//            temp.getParentFile().mkdirs();
+//            File root = new File(getRootPath(clazz, id));
+//            if(!root.exists()) {
+//                File f = new File(root.getPath()+".bak");
+//                if(f.exists()) {
+//                    root = f;
+//                }
+//            }
+//            Properties p = new Properties();
+//            p.load(new FileInputStream(root));
+//            p.store(new FileOutputStream(temp), "JhonDBS Entity");
+//        }
+//    }
     
     /**
      * Encapsula um objeto.
@@ -1123,8 +1130,9 @@ public final class Bottle {
                     .stream()
                     .map(Field::getName)
                     .toList();
-
-            sendToTemp(clazz, id);
+            
+            Assist.sendToTemp(new Ref(id, ClassDictionary.getIndex(clazz)), TEMP_DB);
+//            sendToTemp(clazz, id);
 
             Properties props = new Properties();
             String path = getPath(clazz, id);
@@ -1594,6 +1602,7 @@ public final class Bottle {
             if(this.TEMP_DB.equals("./temp/")) {
                 bottle.defineTemp();
             } else {
+                bottle.isSub = true;
                 sub = true;
             }
             

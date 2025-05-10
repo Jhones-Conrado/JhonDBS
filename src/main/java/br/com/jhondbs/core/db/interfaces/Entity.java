@@ -150,6 +150,7 @@ public interface Entity extends Serializable, Cloneable{
      */
     default <T extends Entity> T load(String id) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
         Bottle bottle = new Bottle.BottleBuilder().entityClass(this.getClass()).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
+        bottle.cleanFolders();
         return (T) bottle.entity;
     }
     
