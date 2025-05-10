@@ -129,6 +129,7 @@ public class Transaction {
             backupCurrentState();
             rootBottle.delete(true);
             
+            rootBottle.deleteFilesWithDelete();
             rootBottle.moveDirectory();
             
             committed = true;
