@@ -116,7 +116,6 @@ public final class Bottle {
     /**
      * Adicionar uma entidade como referenciador desta.
      * @param entity
-     * @throws Exception
      */
     public void putRef(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         Ref ref = new Ref(entity);
@@ -126,7 +125,6 @@ public final class Bottle {
     /**
      * Remove uma entidade da lista de referenciadores.
      * @param entity
-     * @throws Exception 
      */
     public void removeRef(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         Ref ref = new Ref(entity);
@@ -135,7 +133,6 @@ public final class Bottle {
     
     /**
      * Lê as referências do estado antigo da entidade.
-     * @throws Exception 
      */
     public void loadRefs() throws FileNotFoundException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
         String path = getPath(this.entity);
@@ -247,7 +244,6 @@ public final class Bottle {
      * Carrega o estado atual da entidade atualmente no banco de dados.
      * Usado para comparação entre o estado de memória atual e o estado permanente.
      * @return
-     * @throws Exception 
      */
     public Bottle loadOldState() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
         String path = new Writer(ROOT_STAGE).getPath(this.entity);
@@ -263,7 +259,6 @@ public final class Bottle {
      * Retorna o caminho para a entidade no diretório temporário.
      * @param entity
      * @return
-     * @throws Exception 
      */
     public String getTempPath(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return getTempPath(entity.getClass(), entity.getId());
@@ -278,7 +273,6 @@ public final class Bottle {
      * @param classe
      * @param id
      * @return
-     * @throws Exception 
      */
     public String getRootPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
@@ -291,7 +285,6 @@ public final class Bottle {
      * @param classe
      * @param id
      * @return
-     * @throws Exception 
      */
     public String getTempPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
@@ -303,7 +296,6 @@ public final class Bottle {
      * Retorna o caminho para a entidade de acordo com o modo operacional da capsula.
      * @param entity
      * @return
-     * @throws Exception 
      */
     public String getPath(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         return getPath(entity.getClass(), entity.getId());
@@ -314,7 +306,6 @@ public final class Bottle {
      * @param classe
      * @param id
      * @return
-     * @throws Exception 
      */
     public String getPath(Class classe, String id) {
         String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
@@ -370,9 +361,6 @@ public final class Bottle {
     
     /**
      * Grava todas as novas imagens no banco de dados.
-     * @param bottle
-     * @param imgsToDelete
-     * @throws Exception 
      */
     public void flushImgs() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
         File tempFolder = new File(TEMP_DB+"imgs/"+this.entity.getId());
@@ -424,9 +412,6 @@ public final class Bottle {
     
     /**
      * Grava todos os novos arquivos no banco de dados.
-     * @param bottle
-     * @param filesToDelete
-     * @throws Exception 
      */
     public void flushFiles() throws IOException, NoSuchAlgorithmException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         File tempFolder = new File(TEMP_DB+"files/"+this.entity.getId());
@@ -714,31 +699,7 @@ public final class Bottle {
     
     public void sendToTemp() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, IOException {
         Assist.sendToTemp(new Ref(this.entity), TEMP_DB);
-//        sendToTemp(this.entity.getClass(), this.entity.getId());
     }
-//    
-//    /**
-//     * Envia uma entidade para a pasta temporária para que sejam realizadas tarefas
-//     * de serialização.
-//     * @param entity
-//     * @throws Exception 
-//     */
-//    private void sendToTemp(Class clazz, String id) throws FileNotFoundException, IOException {
-//        File temp = new File(getTempPath(clazz, id));
-//        if(!temp.exists()) {
-//            temp.getParentFile().mkdirs();
-//            File root = new File(getRootPath(clazz, id));
-//            if(!root.exists()) {
-//                File f = new File(root.getPath()+".bak");
-//                if(f.exists()) {
-//                    root = f;
-//                }
-//            }
-//            Properties p = new Properties();
-//            p.load(new FileInputStream(root));
-//            p.store(new FileOutputStream(temp), "JhonDBS Entity");
-//        }
-//    }
     
     /**
      * Encapsula um objeto.
@@ -1132,7 +1093,6 @@ public final class Bottle {
                     .toList();
             
             Assist.sendToTemp(new Ref(id, ClassDictionary.getIndex(clazz)), TEMP_DB);
-//            sendToTemp(clazz, id);
 
             Properties props = new Properties();
             String path = getPath(clazz, id);
