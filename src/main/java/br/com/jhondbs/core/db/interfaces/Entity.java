@@ -23,13 +23,16 @@
  */
 package br.com.jhondbs.core.db.interfaces;
 
+import br.com.jhondbs.core.db.Mapper;
 import br.com.jhondbs.core.db.capsule.Bottle;
 import br.com.jhondbs.core.db.capsule.Reader;
+import br.com.jhondbs.core.db.capsule.Ref;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.filter.Filter;
+import br.com.jhondbs.core.tools.ClassDictionary;
 import java.io.Serializable;
 import java.util.List;
 import java.lang.reflect.Field;
@@ -313,6 +316,27 @@ public interface Entity extends Serializable, Cloneable{
             return true;
         }
         return false;
+    }
+    
+    /**
+     * Retorna uma lista com as entidades que fazem referência a esta.
+     * @return Lista de referenciadores.
+     */
+    default List<Ref> refMapper() {
+        return Mapper.get(this);
+    }
+    
+    /**
+     * Retorna uma lista com as entidades que fazem referência a esta, filtradas
+     * por classe.
+     * @param clazz Classe referenciadora a ser buscada.
+     * @return Lista de referenciadores filtrados.
+     */
+    default List<Ref> refMapper(Class clazz) {
+        int index = ClassDictionary.getIndex(clazz);
+        List<Ref> map = refMapper();
+        return map.stream().filter(ref -> ref.getValue() == index)
+                .toList();
     }
     
 }

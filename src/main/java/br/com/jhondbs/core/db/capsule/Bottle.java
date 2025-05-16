@@ -23,6 +23,7 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.Mapper;
 import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
@@ -142,14 +143,19 @@ public final class Bottle {
             currentProps.load(new FileInputStream(new File(path)));
             this.props = currentProps;
             String refs = currentProps.getProperty("refs").toString();
-            if(!refs.isBlank()) {
-                this.referencias.addAll(Arrays.asList(refs.split("::"))
-                        .stream()
-                        .filter(str -> !str.isBlank())
-                        .map(str -> new Ref(str))
-                        .toList());
-            }
+            loadRefs(refs);
         }
+    }
+    
+    public void loadRefs(String refs) {
+        if(!refs.isBlank()) {
+            this.referencias.addAll(Arrays.asList(refs.split("::"))
+                    .stream()
+                    .filter(str -> !str.isBlank())
+                    .map(str -> new Ref(str))
+                    .toList());
+        }
+        Mapper.add(entity, referencias);
     }
     
     /**
@@ -1137,13 +1143,14 @@ public final class Bottle {
             }
 
             String refs = props.get("refs").toString();
-            if (!refs.isBlank()) {
-                for (String ref : refs.split("::")) {
-                    if (!ref.isBlank()) {
-                        this.referencias.add(new Ref(ref));
-                    }
-                }
-            }
+            loadRefs(refs);
+//            if (!refs.isBlank()) {
+//                for (String ref : refs.split("::")) {
+//                    if (!ref.isBlank()) {
+//                        this.referencias.add(new Ref(ref));
+//                    }
+//                }
+//            }
         } finally {
             if (!isSub) {
                 io.unlockRead(id);

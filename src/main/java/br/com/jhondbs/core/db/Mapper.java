@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2024 jhones.
+ * Copyright 2025 jhones.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,52 +21,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package br.com.jhondbs.core.db.capsule;
+package br.com.jhondbs.core.db;
 
-import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
+import br.com.jhondbs.core.db.capsule.Ref;
 import br.com.jhondbs.core.db.interfaces.Entity;
-import br.com.jhondbs.core.tools.ClassDictionary;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  *
  * @author jhones
  */
-public class Ref extends Pairing<String, Integer>{
-
-    public Ref() {
+public class Mapper {
+    
+    private static WeakHashMap<Entity, List<Ref>> map = new WeakHashMap<>();
+    
+    public static void add(Entity entity, String str) {
+        add(entity, Arrays.asList(str.split("::")));
     }
     
-    public Ref(String key, Integer value) {
-        super(key, value);
+    public static void add(Entity entity, List<String> refs) {
+        List<Ref> list = new ArrayList<>();
+        for(String str : refs) {
+            String[] split = str.split(":");
+            Ref ref = new Ref(split[1], Integer.valueOf(split[0]));
+            list.add(ref);
+        }
+        map.put(entity, list);
     }
     
-    public Ref(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        super(entity.getId(), ClassDictionary.getIndex(entity.getClass()));
-    }
-
-    public Ref(String pair) {
-        String[] split = pair.split(":");
-        setKey(split[1]);
-        setValue(Integer.valueOf(split[0]));
+    public static void add(Entity entity, Set<Ref> refs) {
+        List<Ref> list = new ArrayList<>();
+        list.addAll(refs);
+        map.put(entity, list);
     }
     
-    public Class recoverClass() {
-        return ClassDictionary.fromIndex(getValue());
-    }
-    
-    public Entity recover() throws Exception{
-        Bottle bottle = new Bottle.BottleBuilder()
-                .entityClass(recoverClass())
-                .id(getKey())
-                .modoOperacional(Bottle.ROOT_STAGE)
-                .build();
-        bottle.cleanFolders();
-        return bottle.entity;
-    }
-    
-    @Override
-    public String toString() {
-        return getValue()+":"+getKey();
+    public static List<Ref> get(Entity entity) {
+        return map.getOrDefault(entity, new ArrayList<>());
     }
     
 }
