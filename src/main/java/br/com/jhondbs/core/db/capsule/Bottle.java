@@ -1291,7 +1291,10 @@ public final class Bottle {
         if(!this.imgs.containsKey(hash)) {
             File imageFile = new File(ROOT_DB+"imgs/"+this.entity.getId()+"/"+hash);
             if (!imageFile.exists()) {
-                throw new IllegalArgumentException("Imagem não encontrada no caminho: " + imageFile.getPath());
+                imageFile = new File(imageFile.getPath()+".bak");
+                if(!imageFile.exists()) {
+                    throw new IllegalArgumentException("Imagem não encontrada no caminho: " + imageFile.getPath());
+                }
             }
             BufferedImage readed = ImageIO.read(imageFile);
             this.imgs.put(hash, readed);
