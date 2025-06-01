@@ -225,24 +225,39 @@ public interface Entity extends Serializable, Cloneable{
      * Verdadeiro para caso de igualdade.
      */
     default boolean igual(Object obj){
-        List<Field> af = FieldsManager.getFields(this);
-        List<Field> bf = FieldsManager.getFields(obj);
-        if(af.size() == bf.size()){
-            for(Field f : af){
-                try {
-                    f.setAccessible(true);
-                    if(!f.get(this).equals(f.get(obj))){
-                        return false;
+        if(obj.getClass() != this.getClass()) {
+            return false;
+        }
+        if(!Entity.class.isAssignableFrom(obj.getClass())) {
+            return false;
+        }
+        Entity e = (Entity) obj;
+        try {
+            if(e.getId().equals(this.getId())) {
+                return true;
+            } else {
+                List<Field> af = FieldsManager.getFields(this);
+                List<Field> bf = FieldsManager.getFields(obj);
+                if(af.size() == bf.size()){
+                    for(Field f : af){
+                        try {
+                            f.setAccessible(true);
+                            if(!f.get(this).equals(f.get(obj))){
+                                return false;
+                            }
+                        } catch (IllegalArgumentException | IllegalAccessException ex) {
+                            Logger.getLogger(Entity.class.getName()).log(Level.SEVERE, null, ex);
+                            return false;
+                        }
                     }
-                } catch (IllegalArgumentException | IllegalAccessException ex) {
-                    Logger.getLogger(Entity.class.getName()).log(Level.SEVERE, null, ex);
+                } else {
                     return false;
                 }
             }
-        } else {
-            return false;
+        } catch (IllegalArgumentException | IllegalAccessException | EntityIdBadImplementationException ex) {
+            System.getLogger(this.getClass().getName()).log(System.Logger.Level.ERROR, (String) null, ex);
         }
-        return true;
+        return equals(obj);
     }
     
     /**

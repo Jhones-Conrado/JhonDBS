@@ -442,7 +442,7 @@ public final class Bottle {
                     }
                     if(!hashsProducao.contains(fname)) {
                         File out = new File(tempFolder.getPath()+"/"+hash);
-                        Files.move(this.files.get(hash).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        Files.copy(this.files.get(hash).toPath(), out.toPath(), StandardCopyOption.REPLACE_EXISTING);
                     }
                 }
 
@@ -1280,7 +1280,10 @@ public final class Bottle {
         if(!this.files.containsKey(name)) {
             File file = new File(ROOT_DB+"files/"+this.entity.getId()+"/"+name);
             if(!file.exists()) {
-                throw new NullPointerException("Arquivo inexistente: "+file.getPath());
+                file = new File(file.getPath()+".bak");
+                if(!file.exists()) {
+                    throw new NullPointerException("Arquivo inexistente: "+file.getPath());
+                }
             }
             this.files.put(name, file);
         }
