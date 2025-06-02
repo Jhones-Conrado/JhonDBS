@@ -58,21 +58,108 @@ public class SporadicTests {
     public void tearDown() {
     }
 
-    @Test
-    public void hello() throws IOException, Exception {
-        System.out.println("sporadic test");
-//        
+//    @Test
+//    public void salvarSemArquivo() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAMENTO DE ENTIDADE SEM ARQUIVO");
 //        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
 //        a.enteb = new SubEntidade("Carro");
-//        a.file = new File("./medidas.svg");
 //        a.enteb.dono = a;
-//        
 //        a.save();
-//        
+//        assert true;
+//    }
+//    
+//    @Test
+//    public void salvarELerSemArquivo() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAR E LER SEM ARQUIVO");
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
+//        a.enteb = new SubEntidade("Carro");
+//        a.enteb.dono = a;
+//        a.save();
+//        //Load
+//        EntidadePrincipal a2 = a.load(a.getId());
+//        System.out.println(a2.enteb.dono.name);
+//        assert true;
+//    }
+//    
+//    @Test
+//    public void salvarLerEDeletarSemArquivo() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAR, LER E DELETAR SEM ARQUIVO");
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
+//        a.enteb = new SubEntidade("Carro");
+//        a.enteb.dono = a;
+//        a.save();
+//        //Load
 //        EntidadePrincipal a2 = a.load(a.getId());
 //        System.out.println(a2.enteb.dono.name);
 //        a2.delete();
-        
-        assert true;
-    }
+//        assert true;
+//    }
+//    
+//    
+//    @Test
+//    public void salvarComArquivo() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAMENTO DE ENTIDADE COM ARQUIVO");
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
+//        a.enteb = new SubEntidade("Carro");
+//        a.enteb.dono = a;
+//        // Arquivo
+//        a.file = new File("./medidas.svg");
+//        a.save();
+//        assert true;
+//    }
+//    
+//    @Test
+//    public void salvarELerComArquivo() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAR E LER COM ARQUIVO");
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
+//        a.enteb = new SubEntidade("Carro");
+//        a.enteb.dono = a;
+//        // Arquivo
+//        a.file = new File("./medidas.svg");
+//        a.save();
+//        //Load
+//        EntidadePrincipal a2 = a.load(a.getId());
+//        System.out.println(a2.enteb.dono.name);
+//        assert true;
+//    }
+//    
+//    @Test
+//    public void salvarLerEDeletarComArquivo() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAR, LER E DELETAR COM ARQUIVO");
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
+//        a.enteb = new SubEntidade("Carro");
+//        a.enteb.dono = a;
+//        // Arquivo
+//        a.file = new File("./medidas.svg");
+//        a.save();
+//        //Load
+//        EntidadePrincipal a2 = a.load(a.getId());
+//        System.out.println(a2.enteb.dono.name);
+//        a2.delete();
+//        assert true;
+//    }
+    
+//    @Test
+//    public void backupArquivoQuebrado() throws IOException, Exception {
+//        System.out.println("TESTE DE SALVAR, LER E DELETAR COM ARQUIVO");
+//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
+//        // Sub entidade recursiva
+//        a.enteb = new SubEntidade("Carro");
+//        a.enteb.dono = a;
+//        // Arquivo
+//        a.file = new File("./medidas.svg");
+//        a.save();
+//        //Load
+//        EntidadePrincipal a2 = a.load(a.getId());
+//        a2.file.delete();
+//        a2.delete();
+//        assert true;
+//    }
+    
 }

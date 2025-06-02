@@ -76,6 +76,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 
 /**
@@ -582,20 +584,24 @@ public final class Bottle {
      * @return 
      */
     public boolean delete(boolean sub) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
-        Assist.sendToTemp(new Ref(entity), TEMP_DB);
-
+        for(Bottle b : this.bottles.values()) {
+            Assist.sendToTemp(new Ref(b.entity), TEMP_DB);
+        }
+        
         Properties tester = new Properties();
         tester.load(new FileInputStream(new File(Assist.getPathFromRef(new Ref(entity), TEMP_DB))));
         if (!tester.containsKey("exclude")) {
             List<Ref> toClean = new ArrayList<>();
-
+            
+            Properties build = build();
+            
             String id = entity.getId();
-            toClean.addAll(Assist.getEntities(build().get("fields").toString())
+            toClean.addAll(Assist.getEntities(build.get("fields").toString())
                     .stream()
                     .filter(ref -> !ref.getKey().equals(id))
                     .toList());
 
-            toClean.addAll(Arrays.asList(build().getProperty("refs").toString().split("::"))
+            toClean.addAll(Arrays.asList(build.getProperty("refs").toString().split("::"))
                     .stream()
                     .filter(str -> !str.isBlank())
                     .map(str -> new Ref(str))
@@ -609,7 +615,8 @@ public final class Bottle {
             Properties props = new Properties();
             props.put("exclude", "true");
             props.store(new FileOutputStream(new File(getTempPath(entity))), "JhonDBS Entity");
-
+            
+            // Inicia a verificação de exclusão em cascata.
             for (Ref ref : toClean) {
                 Properties p = new Properties();
                 p.load(new FileInputStream(new File(Assist.getPathFromRef(ref, TEMP_DB))));
