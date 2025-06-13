@@ -23,8 +23,13 @@
  */
 package br;
 
+import br.com.jhondbs.core.db.Mapper;
+import br.com.jhondbs.core.db.obj.ColdEntity;
+import br.com.jhondbs.core.db.obj.ColdImage;
+import br.com.jhondbs.core.tools.FieldsManager;
+import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
+import javax.imageio.ImageIO;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -56,6 +61,27 @@ public class SporadicTests {
     
     @After
     public void tearDown() {
+    }
+    
+    @Test
+    public void ColdImage() throws Exception {
+        correr();
+        System.gc();
+        System.out.println("MAP POS DELETE: "+Mapper.coldMap.size());
+    }
+    
+    public void correr() throws Exception {
+        EntidadePrincipal e = new EntidadePrincipal("jhones"+String.valueOf(System.nanoTime()));
+        SubEntidade sub = new SubEntidade("COISA");
+        e.coldEntity = new ColdEntity(sub);
+        
+        BufferedImage img = ImageIO.read(new File("./img.png"));
+        e.image = new ColdImage(img);
+//        e.save();
+        
+//        e = e.load(e.getId());
+        
+//        e.delete();
     }
 
 //    @Test

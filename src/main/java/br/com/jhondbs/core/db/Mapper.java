@@ -25,9 +25,13 @@ package br.com.jhondbs.core.db;
 
 import br.com.jhondbs.core.db.capsule.Ref;
 import br.com.jhondbs.core.db.interfaces.Entity;
+import br.com.jhondbs.core.tools.FieldsManager;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
 
@@ -38,6 +42,7 @@ import java.util.WeakHashMap;
 public class Mapper {
     
     private static WeakHashMap<Entity, List<Ref>> map = new WeakHashMap<>();
+    public static WeakHashMap<Object, Map<Field, Ref>> coldMap = new WeakHashMap<Object, Map<Field, Ref>>();
     
     public static void add(Entity entity, String str) {
         add(entity, Arrays.asList(str.split("::")));
@@ -61,6 +66,33 @@ public class Mapper {
     
     public static List<Ref> get(Entity entity) {
         return map.getOrDefault(entity, new ArrayList<>());
+    }
+    
+    public static void addCold(Object object, Field field, Ref ref) {
+        coldMap.putIfAbsent(object, new HashMap<>());
+        coldMap.get(object).putIfAbsent(field, ref);
+    }
+    
+    public static Ref getCold(Object object, Field field) {
+        Map<Field, Ref> m = coldMap.getOrDefault(object, new HashMap<>());
+        return m.getOrDefault(field, null);
+    }
+    
+    public static Ref getCold(Object object, String field) {
+        Field get = FieldsManager.getAllFields(object)
+                .stream().filter(f -> f.getName().equals(field))
+                .findFirst()
+                .get();
+        Map<Field, Ref> m = coldMap.getOrDefault(object, new HashMap<>());
+        return m.getOrDefault(get, null);
+    }
+    
+    public static <T extends Entity> T loadCold(Object object, Field field) throws Exception {
+        return (T) getCold(object, field).recover();
+    }
+    
+    public static <T extends Entity> T loadCold(Object object, String field) throws Exception {
+        return (T) getCold(object, field).recover();
     }
     
 }

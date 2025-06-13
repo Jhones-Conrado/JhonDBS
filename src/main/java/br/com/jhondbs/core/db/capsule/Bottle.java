@@ -29,6 +29,7 @@ import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.db.interfaces.Cascate;
+import br.com.jhondbs.core.db.interfaces.Cold;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.obj.ColdEntity;
 import br.com.jhondbs.core.tools.ClassDictionary;
@@ -57,7 +58,6 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
@@ -76,8 +76,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 
 /**
@@ -111,6 +109,8 @@ public final class Bottle {
     public Properties props = new Properties();
     
     public boolean cascate = false;
+    
+    public String inicializador = "";
     
     private Bottle() {
         
@@ -559,6 +559,8 @@ public final class Bottle {
      */
     public boolean delete() throws IllegalArgumentException, IllegalAccessException, IOException, EntityIdBadImplementationException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, Exception {
         Transaction tx = Transaction.begin(ROOT_DB);
+        loadCold(this.entity);
+        engarrafar();
         try {
             tx.add(this);
             tx.commitDel();
@@ -568,22 +570,66 @@ public final class Bottle {
         }
     }
     
-    private void collectCascadingDeletes(Set<Bottle> toDelete) {
-        toDelete.add(this);
-        for (Bottle bottle : bottles.values()) {
-            if (bottle.cascate && !toDelete.contains(bottle)) {
-                bottle.collectCascadingDeletes(toDelete);
+    
+    
+    public void loadCold(Object object) throws Exception {
+        List<Field> fields = FieldsManager.getAllFields(object);
+        for(Field field : fields) {
+            Class<?> type = field.getType();
+            if(field.isAnnotationPresent(Cold.class) || Reflection.isArrayMap(type)) {
+                Object value = FieldsManager.getValueFrom(field.getName(), object);
+                if(Reflection.isArrayMap(type)) {
+                    if(value != null) {
+                        if(List.class.isAssignableFrom(type)) {
+                            List list = (List) value;
+                            for(Object o : list) {
+                                if(Reflection.isComplexObject(o.getClass())) {
+                                    loadCold(o);
+                                }
+                            }
+                        } else if(Set.class.isAssignableFrom(type)) {
+                            Set set = (Set) value;
+                            for(Object o : set) {
+                                if(Reflection.isComplexObject(o.getClass())) {
+                                    loadCold(o);
+                                }
+                            }
+                        } else if(Map.class.isAssignableFrom(type)) {
+                            Map map = (Map) value;
+                            for(Object o : map.keySet()) {
+                                if(Reflection.isComplexObject(o.getClass())) {
+                                    loadCold(o);
+                                }
+                            }
+                            for(Object o : map.values()) {
+                                if(Reflection.isComplexObject(o.getClass())) {
+                                    loadCold(o);
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if(ColdEntity.class.isAssignableFrom(type)) {
+                Object value = FieldsManager.getValueFrom(field.getName(), object);
+                if(value == null) value = Mapper.getCold(object, field);
+                if(value != null) {
+                    Entity get = ((ColdEntity) value).get();
+                    Bottle b = new BottleBuilder().entity(get)
+                            .tempDB(TEMP_DB)
+                            .bottles(bottles)
+                            .build();
+                }
             }
         }
     }
-    
     
     /**
      * Método secundário utilizado para exlcuir subentidades.
      * @param sub
      * @return 
      */
-    public boolean delete(boolean sub) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    public boolean delete(boolean sub) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, Exception {
+//        loadCold(this.entity);
         for(Bottle b : this.bottles.values()) {
             Assist.sendToTemp(new Ref(b.entity), TEMP_DB);
         }
@@ -596,7 +642,7 @@ public final class Bottle {
             Properties build = build();
             
             String id = entity.getId();
-            toClean.addAll(Assist.getEntities(build.get("fields").toString())
+            toClean.addAll(Assist.getEntities(build.get("fields").toString(), this.entity)
                     .stream()
                     .filter(ref -> !ref.getKey().equals(id))
                     .toList());
@@ -606,6 +652,7 @@ public final class Bottle {
                     .filter(str -> !str.isBlank())
                     .map(str -> new Ref(str))
                     .toList());
+            
             
             Ref toRemove = new Ref(entity);
             for (Ref toBeCleaned : toClean) {
@@ -630,6 +677,7 @@ public final class Bottle {
                                 .id(ref.getKey())
                                 .modoOperacional(Bottle.TEMP_STAGE)
                                 .tempDB(TEMP_DB)
+                                .inicializador(entity, id)
                                 .build();
                         bottle.delete(true); // Exclusão recursiva
                     }
@@ -687,6 +735,7 @@ public final class Bottle {
                                             .modoOperacional(modoOperacional)
                                             .rootDB(ROOT_DB)
                                             .tempDB(TEMP_DB)
+                                            .inicializador(entity, entity.getId())
                                             .build();
                                     
                                     bottle.engarrafar();
@@ -791,7 +840,13 @@ public final class Bottle {
                     Object get = field.get(objeto);
                     if(get != null) {
                         sb.append("{").append(field.getName()).append(":");
-                        sb.append(encapsularObjeto(get, cascate));
+                        boolean subCascate = cascate;
+                        if(!cascate) {
+                            if(field.isAnnotationPresent(Cascate.class)) {
+                                subCascate = true;
+                            }
+                        }
+                        sb.append(encapsularObjeto(get, subCascate));
                         sb.append("}");
                     }
                 }
@@ -905,21 +960,6 @@ public final class Bottle {
             sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString();
-    }
-    
-    @SuppressWarnings("empty-statement")
-    private byte[] calculateMD5(File file) throws NoSuchAlgorithmException, IOException {
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        try (DigestInputStream dis = new DigestInputStream(new FileInputStream(file), md)) {
-            while (dis.read() != -1) ; // Lê o arquivo completamente para calcular o hash
-        }
-        return md.digest();
-    }
-    
-    private boolean areFilesEquals(File fileA, File fileB) throws NoSuchAlgorithmException, IOException {
-        byte[] hashA = calculateMD5(fileA);
-        byte[] hashB = calculateMD5(fileB);
-        return Arrays.equals(hashA, hashB);
     }
     
     private String encapsuleEnum(Enum e) {
@@ -1071,22 +1111,6 @@ public final class Bottle {
         return sb.toString();
     }
     
-    private List asList(Object object) {
-        if(Reflection.isInstance(object.getClass(), List.class)) {
-            return (List) object;
-        } else if(Reflection.isInstance(object.getClass(), Set.class)) {
-            List list = new ArrayList();
-            list.addAll((Set) object);
-            return list;
-        } else {
-            try {
-                return Arrays.asList(object);
-            } catch (Exception e) {
-            }
-        }
-        return new ArrayList();
-    }
-    
     /*
     ************************************************************
     ***************  RECUPERAÇÃO DE ENTIDADE   *****************
@@ -1100,7 +1124,12 @@ public final class Bottle {
         }
         try {
             this.entity = (Entity) Reflection.getNewInstance(clazz, loader);
-            List<String> actualFieldsList = FieldsManager.getAllFields(this.entity.getClass())
+            
+            List<Field> fieldsList = FieldsManager.getAllFields(this.entity.getClass());
+            Map<String, Field> mapFields = new HashMap<>();
+            fieldsList.forEach(f -> mapFields.putIfAbsent(f.getName(), f));
+            
+            List<String> actualFieldsList = fieldsList
                     .stream()
                     .map(Field::getName)
                     .toList();
@@ -1111,7 +1140,7 @@ public final class Bottle {
             String path = getPath(clazz, id);
             File file = new File(path);
             if (!file.exists()) {
-                throw new FileNotFoundException("Entidade não encontrada: " + path);
+                throw new FileNotFoundException("Entidade não encontrada: " + path + "\nNo carregamento da entidade: "+this.entity+" -> "+id+"\n"+inicializador);
             }
             props.load(new FileInputStream(file));
 
@@ -1151,13 +1180,6 @@ public final class Bottle {
 
             String refs = props.get("refs").toString();
             loadRefs(refs);
-//            if (!refs.isBlank()) {
-//                for (String ref : refs.split("::")) {
-//                    if (!ref.isBlank()) {
-//                        this.referencias.add(new Ref(ref));
-//                    }
-//                }
-//            }
         } finally {
             if (!isSub) {
                 io.unlockRead(id);
@@ -1170,13 +1192,31 @@ public final class Bottle {
         String nome_campo = reader.getKeyFromCapsule(capsule);
         String sub_capsula = reader.getValueFromCapsule(capsule);
         
-        if(sub_capsula != null && !sub_capsula.isBlank()) {
-            String indice_classe = reader.getKeyFromCapsule(sub_capsula);
-            String conteudo = reader.getValueFromCapsule(sub_capsula);
-
-            Object valor = recuperar(indice_classe, conteudo, loader);
-            FieldsManager.setValue(nome_campo, receptor, valor);
+        Field field = FieldsManager.getAllFields(receptor)
+                .stream().filter(f -> f.getName().equals(nome_campo))
+                .findFirst().get();
+        
+        if(field != null) {
+            if(sub_capsula != null && !sub_capsula.isBlank()) {
+                if(field.isAnnotationPresent(Cold.class)) {
+                    Ref ref = new Ref(sub_capsula);
+                    if(Entity.class.isAssignableFrom(ClassDictionary.fromIndex(ref.getValue()))) {
+                        Mapper.addCold(receptor, field, ref);
+                    } else {
+                        inserir(receptor, nome_campo, sub_capsula, loader);
+                    }
+                } else {
+                    inserir(receptor, nome_campo, sub_capsula, loader);
+                }
+            }
         }
+    }
+    
+    private void inserir(Object receptor, String nome_campo, String sub_capsula, ClassLoader loader) throws ClassNotFoundException, IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InstantiationException, InvocationTargetException, NoSuchMethodException, URISyntaxException, ParseException, ObjectNotDesserializebleException {
+        String indice_classe = reader.getKeyFromCapsule(sub_capsula);
+        String conteudo = reader.getValueFromCapsule(sub_capsula);
+        Object valor = recuperar(indice_classe, conteudo, loader);
+        FieldsManager.setValue(nome_campo, receptor, valor);
     }
     
     /**
@@ -1235,6 +1275,7 @@ public final class Bottle {
                         .modoOperacional(modoOperacional)
                         .rootDB(ROOT_DB)
                         .tempDB(TEMP_DB)
+                        .inicializador(entity, entity.getId())
                         .build();
                 return bottle.entity;
             }
@@ -1252,19 +1293,6 @@ public final class Bottle {
             if (classe_do_objeto.isEnum()) {
                 Class<?> forName = Class.forName(classe_do_objeto.getName(), true, loader);
                 return Enum.valueOf((Class<Enum>) forName, conteudo);
-            } else if(Reflection.isInstance(classe_do_objeto, ColdEntity.class) || classe_do_objeto.isAssignableFrom(ColdEntity.class)) {
-                Object o = Reflection.getNewInstance(classe_do_objeto, loader);
-                List<String> campos = reader.splitCapsules(conteudo);
-                for(String campo : campos) {
-                    if(campo.contains("loader")) {
-                        FieldsManager.setValue("loader", o, loader);
-                    } else if(campo.contains("entity")) {
-                        //Ignorar o campo entity durante o carregamento.
-                    } else {
-                        inserir(o, campo, loader);
-                    }
-                }
-                return o;
             } else {
                 Object o = Reflection.getNewInstance(classe_do_objeto, loader);
                 List<String> actualFieldsList = FieldsManager.getAllFields(o.getClass())
@@ -1474,6 +1502,7 @@ public final class Bottle {
         private boolean isSub = false;
         private Properties props = new Properties();
         private boolean cascate = false;
+        private String inicializador = "";
         
         private int index = -1;
         private String id = "";
@@ -1556,6 +1585,11 @@ public final class Bottle {
         
         public BottleBuilder id(String id) {
             this.id = id;
+            return this;
+        }
+        
+        public BottleBuilder inicializador(Entity entity, String id) {
+            this.inicializador = inicializador + " -> " + entity.getClass().getName()+" | "+id;
             return this;
         }
         

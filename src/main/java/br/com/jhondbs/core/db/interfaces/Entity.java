@@ -212,7 +212,7 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean delete() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException, Exception{
         Bottle b = new Bottle.BottleBuilder().entity(this).build();
-        b.engarrafar();
+//        b.engarrafar();
         return b.delete();
     }
     

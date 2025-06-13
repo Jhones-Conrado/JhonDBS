@@ -90,9 +90,6 @@ public class Transaction {
         if (committed || rolledBack) {
             throw new IllegalStateException("Transaction already completed: " + transactionId);
         }
-        if (bottle.entity.getId() == null) {
-            throw new IllegalArgumentException("Entity ID cannot be null");
-        }
         if(this.rootBottle == null) {
             this.rootBottle = bottle;
         }
@@ -117,7 +114,7 @@ public class Transaction {
         return this;
     }
     
-    public void commitDel() throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InterruptedException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
+    public void commitDel() throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, InterruptedException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, Exception {
         if (committed || rolledBack) {
             throw new IllegalStateException("Transaction already completed: " + transactionId);
         }
@@ -161,6 +158,7 @@ public class Transaction {
             throw new IllegalStateException("Transaction already completed: " + transactionId);
         }
         try {
+            LOGGER.log(Level.INFO, "Comitting: "+this.rootBottle.entity.getClass().getName()+" -> "+this.rootBottle.entity.getId());
             // Tranca entidades
             lockEntities();
             

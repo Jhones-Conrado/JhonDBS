@@ -48,7 +48,6 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -334,7 +333,9 @@ public final class Reflection {
             constructor.setAccessible(true); // Garante acesso ao construtor, mesmo que ele seja privado
             Object[] paramObjects = prepareConstructorParameters(constructor.getParameters());
             Class<?>[] types = constructor.getParameterTypes();
-            Object ins = loadedClass.getConstructor(types).newInstance(paramObjects);
+            Constructor<?> cons = loadedClass.getConstructor(types);
+            cons.setAccessible(true);
+            Object ins = cons.newInstance(paramObjects);
             return (T) ins;
         }
     }
@@ -479,6 +480,10 @@ public final class Reflection {
      */
     public static boolean isDate(Class clazz){
         return clazz == null ? false : DATE_TYPES.stream().anyMatch(c -> c.isAssignableFrom(clazz));
+    }
+    
+    public static boolean isComplexObject(Class clazz) {
+        return !isPrimitive(clazz) && !isDate(clazz);
     }
     
     /**

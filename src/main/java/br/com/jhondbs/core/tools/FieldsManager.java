@@ -68,6 +68,7 @@ public class FieldsManager {
      * lista com todos os campos do objeto.
      */
     public static List<Field> getAllFields(Object obj){
+        if(obj == null) return null;
         return getAllFields(obj.getClass());
     }
     
@@ -78,6 +79,7 @@ public class FieldsManager {
      * lista com todos os campos do objeto.
      */
     public static List<Field> getAllFields(Class clazz){
+        if(clazz == null) return null;
         List<Field> fields = new ArrayList<>();
         while(clazz != null){
             fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
@@ -206,6 +208,7 @@ public class FieldsManager {
      * Caso, por algum motivo, não tenha sido obtido acesso ao valor da variável.
      */
     public static <T> T getValueFrom(String fieldName, Object obj) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException{
+        if(obj == null) return null;
         List<Field> fields = getAllFields(obj.getClass());
         Field field = fields.stream()
             .filter(f -> f.getName().equals(fieldName))

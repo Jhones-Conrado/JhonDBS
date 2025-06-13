@@ -46,8 +46,12 @@ public class Ref extends Pairing<String, Integer>{
 
     public Ref(String pair) {
         String[] split = pair.split(":");
-        setKey(split[1]);
-        setValue(Integer.valueOf(split[0]));
+        String k = split[1].substring(0, split[1].length());
+        if(k.endsWith("}")) {
+            k = k.substring(0, k.length()-1);
+        }
+        setKey(k);
+        setValue(Integer.valueOf(split[0].replaceAll("[^0-9]", "")));
     }
     
     public Class recoverClass() {

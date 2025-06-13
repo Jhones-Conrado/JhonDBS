@@ -25,13 +25,16 @@ package br.com.jhondbs.core.db.capsule;
 
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
+import br.com.jhondbs.core.db.interfaces.Cold;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
+import br.com.jhondbs.core.tools.FieldsManager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
@@ -57,7 +60,7 @@ public class Assist {
     
     private static final Logger LOGGER = Logger.getLogger(Assist.class.getName());
     
-    public static List<Ref> getEntities(String capsules) {
+    public static List<Ref> getEntities(String capsules, Entity entity) {
         List<Ref> list = new ArrayList<>();
         if (capsules == null || capsules.trim().isEmpty()) {
             return list;
@@ -75,7 +78,24 @@ public class Assist {
                     if (clazz != null && Entity.class.isAssignableFrom(clazz)) {
                         list.add(new Ref(uuid, index));
                     } else {
-//                        LOGGER.log(Level.WARNING, "Classe inválida para índice {0} em cápsula: {1}", new Object[]{index, cap});
+                        int in = cap.indexOf(uuid);
+                        int count = 2;
+                        while(cap.charAt(in) != '{' && cap.charAt(in) > 0 && count > 0) {
+                            in--;
+                            count--;
+                        }
+                        try {
+                            String fieldName = cap.substring(in, cap.indexOf(":", in));
+                            List<Field> allFields = FieldsManager.getAllFields(entity);
+                            Field field = allFields.stream()
+                                    .filter(f -> f.getName().equals(fieldName))
+                                    .findFirst()
+                                    .get();
+                            if(field.isAnnotationPresent(Cold.class)) {
+                                list.add(new Ref(uuid, index));
+                            }
+                        } catch (Exception e) {
+                        }
                     }
                 } catch (NumberFormatException e) {
                     LOGGER.log(Level.WARNING, "Formato inválido de índice em cápsula: {0}", matcher.group(0));
@@ -129,6 +149,7 @@ public class Assist {
         props.load(new FileInputStream(file));
 
         String refPattern = String.format("\\{%d:%s\\}", toRemove.getValue(), Pattern.quote(toRemove.getKey()));
+        
         String strFields = props.get("fields").toString();
         strFields = strFields.replaceAll(refPattern, "");
         props.put("fields", strFields);
@@ -172,6 +193,21 @@ public class Assist {
                 p.store(new FileOutputStream(tempFile), "JhonDBS Entity");
             }
         }
+    }
+    
+    public static String getTempPath(Ref reference, String temp) {
+        Class clazz = ClassDictionary.fromIndex(reference.getValue());
+        return temp+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
+    }
+    
+    public static String getRootPath(Ref reference) {
+        Class clazz = ClassDictionary.fromIndex(reference.getValue());
+        return "./db/"+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
+    }
+    
+    public static String getRootPath(String id, int index) {
+        Class clazz = ClassDictionary.fromIndex(index);
+        return "./db/"+clazz.getName().replace(".class", "").replace(".", "/")+"/"+id;
     }
     
     public static List<Ref> removedsBetweenStates(Bottle bottle) throws IOException, EntityIdBadImplementationException, IllegalArgumentException, IllegalAccessException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {

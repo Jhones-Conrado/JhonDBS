@@ -23,9 +23,21 @@
  */
 package br.com.jhondbs.core.db.obj;
 
-import br.com.jhondbs.core.db.capsule.Bottle;
+import br.com.jhondbs.core.db.Mapper;
+import br.com.jhondbs.core.db.capsule.Assist;
+import br.com.jhondbs.core.db.capsule.Reader;
+import br.com.jhondbs.core.db.interfaces.Cold;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.UUID;
 
 /**
  *
@@ -33,32 +45,99 @@ import br.com.jhondbs.core.tools.ClassDictionary;
  */
 public class ColdEntity {
     
+    private transient String innerId = UUID.randomUUID().toString();
+    
+    @Cold
     private Entity entity;
     
-    private int index;
-    private String id;
+    public String id;
+    public int index;
+    
+    private Map<String, Object> map = new HashMap<>();
     
     public ColdEntity() {
     }
     
     public ColdEntity(Entity entity) throws Exception {
         this.entity = entity;
-        this.index = ClassDictionary.getIndex(entity.getClass());
         this.id = entity.getId();
+        this.index = ClassDictionary.getIndex(entity.getClass());
     }
     
     public void set(Entity entity) throws Exception {
         this.entity = entity;
-        this.index = ClassDictionary.getIndex(entity.getClass());
         this.id = entity.getId();
+        this.index = ClassDictionary.getIndex(entity.getClass());
     }
     
     public <T extends Entity>T get() throws Exception {
         if(this.entity == null) {
-            Bottle bottle = new Bottle.BottleBuilder().entityClass(ClassDictionary.fromIndex(index)).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
-            this.entity = bottle.entity;
+            this.entity = Mapper.loadCold(this, "entity");
         }
         return (T) this.entity;
     }
+    
+    public String getField(String name) throws IOException {
+        load();
+        return (String) map.getOrDefault(name, "");
+    }
+    
+    public void load() throws FileNotFoundException, IOException {
+        if(map.isEmpty()) {
+            String path = Assist.getRootPath(id, index);
+            Properties p = new Properties();
+            p.load(new FileInputStream(new File(path)));
+            String fieldsStr = p.getProperty("fields");
+            Reader r = new Reader();
+            List<String> capsules = r.splitCapsules(fieldsStr);
+            for(String str : capsules) {
+                String[] split = r.splitCapsuleAsKeyValueArray(str);
+                String field = split[0];
+                String[] fieldCap = r.splitCapsuleAsKeyValueArray(split[1]);
+                String value = fieldCap[1];
+                map.put(field, value);
+            }
+        }
+    }
+
+//    @Override
+//    public boolean equals(Object obj) {
+//        if(obj.getClass().isAssignableFrom(this.getClass())) {
+//            ColdEntity c = (ColdEntity) obj;
+//            return c.innerId.equals(this.innerId);
+//        }
+//        
+//        if(obj.getClass().isAssignableFrom(Entity.class)) {
+//            Entity e = (Entity) obj;
+//            if(ClassDictionary.getIndex(e.getClass()) == this.index) {
+//                try {
+//                    return e.getId().equals(this.id);
+//                } catch (Exception ex) {
+//                }
+//            }
+//        }
+//
+//        if(!this.getClass().isAssignableFrom(obj.getClass())) return false;
+//
+//        ColdEntity c = (ColdEntity) obj;
+//        return this.id.equals(c.id);
+//    }
+//
+//    @Override
+//    public int hashCode() {
+//        if(id == null || id.isBlank()) {
+//            int hash = 0;
+//            for (char c : innerId.toCharArray()) {
+//                hash = 31 * hash + c; // Algoritmo baseado em String.hashCode()
+//            }
+//            return hash;
+//        } else {
+//            int hash = 0;
+//            for (char c : id.toCharArray()) {
+//                hash = 31 * hash + c; // Algoritmo baseado em String.hashCode()
+//            }
+//            return hash;
+//        }
+//    }
     
 }

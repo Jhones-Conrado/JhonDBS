@@ -48,7 +48,7 @@ public class SubEntidade implements Entity {
     private Map<String, Integer> mapa = new HashMap();
     private List<ObjetoComplexo> subEntes = new ArrayList<>();
     
-    private String type;
+    public String type;
 
     public EntidadePrincipal dono;
     

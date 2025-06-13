@@ -27,6 +27,7 @@ import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
 import br.com.jhondbs.core.db.obj.ColdEntity;
+import br.com.jhondbs.core.db.obj.ColdImage;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -96,7 +97,12 @@ public class EntidadePrincipal implements Entity{
     
     public ColdEntity cold;
     
+    @Cascate
+    public ColdEntity coldEntity;
+    
     public File file;
+    
+    public ColdImage image;
     
     public EntidadePrincipal() {
         this.name = null;
