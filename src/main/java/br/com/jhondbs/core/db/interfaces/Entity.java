@@ -24,6 +24,7 @@
 package br.com.jhondbs.core.db.interfaces;
 
 import br.com.jhondbs.core.db.Mapper;
+import br.com.jhondbs.core.db.capsule.Assist;
 import br.com.jhondbs.core.db.capsule.Bottle;
 import br.com.jhondbs.core.db.capsule.Reader;
 import br.com.jhondbs.core.db.capsule.Ref;
@@ -33,6 +34,7 @@ import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.filter.Filter;
 import br.com.jhondbs.core.tools.ClassDictionary;
+import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 import java.lang.reflect.Field;
@@ -173,9 +175,8 @@ public interface Entity extends Serializable, Cloneable{
      * @return List of entities of this type in the database.<br>
      * Lista com as entidades desse tipo no banco de dados.
      */
-    default <T extends Entity> List<T> loadAll() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        return null;
-//        return Bottle.loadAll(this.getClass(), this.getClass().getClassLoader());
+    default <T extends Entity> List<T> loadAll() throws Exception{
+        return loadAll(null);
     }
     
     /**
@@ -188,9 +189,21 @@ public interface Entity extends Serializable, Cloneable{
      * @return List of entities that passed the test.<br>
      * Lista com as entidades que passaram no teste.
      */
-    default <T extends Entity> List<T> loadAll(Filter filter) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        return null;
-//        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
+    default <T extends Entity> List<T> loadAll(Filter filter) throws Exception{
+        File folder = new File(Assist.getRootPath(new Ref(this))).getParentFile();
+        String[] list = folder.list();
+        List<T> enteList = new ArrayList<>();
+        for(String id : list) {
+            Entity load = load(id);
+            if(filter != null) {
+                if(filter.filter(load)) {
+                    enteList.add((T) load);
+                }
+            } else {
+                enteList.add((T) load);
+            }
+        }
+        return enteList;
     }
     
     /**
@@ -199,7 +212,7 @@ public interface Entity extends Serializable, Cloneable{
      * @return 
      */
     default List<String> getAllIds(){
-        return Reader.listAllIds(this.getClass(), "./db/");
+        return Reader.listAllIds(this.getClass(), Bottle.ROOT_DB);
     }
     
     /**
