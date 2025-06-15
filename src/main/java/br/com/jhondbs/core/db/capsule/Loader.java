@@ -76,7 +76,7 @@ public class Loader {
             Entity entity = (Entity) Reflection.getNewInstance(clazz, Thread.currentThread().getContextClassLoader());
             setId(entity, id);
             rootBottle.entity = entity;
-
+            
             Map<String, Field> mapFields = new HashMap<>();
             FieldsManager.getAllFields(clazz).forEach(f -> mapFields.putIfAbsent(f.getName(), f));
 
@@ -158,7 +158,9 @@ public class Loader {
         String indice_classe = Reader.getKeyFromCapsule(capsule);
         String conteudo = Reader.getValueFromCapsule(capsule);
         Object valor = recover(indice_classe, conteudo);
-        FieldsManager.setValue(field, object, valor);
+        if(valor != null) {
+            FieldsManager.setValue(field, object, valor);
+        }
     }
     
     private Object recover(String indice, String conteudo) throws Exception {
