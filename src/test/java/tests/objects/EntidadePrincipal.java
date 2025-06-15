@@ -26,8 +26,7 @@ package tests.objects;
 import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.interfaces.Unique;
-import br.com.jhondbs.core.db.obj.ColdEntity;
-import br.com.jhondbs.core.db.obj.ColdImage;
+import java.awt.Image;
 import java.io.File;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -59,7 +58,7 @@ public class EntidadePrincipal implements Entity{
     @Unique
     public final String name;
     
-    public EnumBasico em;
+    public EnumBasico em = EnumBasico.USUARIO;
     
     public char character = 'x';
     public short curto = 5;
@@ -72,7 +71,7 @@ public class EntidadePrincipal implements Entity{
     public BigDecimal bigdecimal = new BigDecimal(25.30);
     public BigInteger biginteger = new BigInteger("100");
     
-    public Endereco endereco;
+    public Endereco endereco = new Endereco("SDO A", 429, "Vila Machado", "Itaitinga", "Ceara", "Brasil");
     
     public List<ObjetoComplexo> lista = new ArrayList<>();
     
@@ -95,14 +94,9 @@ public class EntidadePrincipal implements Entity{
     
     public ObjetoComplexo subObjeto = new ObjetoComplexo("sub objeto");
     
-    public ColdEntity cold;
-    
-    @Cascate
-    public ColdEntity coldEntity;
-    
     public File file;
     
-    public ColdImage image;
+    public Image image;
     
     public EntidadePrincipal() {
         this.name = null;
@@ -117,6 +111,10 @@ public class EntidadePrincipal implements Entity{
         lista.add(new ObjetoComplexo("cereja"));
         lista.add(new ObjetoComplexo("alface"));
         lista.add(new ObjetoComplexo("coentro"));
+        
+        mapa.put("coisa1", "Objeto tipo texto");
+        mapa.put("coisa2", 123);
+        mapa.put("coisa3", 55.0);
     }
 
     public EntidadePrincipal(String name, Endereco endereco) {

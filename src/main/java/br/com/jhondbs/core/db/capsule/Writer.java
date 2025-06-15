@@ -24,51 +24,26 @@
 package br.com.jhondbs.core.db.capsule;
 
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
-import br.com.jhondbs.core.db.interfaces.Entity;
-import br.com.jhondbs.core.tools.Reflection;
 import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
 import java.util.Properties;
 
 /**
- *
+ * Usado específicamente para gravar o arquivo properties de uma entidade no
+ * banco de dados.
+ * Sempre irá gravar na pasta temporária. Um arquivo NUNCA deve ser gravado
+ * diretamente na pasta de produção.
  * @author jhones
  */
 public class Writer {
     
-    public int modoOperacional = Bottle.TEMP_STAGE;
-    
-    private String ROOT_DB = "./db/";
-    private String TEMP_DB = "./temp/";
-    
     public Writer() {
     }
     
-    public Writer(String root, String temp) {
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-    }
-    
-    public Writer(int modoOperacional) {
-        this.modoOperacional = modoOperacional;
-    }
-    
-    public Writer(int modoOperacional, String root, String temp) {
-        this.modoOperacional = modoOperacional;
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-    }
-    
-    public boolean write(Bottle bottle) throws IOException, IllegalAccessException, EntityIdBadImplementationException {
-        String path = getPath(bottle.entity);
+    public static boolean write(Bottle bottle) throws IOException, IllegalAccessException, EntityIdBadImplementationException {
+        String path = Assist.getTempPath(new Ref(bottle.entity), bottle.TEMP_DB);
         File file = new File(path);
         file.getParentFile().mkdirs(); // Garantir diretórios
         Properties build = bottle.build();
@@ -76,51 +51,6 @@ public class Writer {
             build.store(bos, "JhonDBS Entity");
         }
         return true;
-    }
-    
-    public boolean writeText(Class classe, String id, String content) throws IOException {
-        try(BufferedWriter w = Files.newBufferedWriter(Paths.get(getPath(classe, id)), StandardCharsets.UTF_8)) {
-            w.write(content);
-            w.flush();
-        }
-        return true;
-    }
-    
-    /*
-    ************************************************************
-    ********************    AUXILIARES    **********************
-    ************************************************************
-    */
-    
-    public void initDb() throws URISyntaxException, IOException {
-        File file  = null;
-        if(ROOT_DB.endsWith("/")) {
-            file  = new File(ROOT_DB.substring(0, ROOT_DB.length()-1));
-        } else {
-            file  = new File(ROOT_DB);
-        }
-        
-        if(!file.exists()) {
-            List<Class<?>> all = Reflection.allImplementsNotAbstract(Entity.class);
-            for(Class path : all) {
-                File rootdb = new File(ROOT_DB+path.getName().replace(".class", "").replace(".", "/"));
-                rootdb.mkdirs();
-            }
-        }
-    }
-    
-    public String getPath(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        return getPath(entity.getClass(), entity.getId());
-    }
-    
-    public String getPath(Class classe, String id) {
-        String path = classe.getName().replace(".class", "").replace(".", "/")+"/"+id;
-        if(modoOperacional == 0) {
-            path = ROOT_DB+path;
-        } else {
-            path = TEMP_DB+path;
-        }
-        return path;
     }
     
 }

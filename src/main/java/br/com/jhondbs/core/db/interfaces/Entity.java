@@ -151,9 +151,12 @@ public interface Entity extends Serializable, Cloneable{
      * @return Entity found in the database. Null for not found.<br>
      * Entity encontrada no banco de dados. Nulo para não encontrada.
      */
-    default <T extends Entity> T load(String id) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        Bottle bottle = new Bottle.BottleBuilder().entityClass(this.getClass()).id(id).modoOperacional(Bottle.ROOT_STAGE).build();
-        bottle.cleanFolders();
+    default <T extends Entity> T load(String id) throws Exception{
+        Bottle bottle = new Bottle.BottleBuilder()
+                .entityClass(this.getClass())
+                .id(id)
+                .modoOperacional(Bottle.ROOT_STAGE)
+                .build();
         return (T) bottle.entity;
     }
     
@@ -171,7 +174,8 @@ public interface Entity extends Serializable, Cloneable{
      * Lista com as entidades desse tipo no banco de dados.
      */
     default <T extends Entity> List<T> loadAll() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        return Bottle.loadAll(this.getClass(), this.getClass().getClassLoader());
+        return null;
+//        return Bottle.loadAll(this.getClass(), this.getClass().getClassLoader());
     }
     
     /**
@@ -185,7 +189,8 @@ public interface Entity extends Serializable, Cloneable{
      * Lista com as entidades que passaram no teste.
      */
     default <T extends Entity> List<T> loadAll(Filter filter) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
-        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
+        return null;
+//        return Bottle.loadAll(this.getClass(), filter, this.getClass().getClassLoader());
     }
     
     /**
@@ -194,9 +199,7 @@ public interface Entity extends Serializable, Cloneable{
      * @return 
      */
     default List<String> getAllIds(){
-        Reader reader = new Reader();
-        reader.modoOperacional = Bottle.ROOT_STAGE;
-        return reader.listAllIds(this.getClass());
+        return Reader.listAllIds(this.getClass(), "./db/");
     }
     
     /**
@@ -212,7 +215,6 @@ public interface Entity extends Serializable, Cloneable{
      */
     default boolean delete() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException, Exception{
         Bottle b = new Bottle.BottleBuilder().entity(this).build();
-//        b.engarrafar();
         return b.delete();
     }
     
@@ -294,7 +296,7 @@ public interface Entity extends Serializable, Cloneable{
         return FieldsManager.getValueFrom(fieldName, this);
     }
     
-    default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, IOException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
+    default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws Exception{
         List<Field> fields = FieldsManager.getAllFields(this);
         if(fields.stream().noneMatch(field -> field.getName().equals(fieldname))) throw new IllegalArgumentException(fieldname +" does not exists.");
         Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();
@@ -308,7 +310,7 @@ public interface Entity extends Serializable, Cloneable{
         return list;
     }
     
-    default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException, URISyntaxException, ParseException, IOException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException{
+    default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws Exception{
         List<Field> fields = FieldsManager.getAllFields(this);
         if(fields.stream().noneMatch(field -> field.getName().equals(fieldname))) throw new IllegalArgumentException(fieldname +" does not exists.");
         Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();

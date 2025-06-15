@@ -40,5 +40,10 @@ public class Endereco {
         this.estado = estado;
         this.pais = pais;
     }
+
+    @Override
+    public String toString() {
+        return rua+" "+numero+" "+bairro+" "+cidade+" "+estado+" "+pais;
+    }
     
 }

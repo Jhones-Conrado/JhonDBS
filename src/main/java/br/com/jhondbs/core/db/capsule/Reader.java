@@ -23,18 +23,15 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
-import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
-import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.tools.Reflection;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.time.Period;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -43,136 +40,64 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
- *
+ * Mantém funções auxiliares que ajudam na leitura de arquivos de entidades.
  * @author jhones
  */
 public class Reader {
     
-    public int modoOperacional = Bottle.TEMP_STAGE;
-    
-    private String ROOT_DB = "./db/";
-    private String TEMP_DB = "./temp/";
-
     public Reader() {
     }
     
-    public Reader(String root, String temp) {
-        if (root == null || root.trim().isEmpty()) {
-            throw new IllegalArgumentException("ROOT_DB não pode ser nulo ou vazio");
-        }
-        if (temp == null || temp.trim().isEmpty()) {
-            throw new IllegalArgumentException("TEMP_DB não pode ser nulo ou vazio");
-        }
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-    }
-    
-    public Reader(int modoOperacional) {
-        this.modoOperacional = modoOperacional;
-    }
-    
-    public Reader(int modoOperacional, String root, String temp) {
-        this.modoOperacional = modoOperacional;
-        this.ROOT_DB = root;
-        this.TEMP_DB = temp;
-    }
-    
-    
-    public String readFile(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        return readFile(entity.getClass(), entity.getId());
-    }
-    
-    public String readFile(Class classe, String id) throws IOException {
-        if (classe == null) {
-            throw new IllegalArgumentException("Classe não pode ser nula");
-        }
-        if (id == null || id.trim().isEmpty()) {
-            throw new IllegalArgumentException("ID não pode ser nulo ou vazio");
-        }
-        String path = classe.getName().replace(".class", "").replace(".", "/") + "/" + id;
-        if (modoOperacional == Bottle.ROOT_STAGE) {
-            path = ROOT_DB + path;
-        } else {
-            path = TEMP_DB + path;
-        }
+    /**
+     * Carrega o arquivo properties de uma entidade que pode estar no banco de dados
+     * ou em uma pasta temporária.
+     * @param clazz Classe da entidade.
+     * @param id ID da entidade.
+     * @param temp Opcional, se for nulo ou branco carregará do Banco de Dados.
+     * Se tiver algum path de pasta temporária, carregará a partir de lá.
+     * @return
+     * @throws Exception 
+     */
+    public static Properties read(Class clazz, String id, String temp) throws Exception {
+        Properties props = new Properties();
+        String path = Assist.getPath(new Ref(clazz, id), temp);
         File file = new File(path);
-        if (file.exists()) {
-            try (var reader = Files.newBufferedReader(file.toPath())) {
-                return reader.lines().collect(Collectors.joining("\n"));
-            }
+        if (!file.exists()) {
+            throw new FileNotFoundException("Entidade não encontrada: " + path + " | No carregamento da entidade: "+clazz+" -> "+id);
         }
-        throw new FileNotFoundException("Arquivo inexistente: " + path);
+        props.load(new FileInputStream(file));
+        return props;
     }
     
-    public String readContent(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        String content = readFile(entity);
-        if(content.contains("ref::")) {
-            return content.substring(0, content.indexOf("ref::"));
-        }
-        return content;
-    }
-    
-    public String readContent(Class classe, String id) throws IOException {
-        String content = readFile(classe, id);
-        if(content.contains("ref::")) {
-            return content.substring(0, content.indexOf("ref::"));
-        }
-        return content;
-    }
-    
-    public String readReferences(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        String refs = readFile(entity);
-        if(refs.contains("ref::")) {
-            return refs.substring(refs.indexOf("ref::")+"ref::".length());
-        }
-        return "";
-    }
-    
-    public String readReferences(Class classe, String id) throws IOException {
-        String refs = readFile(classe, id);
-        if(refs.contains("ref::")) {
-            return refs.substring(refs.indexOf("ref::")+"ref::".length());
-        }
-        return "";
-    }
-    
-    public List<String> spliteredReferences(Entity entity) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        return spliteredReferences(entity.getClass(), entity.getId());
-    }
-    
-    public List<String> spliteredReferences(Class classe, String id) throws IOException {
-        List<String> list = new ArrayList<>();
-        String refs = readReferences(classe, id);
-        if(refs.contains("::")) {
-            String[] split = refs.split("::");
-            for(String s : split) {
-                if(s != null && !s.isBlank()) {
-                    list.add(s);
-                }
-            }
-        }
-        return list;
-    }
-    
-    public Map<String, String> splitCapsuleAsKeyValueMap(String str) {
+    /**
+     * Transforma uma String do tipo {chave:valor} em um mapa do tipo <String chave, String valor>.
+     * @param str
+     * @return 
+     */
+    public static Map<String, String> splitCapsuleAsKeyValueMap(String str) {
         Map<String, String> map = new HashMap<>();
-        if(str.contains(":")) {
-            if(str.startsWith("{")) {
-                String chave = str.substring(1, str.indexOf(":"));
-                String conteudo = str.substring(str.indexOf(":")+1, str.length()-1);
-                map.put(chave, conteudo);
-            }
+        if(str.contains(":") && str.startsWith("{")) {
+            String chave = str.substring(1, str.indexOf(":"));
+            String conteudo = str.substring(str.indexOf(":")+1, str.length()-1);
+            map.put(chave, conteudo);
         }
         return map;
     }
     
-    public Map<String, String> splitFieldsAsMap(String str) {
+    /**
+     * Recebe uma String de várias capsulas e as quebra em um mapa de chave e valor.
+     * Ideal para uso em uma String de capsulas de Fields por exemplo.
+     * Retornando um mapa com "chave = nome do field" e valor como uma capsula{indice:valor}.
+     * @param str
+     * @return 
+     */
+    public static Map<String, String> splitFieldsAsMap(String str) {
         Map<String, String> mapa_campos = new HashMap<>();
         List<String> campos = splitCapsules(str);
         for(String s : campos) {
@@ -181,32 +106,28 @@ public class Reader {
         return mapa_campos;
     }
     
-    public String[] splitCapsuleAsKeyValueArray(String str) {
-        Map<String, String> splitered = splitCapsuleAsKeyValueMap(str);
-        if(!splitered.isEmpty()) {
-            String[] back = {splitered.keySet().stream().findFirst().get(), splitered.values().stream().findFirst().get()};
-            return back;
-        }
-        return null;
-    }
-    
-    public String getKeyFromCapsule(String str) {
-        String[] split = splitCapsuleAsKeyValueArray(str);
-        if(split != null) {
-            return split[0];
+    public static String getKeyFromCapsule(String str) {
+        Map<String, String> map = splitCapsuleAsKeyValueMap(str);
+        if(!map.isEmpty()) {
+            return map.keySet().stream().findFirst().get();
         }
         return "";
     }
     
-    public String getValueFromCapsule(String str) {
-        String[] split = splitCapsuleAsKeyValueArray(str);
-        if(split != null) {
-            return split[1];
+    public static String getValueFromCapsule(String str) {
+        Map<String, String> map = splitCapsuleAsKeyValueMap(str);
+        if(!map.isEmpty()) {
+            return map.values().stream().findFirst().get();
         }
         return "";
     }
     
-    public List<String> splitCapsules(String str) {
+    /**
+     * Recebe uma String de várias capsulas aninhadas e as separa em uma lista.
+     * @param str
+     * @return 
+     */
+    public static List<String> splitCapsules(String str) {
         List<String> list = new ArrayList<>();
         if (str == null || str.equals("{}")) {
             return list;
@@ -238,7 +159,7 @@ public class Reader {
         return list;
     }
     
-    public Calendar parseCalendarFromString(String calendarString, ClassLoader loader) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+    public static Calendar parseCalendarFromString(String calendarString, ClassLoader loader) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
         Pattern patternYear = Pattern.compile("YEAR=(\\d+)");
         Pattern patternMonth = Pattern.compile("MONTH=(\\d+)");
         Pattern patternDayOfMonth = Pattern.compile("DAY_OF_MONTH=(\\d+)");
@@ -270,7 +191,7 @@ public class Reader {
         return calendar;
     }
 
-    public Object parseDateTimeFromString(String dateTimeString, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static Object parseDateTimeFromString(String dateTimeString, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         switch (type.getName()) {
             case "java.time.LocalDate" -> {
                 Class<?> localDateClass = Class.forName("java.time.LocalDate", true, loader);
@@ -298,7 +219,7 @@ public class Reader {
         throw new IllegalArgumentException("Formato de data/tempo desconhecido: " + dateTimeString);
     }
 
-    public Period parsePeriodFromString(String periodString, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static Period parsePeriodFromString(String periodString, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         try {
             Class<?> periodClass = Class.forName("java.time.Period", true, loader);
             Object period = periodClass.getMethod("parse", CharSequence.class).invoke(null, periodString);
@@ -308,7 +229,7 @@ public class Reader {
         }
     }
 
-    public Object parsePrimitiveFromString(String input, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    public static Object parsePrimitiveFromString(String input, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         if (type == String.class) {
             return input; // A string já é o valor
         }
@@ -351,11 +272,11 @@ public class Reader {
         }
     }
     
-    public Map<String, String> readUniqueFieldsAsMap(Class entityClass, String id) throws IOException {
+    public static Map<String, String> readUniqueFieldsAsMap(Class entityClass, String id, String temp) throws Exception {
         Map<String, String> map = new HashMap<>();
-        String capsule = readContent(entityClass, id);
-        String campos = getValueFromCapsule(capsule);
-        Map<String, String> mapaCampos = splitFieldsAsMap(campos);
+        Properties props = read(entityClass, id, temp);
+        String capsule = props.getProperty("fields");
+        Map<String, String> mapaCampos = splitFieldsAsMap(capsule);
         
         List<Field> fields = FieldsManager.getFieldsUnique(FieldsManager.getAllFields(entityClass));
         for(Field field : fields) {
@@ -366,12 +287,12 @@ public class Reader {
         return map;
     }
     
-    public List<Field> listUniqueFields(Class classe) {
+    public static List<Field> listUniqueFields(Class classe) {
         List<Field> allFields = FieldsManager.getAllFields(classe);
         return FieldsManager.getFieldsUnique(allFields);
     }
     
-    public int extractValue(Pattern pattern, String text, ClassLoader loader) {
+    public static int extractValue(Pattern pattern, String text, ClassLoader loader) {
         Matcher matcher = pattern.matcher(text);
         if (matcher.find()) {
             try {
@@ -383,8 +304,8 @@ public class Reader {
         }
         return 0; // valor padrão se o campo não for encontrado
     }
-
-    public String extractString(Pattern pattern, String text, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    
+    public static String extractString(Pattern pattern, String text, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         Class<?> matcherClass = Class.forName("java.util.regex.Matcher", true, loader);
         Matcher matcher = pattern.matcher(text);
         if ((boolean) matcherClass.getMethod("find").invoke(matcher)) {
@@ -393,124 +314,17 @@ public class Reader {
         return "GMT"; // valor padrão se o campo não for encontrado
     }
     
-    public List<String> listAllIds(Class entityClass) {
+    public static List<String> listAllIds(Class entityClass, String prefix) {
         String path = entityClass.getName().replace(".class", "").replace(".", "/");
-        if(modoOperacional == 0) {
-            path = ROOT_DB+path;
-        } else {
-            path = TEMP_DB+path;
+        if(!prefix.endsWith("/")) prefix = prefix+"/";
+        if(prefix != null) {
+            path = prefix+path;
         }
-        
         File file = new File(path);
         if(file.exists()) {
             return Arrays.asList(file.list());
         }
         return new ArrayList<>();
-    }
-    
-    /**
-     * Recebe uma entidade e busca por subentidades anotadas como cascata.
-     * @param entity
-     * @return 
-     */
-    public List<Entity> listCascateEntities(Entity entity) throws IllegalArgumentException, IllegalAccessException {
-        List<Field> fields = FieldsManager.getAllFields(entity);
-        fields = fields.stream().filter(field -> field.isAnnotationPresent(Cascate.class)).toList();
-        
-        List<Entity> entes = new ArrayList<>();
-        
-        for(Field field : fields) {
-            field.setAccessible(true);
-            Object valor = field.get(entity);
-            if(valor != null) {
-                if(ClassDictionary.getIndex(valor.getClass()) != -1 || Reflection.isArrayMap(field.getType())) {
-                    if(valor.getClass().isEnum()) {
-                    } else if(Reflection.isArrayMap(field.getType())) {
-                            if(Reflection.isInstance(valor.getClass(), List.class)) {
-                                List l = (List) valor;
-                                if(!l.isEmpty()) {
-                                    for(Object o : l) {
-                                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                                            entes.add((Entity) o);
-                                        }
-                                    }
-                                }
-                            } else if(Reflection.isInstance(valor.getClass(), Map.class)) {
-                                Map m = (Map) valor;
-                                if(!m.isEmpty()) {
-                                    for(Object o : m.keySet()) {
-                                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                                            entes.add((Entity) o);
-                                        }
-                                    }
-                                    for(Object o : m.values()) {
-                                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                                            entes.add((Entity) o);
-                                        }
-                                    }
-                                }
-                            }
-                    } else {
-                        if(Reflection.isInstance(field.getType(), Entity.class)) {
-                            Entity ente = (Entity) valor;
-                            entes.add(ente);
-                        } else if(!Reflection.isPrimitive(field.getType()) && !Reflection.isNumerical(field.getType()) && !Reflection.isDate(field.getType())) {
-                            fillSubEntities(valor, entes, entity);
-                        }
-                    }
-                }
-            }
-        }
-        
-        return entes;
-    }
-    
-    public List<Entity> listSubEntities(Entity entity) throws IllegalArgumentException, IllegalAccessException {
-        List<Entity> entes = new ArrayList<>();
-        List<Field> fields = FieldsManager.getAllSerializebleFields(entity.getClass());
-        for(Field field : fields) {
-            field.setAccessible(true);
-            Object valor = field.get(entity);
-            if(valor != null) {
-                if(ClassDictionary.getIndex(valor.getClass()) != -1 || Reflection.isArrayMap(field.getType())) {
-                    if(valor.getClass().isEnum()) {
-                    } else if(Reflection.isArrayMap(field.getType())) {
-                            if(Reflection.isInstance(valor.getClass(), List.class)) {
-                                List l = (List) valor;
-                                if(!l.isEmpty()) {
-                                    for(Object o : l) {
-                                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                                            entes.add((Entity) o);
-                                        }
-                                    }
-                                }
-                            } else if(Reflection.isInstance(valor.getClass(), Map.class)) {
-                                Map m = (Map) valor;
-                                if(!m.isEmpty()) {
-                                    for(Object o : m.keySet()) {
-                                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                                            entes.add((Entity) o);
-                                        }
-                                    }
-                                    for(Object o : m.values()) {
-                                        if(Reflection.isInstance(o.getClass(), Entity.class)) {
-                                            entes.add((Entity) o);
-                                        }
-                                    }
-                                }
-                            }
-                    } else {
-                        if(Reflection.isInstance(field.getType(), Entity.class)) {
-                            Entity ente = (Entity) valor;
-                            entes.add(ente);
-                        } else if(!Reflection.isPrimitive(field.getType()) && !Reflection.isNumerical(field.getType()) && !Reflection.isDate(field.getType())) {
-                            fillSubEntities(valor, entes, entity);
-                        }
-                    }
-                }
-            }
-        }
-        return entes;
     }
     
     /**

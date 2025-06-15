@@ -26,10 +26,9 @@ package br.com.jhondbs.core.db.capsule;
 import java.util.Objects;
 
 /**
- *
- * @author jhones
  * Utilizado para fazer o pareamento entre dois valores nos moldes de "Chave -> Valor",
  * similar a um Map, porém para pareamento único.
+ * @author jhones
  */
 public class Pairing<K, V> {
     private K key;

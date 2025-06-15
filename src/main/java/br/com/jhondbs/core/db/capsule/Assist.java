@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -52,14 +53,21 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- *
+ * Mantém funções auxiliares utilizadas no encapsulamento e desencapsulamento de
+ * entidades.
  * @author jhones
- * Classe de funções auxiliares para o bottle.
  */
 public class Assist {
     
     private static final Logger LOGGER = Logger.getLogger(Assist.class.getName());
     
+    /**
+     * Faz uma varredura nas capsulas buscando referências a entidades.
+     * @param capsules
+     * @param entity
+     * @return Uma lista de objetos Ref com as referências a todas as entidades encontradas
+     * na lista de capsulas enviada.
+     */
     public static List<Ref> getEntities(String capsules, Entity entity) {
         List<Ref> list = new ArrayList<>();
         if (capsules == null || capsules.trim().isEmpty()) {
@@ -105,6 +113,11 @@ public class Assist {
         return list;
     }
     
+    /**
+     * Busca um UUID dentro de uma String.
+     * @param input
+     * @return 
+     */
     public static int findUUID(String input) {
         // Expressão regular para UUID
         String uuidRegex = "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b";
@@ -119,13 +132,6 @@ public class Assist {
         // Retorna -1 se nenhum UUID for encontrado
         return -1;
     }
-    
-    public static Matcher matcherFindUUID(String input) {
-        // Expressão regular para UUID
-        String uuidRegex = "\\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\\b";
-        Pattern pattern = Pattern.compile(uuidRegex);
-        return pattern.matcher(input);
-    }
 
     /**
      * Remove a existência de uma entidade em uma outra entidade. Ou seja, removerá ela de todos
@@ -135,44 +141,79 @@ public class Assist {
      * @param temp_db Diretório temporário para executar a ação.
      * @throws Exception 
      */
-    public static void removeExistence(Ref toRemove, Ref toBeCleaned, String temp_db) throws IOException {
-        if (toRemove == null || toBeCleaned == null) {
-            throw new IllegalArgumentException("Referências 'toRemove' e 'getRemoved' não podem ser nulas");
-        }
-        
-        sendToTemp(toBeCleaned, temp_db);
-        String path = getPathFromRef(toBeCleaned, temp_db);
-        File file = new File(path);
-        if (!file.exists()) throw new FileNotFoundException("Arquivo temporário não encontrado: " + path);
-
+    public static void removeExistence(Ref toRemove, Ref toBeCleaned, String temp_db) throws Exception {
+        File file = new File(getPathFromRef(toBeCleaned, temp_db));
+        if (!file.exists()) throw new FileNotFoundException("Arquivo temporário não encontrado durante a execução de limpeza da entidade: " + file);
         Properties props = new Properties();
         props.load(new FileInputStream(file));
-
-        String refPattern = String.format("\\{%d:%s\\}", toRemove.getValue(), Pattern.quote(toRemove.getKey()));
+        if(!isMarkedToExclude(props)) {
+            String refPattern = String.format("\\{%d:%s\\}", toRemove.getValue(), Pattern.quote(toRemove.getKey()));
+            String strFields = props.get("fields").toString();
+            strFields = strFields.replaceAll(refPattern, "");
+            props.put("fields", strFields);
+            props.store(new FileOutputStream(file), "JhonDBS Entity");
+            removeFromReference(toRemove, toBeCleaned, temp_db);
+        }
+    }
+    
+    public static Properties removeFromReference(Ref toRemove, Ref toBeCleaned, String temp_db) throws Exception {
+        List<Ref> list = new ArrayList<>();
+        list.add(toRemove);
+        return removeFromReference(list, toBeCleaned, temp_db);
+    }
+    
+    public static Properties removeFromReference(List<Ref> toRemove, Ref toBeCleaned, String temp_db) throws Exception {
+        if (toRemove == null || toBeCleaned == null) throw new IllegalArgumentException("Referências 'toRemove' e 'getRemoved' não podem ser nulas");
         
-        String strFields = props.get("fields").toString();
-        strFields = strFields.replaceAll(refPattern, "");
-        props.put("fields", strFields);
-
-        String refsStr = props.get("refs").toString();
-        String updatedRefs = Arrays.stream(refsStr.split("::"))
-                .filter(ref -> !ref.contains(toRemove.getKey()) && !ref.isBlank())
-                .collect(Collectors.joining("::"));
-        props.put("refs", updatedRefs);
-
-        props.store(new FileOutputStream(file), "JhonDBS Entity");
+        String path = getPathFromRef(toBeCleaned, temp_db);
+        File file = new File(path);
+        if (!file.exists()) throw new FileNotFoundException("Arquivo temporário não encontrado durante a execução de limpeza da entidade: " + path);
+        Properties props = new Properties();
+        props.load(new FileInputStream(file));
+        if(!isMarkedToExclude(props)) {
+            String refsStr = props.get("refs").toString();
+            String updatedRefs = Arrays.stream(refsStr.split("::"))
+                    .filter(ref -> !ref.isBlank())
+                    .filter(ref -> {
+                        Ref r = new Ref(ref);
+                        return !toRemove.contains(r);
+                    })
+                    .collect(Collectors.joining("::"));
+            props.put("refs", updatedRefs);
+            props.store(new FileOutputStream(file), "JhonDBS Entity");
+            
+            if(isCascate(props)) {
+                int refsSize = Arrays.asList(updatedRefs.split("::"))
+                        .stream()
+                        .filter(ref -> !ref.isBlank())
+                        .toArray().length;
+                if(refsSize == 0) {
+                    Bottle bd = new Bottle.BottleBuilder()
+                            .entityClass(toBeCleaned.recoverClass())
+                            .id(toBeCleaned.getKey())
+                            .tempDB(temp_db)
+                            .build();
+                    bd.delete(true);
+                    props.load(new FileInputStream(file));
+                } else {
+                    /*
+                    Chamar CascateAnalyzer aqui para verificar referências cruzadas
+                    e se o referênciador mantém referência cascata.
+                    */
+                    CascateAnalyzer.analyze(toBeCleaned, temp_db);
+                }
+            }
+        }
+        return props;
     }
     
-    public static void removeExistenceFromBottle(Bottle bottle, Ref getRemoved) throws IOException, IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        if (bottle == null || bottle.bottles.isEmpty()) {
-            LOGGER.log(Level.FINE, "Nenhuma sub-bottle para remover existência: {0}", getRemoved);
-            return;
-        }
-        for (Bottle b : bottle.bottles.values()) {
-            removeExistence(new Ref(b.entity), getRemoved, b.TEMP_DB);
-        }
-    }
-    
+    /**
+     * Envia uma entidade para a pasta temporária para que se inicialize os trabalhos.
+     * @param reference
+     * @param temp
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
     public static void sendToTemp(Ref reference, String temp) throws FileNotFoundException, IOException {
         Class clazz = ClassDictionary.fromIndex(reference.getValue());
         String path = temp+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
@@ -184,7 +225,7 @@ public class Assist {
             File root = new File(dbPath);
             
             if(!root.exists()) {
-                root = new File(dbPath+".bak");
+                root = new File(dbPath+Transaction.BACKUP_SUFFIX);
             }
             
             if(root.exists()) {
@@ -195,59 +236,130 @@ public class Assist {
         }
     }
     
+    /**
+     * Retorna o diretório temporário de uma entidade a partir de sua referência.
+     * @param reference
+     * @param temp
+     * @return 
+     */
     public static String getTempPath(Ref reference, String temp) {
         Class clazz = ClassDictionary.fromIndex(reference.getValue());
         return temp+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
     }
     
+    /**
+     * Retorna o diretório permanente de uma entidade a partir de sua referencia.
+     * @param reference
+     * @return 
+     */
     public static String getRootPath(Ref reference) {
         Class clazz = ClassDictionary.fromIndex(reference.getValue());
         return "./db/"+clazz.getName().replace(".class", "").replace(".", "/")+"/"+reference.getKey();
     }
     
+    /**
+     * Retorna o diretório permanente de uma entidade a partir de seu ID e índice de classe.
+     * @param id
+     * @param index
+     * @return 
+     */
     public static String getRootPath(String id, int index) {
         Class clazz = ClassDictionary.fromIndex(index);
         return "./db/"+clazz.getName().replace(".class", "").replace(".", "/")+"/"+id;
     }
     
-    public static List<Ref> removedsBetweenStates(Bottle bottle) throws IOException, EntityIdBadImplementationException, IllegalArgumentException, IllegalAccessException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException {
-        
+    public static String getRootPath(Bottle bottle) throws Exception {
+        return "./db/"+bottle.entity.getClass().getName().replace(".class", "").replace(".", "/")+"/"+bottle.entity.getId();
+    }
+    
+    /**
+     * Retorna o diretório de uma entidade, Raiz ou Temporário, de acordo com o
+     * modo operacional da garrafa.
+     * @param entity
+     * @param bottle
+     * @return 
+     * @throws java.lang.IllegalAccessException 
+     * @throws br.com.jhondbs.core.db.errors.EntityIdBadImplementationException 
+     */
+    public static String getPath(Bottle bottle) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException  {
+        Ref ref = new Ref(bottle.entity);
+        return getPath(ref, bottle);
+    }
+    
+    /**
+     * Retorna o diretório de uma entidade, Raiz ou Temporário, de acordo com o
+     * modo operacional da garrafa.
+     * @param ref
+     * @param bottle
+     * @return 
+     */
+    public static String getPath(Ref ref, Bottle bottle) {
+        if(bottle.modoOperacional == Bottle.ROOT_STAGE) {
+            return getRootPath(ref);
+        } else {
+            return getTempPath(ref, bottle.TEMP_DB);
+        }
+    }
+    
+    public static String getPath(Ref ref, String temp) {
+        if(temp != null && !temp.isBlank()) {
+            return getTempPath(ref, temp);
+        } else {
+            return getRootPath(ref);
+        }
+    }
+    
+    public static List<Ref> removedBetweenStates(Bottle newState, Bottle oldState) throws Exception {
         List<Ref> list = new ArrayList<>();
-        Class clazz = bottle.entity.getClass();
-        String tempPath = bottle.TEMP_DB + clazz.getName().replace(".class", "").replace(".", "/") + "/" + bottle.entity.getId();
-        File tempFile = new File(tempPath);
-
-        if (tempFile.exists()) {
-            Bottle db = new Bottle.BottleBuilder()
-                    .entityClass(clazz)
-                    .id(bottle.entity.getId())
-                    .modoOperacional(Bottle.ROOT_STAGE)
-                    .build();
-            Map<String, Bottle> map = db.bottles;
-            for (String id : map.keySet()) {
-                if (!bottle.bottles.containsKey(id)) {
-                    list.add(new Ref(id, ClassDictionary.getIndex(clazz)));
-                }
+        Set<String> newStateKeys = newState.bottles.keySet();
+        
+        for(Bottle bottle : oldState.bottles.values()) {
+            if(newStateKeys.contains(bottle.entity.getId())) {
+                list.add(new Ref(bottle.entity));
             }
         }
+        
         return list;
     }
     
-    public static List<Ref> removedsBetweenStates(Bottle old, Bottle actual) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
-        List<Ref> list = new ArrayList<>();
-        for(String id : old.bottles.keySet().stream()
-                .filter(id -> !actual.bottles.containsKey(id)).toList()) {
-            list.add(new Ref(old.bottles.get(id).entity));
-        }
-        return list;
-    }
-    
+    /**
+     * Retorna o caminho temporário de uma entidade a partir de sua referência.
+     * @param ref
+     * @param temp_db
+     * @return 
+     */
     public static String getPathFromRef(Ref ref, String temp_db) {
         Class clazz = ClassDictionary.fromIndex(ref.getValue());
         return temp_db+clazz.getName().replace(".class", "").replace(".", "/")+"/"+ref.getKey();
     }
     
-    public static Bottle createBottle(Entity ente, Map<String, Bottle> bottles, int modoOperacional, String ROOT_DB, String TEMP_DB, Entity referencia, boolean cascate) throws IOException, EntityIdBadImplementationException, IllegalArgumentException, IllegalAccessException, URISyntaxException, ParseException, ObjectNotDesserializebleException, ClassNotFoundException, InstantiationException, InvocationTargetException, NoSuchMethodException, FileNotFoundException, NoSuchAlgorithmException {
+    /**
+     * Cria uma nova garrafa para uma entidade recebendo a entidade e o mapa de bottles.
+     * É utilizado para uma sub-criação de garrafas, necessária para carregamento de
+     * entidades.
+     * @param ente Ente a ser engarrafado.
+     * @param bottles Mapa atual de bottles.
+     * @param modoOperacional Modo operacional utilizado no momento.
+     * @param ROOT_DB Diretório raiz da produção.
+     * @param TEMP_DB Raiz da pasta temporária.
+     * @param referencia Entidade de referência que está chamando a sub-construção.
+     * @param cascate Se a entidade a ser engarrafada receberá ou não o marcador de cascata.
+     * @return
+     * @throws IOException
+     * @throws EntityIdBadImplementationException
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws URISyntaxException
+     * @throws ParseException
+     * @throws ObjectNotDesserializebleException
+     * @throws ClassNotFoundException
+     * @throws InstantiationException
+     * @throws InvocationTargetException
+     * @throws NoSuchMethodException
+     * @throws FileNotFoundException
+     * @throws NoSuchAlgorithmException 
+     */
+    public static Bottle createBottle(Entity ente, Map<String, Bottle> bottles, int modoOperacional, String TEMP_DB, Entity referencia, boolean cascate) throws Exception {
         if (ente == null) {
             throw new IllegalArgumentException("Entidade não pode ser nula");
         }
@@ -258,7 +370,6 @@ public class Assist {
                 .entity(ente)
                 .bottles(bottles)
                 .modoOperacional(modoOperacional)
-                .rootDB(ROOT_DB)
                 .tempDB(TEMP_DB)
                 .build();
 
@@ -271,6 +382,22 @@ public class Assist {
             bottle.cascate = true;
         }
         return bottle;
+    }
+    
+    public static void markCascate(Properties prop) {
+        prop.put("cascate", "true");
+    }
+    
+    public static void markExclude(Properties prop) {
+        prop.put("exclude", "true");
+    }
+    
+    public static boolean isCascate(Properties prop) {
+        return prop.containsKey("cascate") ? prop.getProperty("cascate").equals("true") : false;
+    }
+    
+    public static boolean isMarkedToExclude(Properties prop) {
+        return prop.containsKey("exclude");
     }
     
 }

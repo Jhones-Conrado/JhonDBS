@@ -28,12 +28,17 @@ import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.tools.ClassDictionary;
 
 /**
- *
+ * Criado específicamente para facilitar o referenciamento de entidades.
+ * Mantém o índice de classe e o id de uma entidade.
  * @author jhones
  */
 public class Ref extends Pairing<String, Integer>{
 
     public Ref() {
+    }
+    
+    public Ref(Class clazz, String id) {
+        super(id, ClassDictionary.getIndex(clazz));
     }
     
     public Ref(String key, Integer value) {
@@ -64,7 +69,7 @@ public class Ref extends Pairing<String, Integer>{
                 .id(getKey())
                 .modoOperacional(Bottle.ROOT_STAGE)
                 .build();
-        bottle.cleanFolders();
+//        bottle.cleanFolders();
         return bottle.entity;
     }
     

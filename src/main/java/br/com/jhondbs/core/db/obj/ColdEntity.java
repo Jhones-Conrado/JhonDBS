@@ -88,13 +88,12 @@ public class ColdEntity {
             Properties p = new Properties();
             p.load(new FileInputStream(new File(path)));
             String fieldsStr = p.getProperty("fields");
-            Reader r = new Reader();
-            List<String> capsules = r.splitCapsules(fieldsStr);
+            List<String> capsules = Reader.splitCapsules(fieldsStr);
             for(String str : capsules) {
-                String[] split = r.splitCapsuleAsKeyValueArray(str);
-                String field = split[0];
-                String[] fieldCap = r.splitCapsuleAsKeyValueArray(split[1]);
-                String value = fieldCap[1];
+                Map<String, String> map = Reader.splitCapsuleAsKeyValueMap(str);
+                String field = map.keySet().stream().findFirst().get();
+                Map<String, String> map2 = Reader.splitCapsuleAsKeyValueMap(map.values().stream().findFirst().get());
+                String value = map2.values().stream().findFirst().get();
                 map.put(field, value);
             }
         }

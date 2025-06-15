@@ -23,11 +23,7 @@
  */
 package br;
 
-import br.com.jhondbs.core.db.Mapper;
-import br.com.jhondbs.core.db.obj.ColdEntity;
-import br.com.jhondbs.core.db.obj.ColdImage;
-import br.com.jhondbs.core.tools.FieldsManager;
-import java.awt.image.BufferedImage;
+import java.awt.Image;
 import java.io.File;
 import javax.imageio.ImageIO;
 import org.junit.After;
@@ -64,128 +60,64 @@ public class SporadicTests {
     }
     
     @Test
-    public void ColdImage() throws Exception {
-        correr();
-        System.gc();
-        System.out.println("MAP POS DELETE: "+Mapper.coldMap.size());
-    }
-    
     public void correr() throws Exception {
-        EntidadePrincipal e = new EntidadePrincipal("jhones"+String.valueOf(System.nanoTime()));
-        SubEntidade sub = new SubEntidade("COISA");
-        e.coldEntity = new ColdEntity(sub);
-        
-        BufferedImage img = ImageIO.read(new File("./img.png"));
-        e.image = new ColdImage(img);
+//        EntidadePrincipal e = new EntidadePrincipal("jhones"+String.valueOf(System.nanoTime()));
+//        SubEntidade sub = new SubEntidade("COISA");
+//        sub.dono = e;
+//        e.enteb = sub;
+//        e.file = new File("./medidas.svg");
+//        Image img = ImageIO.read(new File("./img.jpg"));
+//        e.image = img;
 //        e.save();
-        
+//        
 //        e = e.load(e.getId());
+//        e.enteb.file = new File("./img.jpg");
+//        e.file = null;
+//        e.save();
+//        
+//        e = e.load(e.getId());
+//        e.enteb.image = ImageIO.read(new File("./img2.png"));
+//        e.save();
+//        e = e.load(e.getId());
+//        e.image = null;
+//        e.save();
+//        e.delete();
         
+//        e.enteb.subDaSub = new SubEntidade("SUB DA SUB");
+//        e.enteb.subDaSub.subDaSub = e.enteb;
+//        e.save();
+//        
 //        e.delete();
     }
-
-//    @Test
-//    public void salvarSemArquivo() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAMENTO DE ENTIDADE SEM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        a.save();
-//        assert true;
-//    }
-//    
-//    @Test
-//    public void salvarELerSemArquivo() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAR E LER SEM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        a.save();
-//        //Load
-//        EntidadePrincipal a2 = a.load(a.getId());
-//        System.out.println(a2.enteb.dono.name);
-//        assert true;
-//    }
-//    
-//    @Test
-//    public void salvarLerEDeletarSemArquivo() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAR, LER E DELETAR SEM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        a.save();
-//        //Load
-//        EntidadePrincipal a2 = a.load(a.getId());
-//        System.out.println(a2.enteb.dono.name);
-//        a2.delete();
-//        assert true;
-//    }
-//    
-//    
-//    @Test
-//    public void salvarComArquivo() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAMENTO DE ENTIDADE COM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        // Arquivo
-//        a.file = new File("./medidas.svg");
-//        a.save();
-//        assert true;
-//    }
-//    
-//    @Test
-//    public void salvarELerComArquivo() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAR E LER COM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        // Arquivo
-//        a.file = new File("./medidas.svg");
-//        a.save();
-//        //Load
-//        EntidadePrincipal a2 = a.load(a.getId());
-//        System.out.println(a2.enteb.dono.name);
-//        assert true;
-//    }
-//    
-//    @Test
-//    public void salvarLerEDeletarComArquivo() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAR, LER E DELETAR COM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        // Arquivo
-//        a.file = new File("./medidas.svg");
-//        a.save();
-//        //Load
-//        EntidadePrincipal a2 = a.load(a.getId());
-//        System.out.println(a2.enteb.dono.name);
-//        a2.delete();
-//        assert true;
-//    }
     
-//    @Test
-//    public void backupArquivoQuebrado() throws IOException, Exception {
-//        System.out.println("TESTE DE SALVAR, LER E DELETAR COM ARQUIVO");
-//        EntidadePrincipal a = new EntidadePrincipal("Jhones"+String.valueOf(System.nanoTime()));
-//        // Sub entidade recursiva
-//        a.enteb = new SubEntidade("Carro");
-//        a.enteb.dono = a;
-//        // Arquivo
-//        a.file = new File("./medidas.svg");
-//        a.save();
-//        //Load
-//        EntidadePrincipal a2 = a.load(a.getId());
-//        a2.file.delete();
-//        a2.delete();
-//        assert true;
-//    }
+    private void soutNames(EntidadePrincipal e) {
+        System.out.println("NOME -> "+e.name);
+        System.out.println("-> "+e.enteb.type);
+        System.out.println("-> "+e.character);
+        System.out.println("-> "+e.curto);
+        System.out.println("-> "+e.inteiro);
+        System.out.println("-> "+e.longo);
+        System.out.println("-> "+e.decimal);
+        System.out.println("-> "+e.duplo);
+        System.out.println("-> "+e.boleano);
+        System.out.println("-> "+e.xbyte);
+        System.out.println("-> "+e.bigdecimal);
+        System.out.println("-> "+e.biginteger);
+        System.out.println("-> "+e.endereco);
+        System.out.println("-> lista size"+e.lista.size());
+        System.out.println("-> setList size"+e.setList.size());
+        System.out.println("-> mapa size"+e.mapa.size());
+        System.out.println("-> "+e.date);
+        System.out.println("-> "+e.calendar);
+        System.out.println("-> "+e.localDate);
+        System.out.println("-> "+e.time);
+        System.out.println("-> "+e.dateTime);
+        System.out.println("-> "+e.zonedDateTime);
+        System.out.println("-> "+e.instant);
+        System.out.println("-> "+e.period);
+        System.out.println("-> "+e.enteb);
+        System.out.println("-> "+e.subObjeto);
+        System.out.println("-> "+e.file);
+    }
     
 }

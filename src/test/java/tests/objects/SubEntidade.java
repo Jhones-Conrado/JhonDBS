@@ -23,7 +23,10 @@
  */
 package tests.objects;
 
+import br.com.jhondbs.core.db.interfaces.Cascate;
 import br.com.jhondbs.core.db.interfaces.Entity;
+import java.awt.Image;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,12 +50,17 @@ public class SubEntidade implements Entity {
     private String[] arrayStr = {"Casa", "Abelha", "Mariposa"};
     private Map<String, Integer> mapa = new HashMap();
     private List<ObjetoComplexo> subEntes = new ArrayList<>();
+    public File file;
+    public Image image;
     
     public String type;
 
     public EntidadePrincipal dono;
     
     private EnumBasico meu;
+    
+    @Cascate
+    public SubEntidade subDaSub;
     
     public SubEntidade() {
         this.meu = EnumBasico.USUARIO;
@@ -66,6 +74,7 @@ public class SubEntidade implements Entity {
     }
 
     public SubEntidade(String id, String type) {
+        this.meu = EnumBasico.USUARIO;
         this.id = id;
         this.type = type;
         populate();
@@ -75,6 +84,11 @@ public class SubEntidade implements Entity {
         subEntes.add(new ObjetoComplexo("cachorro"));
         subEntes.add(new ObjetoComplexo("esposa"));
         subEntes.add(new ObjetoComplexo("barco"));
+        
+        mapa.put("carro", 1);
+        mapa.put("avião", 3);
+        mapa.put("moto", 2);
+        mapa.put("trem", 4);
     }
     
 }

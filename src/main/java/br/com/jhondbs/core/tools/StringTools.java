@@ -23,6 +23,8 @@
  */
 package br.com.jhondbs.core.tools;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.NumberFormat;
 import java.util.List;
 import java.util.Locale;
@@ -134,6 +136,17 @@ public class StringTools {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Entrada inválida: " + numericString);
         }
+    }
+    
+    public static String generateMD5Hash(byte[] inputBytes) throws NoSuchAlgorithmException {
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(inputBytes);
+        byte[] digest = md.digest();
+        StringBuilder sb = new StringBuilder();
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b & 0xff));
+        }
+        return sb.toString();
     }
     
 }

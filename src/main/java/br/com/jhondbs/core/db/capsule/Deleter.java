@@ -24,9 +24,7 @@
 package br.com.jhondbs.core.db.capsule;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,22 +32,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Classe responsável por realizar a chamada ordenada do processo de salvar entidades,
+ * Classe responsável por realizar a chamada ordenada do processo de deletar entidades,
  * criando backups, gravando e em caso de erro, retornando ao estado anterior.
  * @author jhones
  */
-public class Transaction {
+public class Deleter {
     /**
      * Mapa de transações ativas.
      */
-    public static final ConcurrentHashMap<String, Transaction> ACTIVE_TRANSACTIONS = new ConcurrentHashMap<>();
+    public static final ConcurrentHashMap<String, Deleter> ACTIVE_TRANSACTIONS = new ConcurrentHashMap<>();
 
     /**
      * Lista de IDS que estão bloqueados para operações;
      */
     private final BlockingIdList blockeds = new BlockingIdList();
     
-    private static final Logger LOGGER = Logger.getLogger(Transaction.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(Deleter.class.getName());
     public static final String BACKUP_SUFFIX = ".bak";
 
     private final String transactionId;
@@ -58,9 +56,7 @@ public class Transaction {
     private Bottle newState;
     private Bottle oldState;
     
-    private List<String> ids = new ArrayList<>();
-    
-    public Transaction(Bottle bottle) throws Exception {
+    public Deleter(Bottle bottle) throws Exception {
         this.transactionId = UUID.randomUUID().toString();
         this.newState = bottle;
     }
@@ -78,7 +74,7 @@ public class Transaction {
             newState.engarrafar();
             fillLock();
             Backuper.doBackup(newState, oldState);
-            Flusher.flush(newState, oldState);
+            Ereaser.flush(newState, oldState);
             Applier.turnEntitiesOn(newState, oldState);
             return true;
         } catch (Exception e) {
@@ -102,24 +98,26 @@ public class Transaction {
             if(file.exists()) {
                 new Bottle.BottleBuilder()
                         .bottles(oldState.bottles)
-                        .entity(this.newState.entity)
+                        .entityClass(newState.entity.getClass())
+                        .id(newState.entity.getId())
                         .build();
             }
         }
     }
     
     private void fillLock() throws Exception {
-        ids.addAll(listIds());
-        blockeds.addAll((String[]) ids.toArray(new String[0]));
+        blockeds.addAll((String[]) listIds().toArray(new String[0]));
     }
     
     private void freeLock() throws Exception {
-        blockeds.removeAll((String[]) ids.toArray(new String[0]));
+        blockeds.removeAll((String[]) listIds().toArray(new String[0]));
     }
     
     private Set<String> listIds() throws Exception {
         Set<String> ids = new HashSet();
-        ids.addAll(newState.bottles.keySet());
+        for(Bottle bottle : newState.bottles.values()) {
+            ids.add(bottle.entity.getId());
+        }
         if(oldState != null) {
             for(Bottle bottle : oldState.bottles.values()) {
                 if(!ids.contains(bottle.entity.getId())) {
