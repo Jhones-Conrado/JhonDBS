@@ -310,17 +310,26 @@ public interface Entity extends Serializable, Cloneable{
     }
     
     default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws Exception{
-        List<Field> fields = FieldsManager.getAllFields(this);
-        if(fields.stream().noneMatch(field -> field.getName().equals(fieldname))) throw new IllegalArgumentException(fieldname +" does not exists.");
-        Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();
-        field.setAccessible(true);
-        List<T> list = new ArrayList<>();
-        for(String id : getAllIds()) {
-            Entity load = load(id);
-            Object fValue = field.get(load);
-            if(fValue.toString().equals(value.toString())) list.add((T) load);
+        try {
+            List<Field> fields = FieldsManager.getAllFields(this);
+            if (fields.stream().noneMatch(field -> field.getName().equals(fieldname))) {
+                throw new IllegalArgumentException(fieldname + " does not exists.");
+            }
+            Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();
+            field.setAccessible(true);
+            List<T> list = new ArrayList<>();
+            for (String id : getAllIds()) {
+                Entity load = load(id);
+                Object fValue = field.get(load);
+                if (fValue.toString().equals(value.toString())) {
+                    list.add((T) load);
+                }
+            }
+            return list;
+        } catch (Exception exception) {
+            System.out.println(exception);
+            throw exception;
         }
-        return list;
     }
     
     default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws Exception{

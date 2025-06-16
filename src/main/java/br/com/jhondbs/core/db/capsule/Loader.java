@@ -23,6 +23,7 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.Mapper;
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.interfaces.Entity;
@@ -87,7 +88,8 @@ public class Loader {
                 throw new FileNotFoundException("Entidade não encontrada: " + path + " | No carregamento da entidade: "+entity+" -> "+id);
             }
             props.load(new FileInputStream(file));
-
+            
+            Mapper.add(entity, props.getProperty("refs"));
             
             if(props.containsKey("cascate")) {
                 rootBottle.cascate = true;

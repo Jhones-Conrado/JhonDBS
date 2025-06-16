@@ -172,29 +172,31 @@ public class Assist {
         props.load(new FileInputStream(file));
         if(!isMarkedToExclude(props)) {
             String refsStr = props.get("refs").toString();
-            String updatedRefs = Arrays.stream(refsStr.split("::"))
-                    .filter(ref -> !ref.isBlank())
-                    .filter(ref -> {
-                        Ref r = new Ref(ref);
-                        return !toRemove.contains(r);
-                    })
-                    .collect(Collectors.joining("::"));
-            props.put("refs", updatedRefs);
-            props.store(new FileOutputStream(file), "JhonDBS Entity");
-            
-            if(isCascate(props)) {
-                int refsSize = Arrays.asList(updatedRefs.split("::"))
-                        .stream()
+            if(!refsStr.isBlank()) {
+                String updatedRefs = Arrays.stream(refsStr.split("::"))
                         .filter(ref -> !ref.isBlank())
-                        .toArray().length;
-                if(refsSize == 0) {
-                    Bottle bd = new Bottle.BottleBuilder()
-                            .entityClass(toBeCleaned.recoverClass())
-                            .id(toBeCleaned.getKey())
-                            .tempDB(temp_db)
-                            .build();
-                    bd.delete(true);
-                    props.load(new FileInputStream(file));
+                        .filter(ref -> {
+                            Ref r = new Ref(ref);
+                            return !toRemove.contains(r);
+                        })
+                        .collect(Collectors.joining("::"));
+                props.put("refs", updatedRefs);
+                props.store(new FileOutputStream(file), "JhonDBS Entity");
+
+                if(isCascate(props)) {
+                    int refsSize = Arrays.asList(updatedRefs.split("::"))
+                            .stream()
+                            .filter(ref -> !ref.isBlank())
+                            .toArray().length;
+                    if(refsSize == 0) {
+                        Bottle bd = new Bottle.BottleBuilder()
+                                .entityClass(toBeCleaned.recoverClass())
+                                .id(toBeCleaned.getKey())
+                                .tempDB(temp_db)
+                                .build();
+                        bd.delete(true);
+                        props.load(new FileInputStream(file));
+                    }
                 }
             }
         }

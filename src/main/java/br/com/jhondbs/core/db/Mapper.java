@@ -45,15 +45,18 @@ public class Mapper {
     public static WeakHashMap<Object, Map<Field, Ref>> coldMap = new WeakHashMap<Object, Map<Field, Ref>>();
     
     public static void add(Entity entity, String str) {
-        add(entity, Arrays.asList(str.split("::")));
+        if(!str.isBlank()) {
+            add(entity, Arrays.asList(str.split("::"))
+                    .stream()
+                    .filter(s -> !s.isBlank())
+                    .toList());
+        }
     }
     
     public static void add(Entity entity, List<String> refs) {
         List<Ref> list = new ArrayList<>();
         for(String str : refs) {
-            String[] split = str.split(":");
-            Ref ref = new Ref(split[1], Integer.valueOf(split[0]));
-            list.add(ref);
+            list.add(new Ref(str));
         }
         map.put(entity, list);
     }
