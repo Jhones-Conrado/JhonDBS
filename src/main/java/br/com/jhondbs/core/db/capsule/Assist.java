@@ -195,12 +195,6 @@ public class Assist {
                             .build();
                     bd.delete(true);
                     props.load(new FileInputStream(file));
-                } else {
-                    /*
-                    Chamar CascateAnalyzer aqui para verificar referências cruzadas
-                    e se o referênciador mantém referência cascata.
-                    */
-                    CascateAnalyzer.analyze(toBeCleaned, temp_db);
                 }
             }
         }

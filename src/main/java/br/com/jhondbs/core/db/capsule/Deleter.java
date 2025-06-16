@@ -24,7 +24,11 @@
 package br.com.jhondbs.core.db.capsule;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -57,6 +61,7 @@ public class Deleter {
     private Bottle oldState;
     
     public Deleter(Bottle bottle) throws Exception {
+        bottle.defineTemp();
         this.transactionId = UUID.randomUUID().toString();
         this.newState = bottle;
     }
@@ -96,11 +101,30 @@ public class Deleter {
             String rootPath = Assist.getRootPath(new Ref(bottle.entity));
             File file = new File(rootPath);
             if(file.exists()) {
-                new Bottle.BottleBuilder()
+                Bottle build = new Bottle.BottleBuilder()
                         .bottles(oldState.bottles)
                         .entityClass(newState.entity.getClass())
                         .id(newState.entity.getId())
+                        .tempDB(newState.TEMP_DB)
+                        .modoOperacional(Bottle.ROOT_STAGE)
                         .build();
+            }
+            Properties prop = new Properties();
+            prop.load(new FileInputStream(file));
+            String refsStr = prop.getProperty("refs");
+            List<Ref> refs = Arrays.stream(refsStr.split("::"))
+                    .filter(ref -> !ref.isBlank())
+                    .map(str -> new Ref(str)).toList();
+            for(Ref ref : refs) {
+                if(!oldState.bottles.containsKey(ref.getKey())) {
+                    Bottle build = new Bottle.BottleBuilder()
+                            .bottles(oldState.bottles)
+                            .entityClass(ref.recoverClass())
+                            .id(ref.getKey())
+                            .tempDB(newState.TEMP_DB)
+                            .modoOperacional(Bottle.ROOT_STAGE)
+                            .build();
+                }
             }
         }
     }

@@ -108,9 +108,11 @@ public final class Bottle {
     /**
      * Utilizado para definir a pasta temporária utilizada para serialização.
      */
-    private void defineTemp() {
-        String identity = this.toString().replace(this.getClass().getName(), "");
-        this.TEMP_DB = this.TEMP_DB + identity +"/";
+    public void defineTemp() {
+        if(this.TEMP_DB.equals("./temp/")) {
+            String identity = this.toString().replace(this.getClass().getName(), "");
+            this.TEMP_DB = this.TEMP_DB + identity +"/";
+        }
     }
     
     /**

@@ -211,6 +211,7 @@ public class Loader {
                             .entityClass(classe_do_objeto)
                             .id(id)
                             .bottles(rootBottle.bottles)
+                            .tempDB(rootBottle.TEMP_DB)
                             .modoOperacional(Bottle.ROOT_STAGE)
                             .build();
                 }
