@@ -320,9 +320,14 @@ public interface Entity extends Serializable, Cloneable{
             List<T> list = new ArrayList<>();
             for (String id : getAllIds()) {
                 Entity load = load(id);
-                Object fValue = field.get(load);
-                if (fValue.toString().equals(value.toString())) {
-                    list.add((T) load);
+                try {
+                    Object fValue = field.get(load);
+                    if (fValue.toString().equals(value.toString())) {
+                        list.add((T) load);
+                    }
+                } catch (Exception e) {
+                    System.out.println("ERROR: null value");
+                    System.out.println("-> "+field.getName()+" -> "+load.getClass().getSimpleName()+" -> "+id);
                 }
             }
             return list;

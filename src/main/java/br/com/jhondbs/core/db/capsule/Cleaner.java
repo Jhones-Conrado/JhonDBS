@@ -65,60 +65,67 @@ public class Cleaner {
     
     private static void cleanFilesDB(Map<String, Bottle> map) throws Exception {
         for(Bottle bottle : map.values()) {
-            Properties props = Reader.read(bottle.entity.getClass(), bottle.entity.getId(), bottle.TEMP_DB);
-            File entityFilesFolder = new File(bottle.ROOT_DB+"/files/"+bottle.entity.getId());
-            
-            if(entityFilesFolder.exists()) {
-                File[] entityFiles = entityFilesFolder.listFiles();
-                if(Assist.isMarkedToExclude(props)) {
-                    for(File exclude : entityFiles) {
-                        exclude.delete();
-                    }
-                    entityFilesFolder.delete();
-                } else {
-                    for(File file : entityFiles) {
-                        String fileName = file.getName();
-                        if(fileName.endsWith(Transaction.BACKUP_SUFFIX)) {
-                            fileName = fileName.substring(0, fileName.length()-Transaction.BACKUP_SUFFIX.length());
+            try {
+                
+                Properties props = Reader.read(bottle.entity.getClass(), bottle.entity.getId(), bottle.TEMP_DB);
+                File entityFilesFolder = new File(bottle.ROOT_DB+"/files/"+bottle.entity.getId());
+
+                if(entityFilesFolder.exists()) {
+                    File[] entityFiles = entityFilesFolder.listFiles();
+                    if(Assist.isMarkedToExclude(props)) {
+                        for(File exclude : entityFiles) {
+                            exclude.delete();
                         }
-                        if(!bottle.files.containsKey(fileName)) {
-                            file.delete();
-                        }
-                    }
-                    if(entityFilesFolder.listFiles().length == 0) {
                         entityFilesFolder.delete();
+                    } else {
+                        for(File file : entityFiles) {
+                            String fileName = file.getName();
+                            if(fileName.endsWith(Transaction.BACKUP_SUFFIX)) {
+                                fileName = fileName.substring(0, fileName.length()-Transaction.BACKUP_SUFFIX.length());
+                            }
+                            if(!bottle.files.containsKey(fileName)) {
+                                file.delete();
+                            }
+                        }
+                        if(entityFilesFolder.listFiles().length == 0) {
+                            entityFilesFolder.delete();
+                        }
                     }
                 }
+            } catch (Exception e) {
             }
         }
     }
     
     private static void cleanImagesDB(Map<String, Bottle> map) throws Exception {
         for(Bottle bottle : map.values()) {
-            Properties props = Reader.read(bottle.entity.getClass(), bottle.entity.getId(), bottle.TEMP_DB);
-            File entityImagesFolder = new File(bottle.ROOT_DB+"/imgs/"+bottle.entity.getId());
-            
-            if(entityImagesFolder.exists()) {
-                File[] entityImages = entityImagesFolder.listFiles();
-                if(Assist.isMarkedToExclude(props)) {
-                    for(File exclude : entityImages) {
-                        exclude.delete();
-                    }
-                    entityImagesFolder.delete();
-                } else {
-                    for(File image : entityImages) {
-                        String imageHash = image.getName();
-                        if(imageHash.endsWith(Transaction.BACKUP_SUFFIX)) {
-                            imageHash = imageHash.substring(0, imageHash.length()-Transaction.BACKUP_SUFFIX.length());
+            try {
+                Properties props = Reader.read(bottle.entity.getClass(), bottle.entity.getId(), bottle.TEMP_DB);
+                File entityImagesFolder = new File(bottle.ROOT_DB+"/imgs/"+bottle.entity.getId());
+
+                if(entityImagesFolder.exists()) {
+                    File[] entityImages = entityImagesFolder.listFiles();
+                    if(Assist.isMarkedToExclude(props)) {
+                        for(File exclude : entityImages) {
+                            exclude.delete();
                         }
-                        if(!bottle.imgs.containsKey(imageHash)) {
-                            image.delete();
-                        }
-                    }
-                    if(entityImagesFolder.listFiles().length == 0) {
                         entityImagesFolder.delete();
+                    } else {
+                        for(File image : entityImages) {
+                            String imageHash = image.getName();
+                            if(imageHash.endsWith(Transaction.BACKUP_SUFFIX)) {
+                                imageHash = imageHash.substring(0, imageHash.length()-Transaction.BACKUP_SUFFIX.length());
+                            }
+                            if(!bottle.imgs.containsKey(imageHash)) {
+                                image.delete();
+                            }
+                        }
+                        if(entityImagesFolder.listFiles().length == 0) {
+                            entityImagesFolder.delete();
+                        }
                     }
                 }
+            } catch (Exception e) {
             }
         }
     }

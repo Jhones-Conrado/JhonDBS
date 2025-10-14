@@ -25,6 +25,7 @@ package br.com.jhondbs.core.tools;
 
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.interfaces.Unique;
+import br.com.jhondbs.core.db.obj.EntityList;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -258,6 +259,13 @@ public class FieldsManager {
                         Set set = new HashSet();
                         set.addAll((List) value);
                         f.set(receptor, set);
+                        break;
+                    }
+                } else if(Reflection.isInstance(f.getType(), EntityList.class)) {
+                    if(Reflection.isInstance(value.getClass(), List.class)) {
+                        EntityList elist = new EntityList();
+                        elist.addAll((List) value);
+                        f.set(receptor, elist);
                         break;
                     }
                 } else if(f.getType().getName().startsWith("[")) {
