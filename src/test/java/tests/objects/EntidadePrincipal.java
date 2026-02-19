@@ -56,7 +56,7 @@ public class EntidadePrincipal implements Entity{
     private String id;
     
     @Unique
-    public final String name;
+    public String name;
     
     public EnumBasico em = EnumBasico.USUARIO;
     

@@ -33,6 +33,8 @@ import br.com.jhondbs.core.db.errors.DuplicatedUniqueFieldException;
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.filter.Filter;
+import br.com.jhondbs.core.db.session.SessionCache;
+import br.com.jhondbs.core.db.session.SessionManager;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import java.io.File;
 import java.io.Serializable;
@@ -140,6 +142,9 @@ public interface Entity extends Serializable, Cloneable{
         Bottle bottle = new Bottle.BottleBuilder().entity(this).build();
         bottle.engarrafar();
         bottle.flush();
+        
+        SessionManager.add(bottle);
+        
         return true;
     }
     
@@ -154,6 +159,11 @@ public interface Entity extends Serializable, Cloneable{
      * Entity encontrada no banco de dados. Nulo para não encontrada.
      */
     default <T extends Entity> T load(String id) throws Exception{
+        SessionCache contains = SessionManager.contains(id);
+        if(contains != null) {
+            return (T) contains.get(id);
+        }
+        
         Bottle bottle = new Bottle.BottleBuilder()
                 .entityClass(this.getClass())
                 .id(id)

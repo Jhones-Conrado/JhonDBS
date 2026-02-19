@@ -23,6 +23,7 @@
  */
 package br.com.jhondbs.core.db.capsule;
 
+import br.com.jhondbs.core.db.session.SessionManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,6 +50,9 @@ public class Ereaser {
         }
         Assist.markExclude(start.props);
         Writer.write(start);
+        
+        SessionManager.remove(toRemove.getKey());
+        
         for(String id : map.keySet()) {
             if(!id.equals(start.entity.getId())) {
                 Assist.removeExistence(toRemove, new Ref(map.get(id).entity), start.TEMP_DB);

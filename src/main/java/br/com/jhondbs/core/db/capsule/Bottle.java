@@ -70,6 +70,11 @@ public final class Bottle {
     private Bottle() {
     }
     
+    public void merge(Bottle bottle) {
+        this.bottles.putAll(bottle.bottles);
+        this.TEMP_DB = bottle.TEMP_DB;
+    }
+    
     /**
      * Adicionar uma entidade como referenciador desta.
      * @param entity
@@ -204,7 +209,7 @@ public final class Bottle {
     
     private void load(Class clazz, String id) throws Exception {
         Loader load = new Loader(this);
-        this.entity = load.load(clazz, id);
+        this.entity = load.load(clazz, id, null);
     }
     
     /**

@@ -27,6 +27,8 @@ import br.com.jhondbs.core.db.Mapper;
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
 import br.com.jhondbs.core.db.interfaces.Entity;
+import br.com.jhondbs.core.db.session.SessionCache;
+import br.com.jhondbs.core.db.session.SessionManager;
 import br.com.jhondbs.core.tools.ClassDictionary;
 import br.com.jhondbs.core.tools.FieldsManager;
 import br.com.jhondbs.core.tools.Reflection;
@@ -70,13 +72,26 @@ public class Loader {
         this.rootBottle = bottle;
     }
     
-    public Entity load(Class clazz, String id) throws Exception {
+    public Entity load(Class clazz, String id, SessionCache session) throws Exception {
         try {
             this.blocked_ids.add(id);
             if(!blocked_ids.contains(id)) blockeds.add(id);
+            
+            SessionCache contains = SessionManager.contains(id);
+            if(contains != null) {
+                return contains.get(id);
+            }
+            
+            
             Entity entity = (Entity) Reflection.getNewInstance(clazz, Thread.currentThread().getContextClassLoader());
             setId(entity, id);
             rootBottle.entity = entity;
+            
+            if(session != null) {
+                session.addEntity(rootBottle);
+            } else {
+                SessionManager.add(rootBottle);
+            }
             
             Map<String, Field> mapFields = new HashMap<>();
             FieldsManager.getAllFields(clazz).forEach(f -> mapFields.putIfAbsent(f.getName(), f));
@@ -96,8 +111,8 @@ public class Loader {
             }
 
             fillRefs(props);
-            fillFields(entity, props.getProperty("fields"));
-
+            fillFields(entity, props.getProperty("fields"), session);
+            
             return entity;
         } finally {
             blockeds.removeAll(blocked_ids.toArray(new String[0]));
@@ -132,7 +147,7 @@ public class Loader {
         }
     }
     
-    private void fillFields(Object object, String capsules) throws Exception {
+    private void fillFields(Object object, String capsules, SessionCache session) throws Exception {
         List<Field> fields = FieldsManager.getAllFields(object);
         List<String> fieldsNames = fields.stream().map(field -> field.getName())
                 .toList();
@@ -140,7 +155,7 @@ public class Loader {
         
         for(String field : map.keySet()) {
             if(fieldsNames.contains(field)) {
-                inject(object, field, map.get(field));
+                inject(object, field, map.get(field), session);
             }
         }
         
@@ -156,16 +171,16 @@ public class Loader {
         rootBottle.referencias = refs;
     }
     
-    private void inject(Object object, String field, String capsule) throws Exception {
+    private void inject(Object object, String field, String capsule, SessionCache session) throws Exception {
         String indice_classe = Reader.getKeyFromCapsule(capsule);
         String conteudo = Reader.getValueFromCapsule(capsule);
-        Object valor = recover(indice_classe, conteudo);
+        Object valor = recover(indice_classe, conteudo, session);
         if(valor != null) {
             FieldsManager.setValue(field, object, valor);
         }
     }
     
-    private Object recover(String indice, String conteudo) throws Exception {
+    private Object recover(String indice, String conteudo, SessionCache session) throws Exception {
         if(conteudo == null || conteudo.isBlank()) return null;
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Class classe_do_objeto = null;
@@ -209,6 +224,17 @@ public class Loader {
                             .tempDB(rootBottle.TEMP_DB)
                             .build();
                 } else {
+                    SessionCache contains = SessionManager.contains(id);
+                    if(contains != null) {
+                        Bottle bottle1 = contains.getBottle(id);
+                        bottle1.merge(rootBottle);
+                        bottle1.modoOperacional = Bottle.ROOT_STAGE;
+                        
+                        session.absorb(contains);
+                        
+                        return bottle1.entity;
+                    }
+                    
                     bottle = new Bottle.BottleBuilder()
                             .entityClass(classe_do_objeto)
                             .id(id)
@@ -221,9 +247,9 @@ public class Loader {
             }
         } else if(Reflection.isArrayMap(classe_do_objeto)) {
             if (Reflection.isInstance(classe_do_objeto, List.class) || classe_do_objeto.isAssignableFrom(List.class)) {
-                return parseListFromString(conteudo, loader);
+                return parseListFromString(conteudo, loader, session);
             } else if (Reflection.isInstance(classe_do_objeto, Map.class) || classe_do_objeto.isAssignableFrom(Map.class)) {
-                return parseMapFromString(conteudo, loader);
+                return parseMapFromString(conteudo, loader, session);
             } else {
                 throw new Exception("Tipo de array não suportado: "+classe_do_objeto);
             }
@@ -236,23 +262,23 @@ public class Loader {
             return Enum.valueOf((Class<Enum>) forName, conteudo);
         } else {
             Object ins = Reflection.getNewInstance(classe_do_objeto);
-            fillFields(ins, conteudo);
+            fillFields(ins, conteudo, session);
             return ins;
         }
     }
     
-    public List parseListFromString(String str, ClassLoader loader) throws Exception {
+    public List parseListFromString(String str, ClassLoader loader, SessionCache session) throws Exception {
         List list = new ArrayList();
         List<String> objetos = Reader.splitCapsules(str);
         for(String objeto : objetos) {
             if(!objeto.equals("{}")) {
-                list.add(recover(Reader.getKeyFromCapsule(objeto), Reader.getValueFromCapsule(objeto)));
+                list.add(recover(Reader.getKeyFromCapsule(objeto), Reader.getValueFromCapsule(objeto), session));
             }
         }
         return list;
     }
     
-    public Map parseMapFromString(String str, ClassLoader loader) throws Exception {
+    public Map parseMapFromString(String str, ClassLoader loader, SessionCache session) throws Exception {
         Map<Object, Object> map = new HashMap<>();
         List<String> objetos = Reader.splitCapsules(str);
         if (objetos == null || objetos.isEmpty()) {
@@ -262,8 +288,8 @@ public class Loader {
             for (int i = 0; i < objetos.size() - 1; i += 2) {
                 String CapsulaChave = objetos.get(i);
                 String CapsulaValor = objetos.get(i+1);
-                Object objeto_chave = recover(Reader.getKeyFromCapsule(CapsulaChave), Reader.getValueFromCapsule(CapsulaChave));
-                Object objeto_valor = recover(Reader.getKeyFromCapsule(CapsulaValor), Reader.getValueFromCapsule(CapsulaValor));
+                Object objeto_chave = recover(Reader.getKeyFromCapsule(CapsulaChave), Reader.getValueFromCapsule(CapsulaChave), session);
+                Object objeto_valor = recover(Reader.getKeyFromCapsule(CapsulaValor), Reader.getValueFromCapsule(CapsulaValor), session);
                 map.put(objeto_chave, objeto_valor);
             }
         }

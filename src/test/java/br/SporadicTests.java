@@ -61,6 +61,15 @@ public class SporadicTests {
     
     @Test
     public void correr() throws Exception {
+        
+        EntidadePrincipal loaded = new EntidadePrincipal().load("a89a0ab9-c560-4e12-be35-3bf93c504fe1");
+        System.out.println("NAME: "+loaded.name);
+        loaded.name = "NOVO NOME";
+        
+        EntidadePrincipal e2 = new EntidadePrincipal().load("a89a0ab9-c560-4e12-be35-3bf93c504fe1");
+        System.out.println("-> "+e2.name);
+        
+        
 //        EntidadePrincipal e = new EntidadePrincipal("jhones"+String.valueOf(System.nanoTime()));
 //        SubEntidade sub = new SubEntidade("COISA");
 //        sub.dono = e;
@@ -82,7 +91,7 @@ public class SporadicTests {
 //        e.image = null;
 //        e.save();
 //        e.delete();
-        
+//        
 //        e.enteb.subDaSub = new SubEntidade("SUB DA SUB");
 //        e.enteb.subDaSub.subDaSub = e.enteb;
 //        e.save();
