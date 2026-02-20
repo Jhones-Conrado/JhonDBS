@@ -50,6 +50,7 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Objects;
 
 /**
  * ENGLISH<br>
@@ -318,33 +319,45 @@ public interface Entity extends Serializable, Cloneable{
     default <T> T getValueFrom(String fieldName) throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException{
         return FieldsManager.getValueFrom(fieldName, this);
     }
-    
-    default <T extends Entity> List<T> findByFieldValue(String fieldname, Object value) throws Exception{
-        try {
-            List<Field> fields = FieldsManager.getAllFields(this);
-            if (fields.stream().noneMatch(field -> field.getName().equals(fieldname))) {
-                throw new IllegalArgumentException(fieldname + " does not exists.");
+
+    default <T extends Entity> List<T> findByFieldValue(String fieldName, Object value) throws Exception {
+
+        List<T> result = new ArrayList<>();
+
+        Field field = null;
+
+        for (String id : getAllIds()) {
+
+            SessionCache cache = SessionManager.contains(id);
+            Entity entity = (cache != null) ? cache.get(id) : load(id);
+
+            if (entity == null) continue;
+
+            // descobre o campo apenas uma vez, baseado na classe REAL da entidade
+            if (field == null) {
+                field = FieldsManager.getAllFields(entity.getClass()).stream()
+                        .filter(f -> f.getName().equals(fieldName))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException(fieldName + " does not exist."));
+                field.setAccessible(true);
             }
-            Field field = fields.stream().filter(f -> f.getName().equals(fieldname)).findFirst().get();
-            field.setAccessible(true);
-            List<T> list = new ArrayList<>();
-            for (String id : getAllIds()) {
-                Entity load = load(id);
-                try {
-                    Object fValue = field.get(load);
-                    if (fValue.toString().equals(value.toString())) {
-                        list.add((T) load);
-                    }
-                } catch (Exception e) {
-                    System.out.println("ERROR: null value");
-                    System.out.println("-> "+field.getName()+" -> "+load.getClass().getSimpleName()+" -> "+id);
-                }
+
+            // garante compatibilidade antes de acessar
+            if (!field.getDeclaringClass().isAssignableFrom(entity.getClass())) {
+                throw new IllegalStateException(
+                        "Field " + fieldName + " does not belong to " + entity.getClass().getName());
             }
-            return list;
-        } catch (Exception exception) {
-            System.out.println(exception);
-            throw exception;
+
+            Object fieldValue = field.get(entity);
+
+            if (Objects.equals(fieldValue, value)) {
+                result.add((T) entity);
+            } else if (cache == null) {
+                SessionManager.remove(entity);
+            }
         }
+
+        return result;
     }
     
     default <T extends Entity> List<T> findByFieldValueIgnoreCase(String fieldname, Object value) throws Exception{

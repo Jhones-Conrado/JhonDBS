@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -272,6 +274,13 @@ public class FieldsManager {
                     Object array = createArrayFromList(f, (List) value);
                     f.set(receptor, array);
                     break;
+                } else if(f.getType().isAssignableFrom(Properties.class)) {
+                    Properties p = new Properties();
+                    Map map = (Map) value;
+                    for(Object o : map.keySet()) {
+                        p.put(o.toString(), map.get(o).toString());
+                    }
+                    value = p;
                 }
                 
                 f.set(receptor, value);

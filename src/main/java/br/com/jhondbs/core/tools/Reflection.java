@@ -325,7 +325,7 @@ public final class Reflection {
         }
         
         try {
-            return (T) loadedClass.getDeclaredConstructor().newInstance();
+            return (T) Thread.currentThread().getContextClassLoader().loadClass(clazz.getName()).getDeclaredConstructor().newInstance();
         } catch (IllegalAccessException | IllegalArgumentException | InstantiationException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
             if (constructor == null) {
                 throw new NoSuchMethodException("Nenhum construtor encontrado para a classe: " + clazz.getName());

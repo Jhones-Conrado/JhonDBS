@@ -39,6 +39,20 @@ public class SessionManager {
     
     private List<SessionCache> sessions = new ArrayList();
     
+    static ClassLoader lastLoader;
+
+    static void checkLoader() {
+        ClassLoader current = Thread.currentThread().getContextClassLoader();
+        if (lastLoader != current) {
+            for(SessionCache session : instance.sessions) {
+                session.clear();
+            }
+            instance.sessions.clear();
+            lastLoader = current;
+            System.out.println("♻ Cache limpo por troca de classloader");
+        }
+    }
+    
     private SessionManager(){
         new Thread(new ExpiredCleaner()).start();
     }
@@ -47,6 +61,7 @@ public class SessionManager {
         if(instance == null) {
             instance = new SessionManager();
         }
+        checkLoader();
         return instance;
     }
     
