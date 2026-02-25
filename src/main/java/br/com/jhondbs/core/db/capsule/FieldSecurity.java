@@ -40,7 +40,7 @@ import java.util.Map;
  * unidade desta classe.
  * @author jhones
  */
-public class FieldSecurity {
+public final class FieldSecurity {
     
     /**
      * Verifica se uma entidade passa no teste de unicidade de campos no contexto

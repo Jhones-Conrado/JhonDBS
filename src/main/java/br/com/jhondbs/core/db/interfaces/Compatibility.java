@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2024 jhones.
+ * Copyright 2026 jhones.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,36 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package br.com.jhondbs.core.db.capsule;
-
-import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Properties;
+package br.com.jhondbs.core.db.interfaces;
 
 /**
- * Usado específicamente para gravar o arquivo properties de uma entidade no
- * banco de dados.
- * Sempre irá gravar na pasta temporária. Um arquivo NUNCA deve ser gravado
- * diretamente na pasta de produção.
+ * Utilizado para criar compatibilidade de objetos e entidades em tempo de leitura.
  * @author jhones
  */
-public final class Writer {
-    
-    public Writer() {
-    }
-    
-    public static boolean write(Bottle bottle) throws IOException, IllegalAccessException, EntityIdBadImplementationException {
-        String path = Assist.getTempPath(new Ref(bottle.entity), bottle.TEMP_DB);
-        File file = new File(path);
-        file.getParentFile().mkdirs(); // Garantir diretórios
-        Properties build = bottle.build();
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file))) {
-            build.store(bos, "JhonDBS Entity");
-        }
-        return true;
-    }
-    
+public interface Compatibility {
+    default void compatible(){};
 }

@@ -274,7 +274,7 @@ public class FieldsManager {
                     Object array = createArrayFromList(f, (List) value);
                     f.set(receptor, array);
                     break;
-                } else if(f.getType().isAssignableFrom(Properties.class)) {
+                } else if(f.getType() == Properties.class) {
                     Properties p = new Properties();
                     Map map = (Map) value;
                     for(Object o : map.keySet()) {

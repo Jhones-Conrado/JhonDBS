@@ -40,7 +40,7 @@ import java.util.logging.Logger;
  * criando backups, gravando e em caso de erro, retornando ao estado anterior.
  * @author jhones
  */
-public class Deleter {
+public final class Deleter {
     /**
      * Mapa de transações ativas.
      */

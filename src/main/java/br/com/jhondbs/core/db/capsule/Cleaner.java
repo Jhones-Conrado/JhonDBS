@@ -33,7 +33,7 @@ import java.util.Properties;
  * commits no banco de dados.
  * @author jhones
  */
-public class Cleaner {
+public final class Cleaner {
     
     /**
      * Exclui todos os arquivos .bak da pasta do banco de dados.

@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
  * entidades.
  * @author jhones
  */
-public class Assist {
+public final class Assist {
     
     private static final Logger LOGGER = Logger.getLogger(Assist.class.getName());
     

@@ -164,5 +164,5 @@ public class Filter implements Entity{
     public static Filter listToFilter(List<FilterCondition> list){
         return new Filter(true, list);
     }
-    
+
 }

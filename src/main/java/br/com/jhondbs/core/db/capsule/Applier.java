@@ -46,7 +46,7 @@ import java.util.Properties;
  * as imagens.
  * @author jhones
  */
-public class Applier {
+public final class Applier {
     
     /**
      * Transfere as entidades alteradas para a pasta de produção.

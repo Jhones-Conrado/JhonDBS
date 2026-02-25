@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Responsável por bloquear o acesso a arquivos que estejam sendo lidos ou gravados.
  * @author jhones
  */
-public class BlockingIdList {
+public final class BlockingIdList {
     private static final CopyOnWriteArrayList<String> ids = new CopyOnWriteArrayList<>();
     private static final ReentrantLock lock = new ReentrantLock();
     private static final Condition idAvailable = lock.newCondition();

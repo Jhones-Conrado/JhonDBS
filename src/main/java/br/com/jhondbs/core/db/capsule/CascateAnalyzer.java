@@ -49,7 +49,7 @@ import java.util.stream.Collectors;
  * conclusão ou não desta classe.
  * @author jhones
  */
-public class CascateAnalyzer {
+public final class CascateAnalyzer {
     
     /**
      * Verifica nas referências restantes da entidade quais destas estão marcadas

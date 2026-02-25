@@ -49,7 +49,7 @@ import java.util.regex.Pattern;
  * Mantém funções auxiliares que ajudam na leitura de arquivos de entidades.
  * @author jhones
  */
-public class Reader {
+public final class Reader {
     
     public Reader() {
     }

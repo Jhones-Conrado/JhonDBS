@@ -33,7 +33,7 @@ import java.util.Arrays;
  * converte-o em uma lista do tipo específico.
  * @author jhones
  */
-public class ArrayWorker {
+public final class ArrayWorker {
     
     @SuppressWarnings("unchecked")
     public static <T> ArrayList<T> toArrayList(Object array) {

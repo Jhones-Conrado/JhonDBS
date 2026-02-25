@@ -39,7 +39,7 @@ import java.util.Map;
  * órfã.
  * @author jhones
  */
-public class Ereaser {
+public final class Ereaser {
     
     public static void flush(Bottle start, Bottle oldStage) throws Exception {
         Ref toRemove = new Ref(start.entity);

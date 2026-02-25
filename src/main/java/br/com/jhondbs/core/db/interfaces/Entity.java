@@ -78,7 +78,7 @@ import java.util.Objects;
  * gerado no momento.
  * @author jhonesconrado
  */
-public interface Entity extends Serializable, Cloneable{
+public interface Entity extends Serializable, Cloneable, Compatibility{
     
     public static final long serialVersionUID = 1l;
     

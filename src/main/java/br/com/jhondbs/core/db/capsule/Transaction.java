@@ -38,7 +38,7 @@ import java.util.logging.Logger;
  * criando backups, gravando e em caso de erro, retornando ao estado anterior.
  * @author jhones
  */
-public class Transaction {
+public final class Transaction {
     /**
      * Mapa de transações ativas.
      */

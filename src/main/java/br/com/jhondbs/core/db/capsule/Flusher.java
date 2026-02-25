@@ -31,7 +31,7 @@ import java.util.List;
  * não estejam mais sendo referênciadas e em seguida grava os novos arquivos.
  * @author jhones
  */
-public class Flusher {
+public final class Flusher {
     
     /*
     Passos:

@@ -43,7 +43,7 @@ import java.util.Set;
  * Mantém todos os métodos auxiliares de encapsulamento de objetos e entidades.
  * @author jhones
  */
-public class Encapsulator {
+public final class Encapsulator {
     
     public static String encapsularField(Field field, Object object, Bottle bottle) throws Exception {
         field.setAccessible(true);

@@ -32,7 +32,7 @@ import br.com.jhondbs.core.tools.ClassDictionary;
  * Mantém o índice de classe e o id de uma entidade.
  * @author jhones
  */
-public class Ref extends Pairing<String, Integer>{
+public final class Ref extends Pairing<String, Integer>{
 
     public Ref() {
     }

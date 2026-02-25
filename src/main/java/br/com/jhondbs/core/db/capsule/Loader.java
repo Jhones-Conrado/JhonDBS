@@ -26,6 +26,7 @@ package br.com.jhondbs.core.db.capsule;
 import br.com.jhondbs.core.db.Mapper;
 import br.com.jhondbs.core.db.errors.EntityIdBadImplementationException;
 import br.com.jhondbs.core.db.errors.ObjectNotDesserializebleException;
+import br.com.jhondbs.core.db.interfaces.Compatibility;
 import br.com.jhondbs.core.db.interfaces.Entity;
 import br.com.jhondbs.core.db.session.SessionCache;
 import br.com.jhondbs.core.db.session.SessionManager;
@@ -61,7 +62,7 @@ import javax.imageio.ImageIO;
  * forma segura.
  * @author jhones
  */
-public class Loader {
+public final class Loader {
     
     private final BlockingIdList blockeds = new BlockingIdList();
     
@@ -112,6 +113,8 @@ public class Loader {
 
             fillRefs(props);
             fillFields(entity, props.getProperty("fields"), session);
+            
+            entity.compatible();
             
             return entity;
         } finally {
@@ -263,6 +266,11 @@ public class Loader {
         } else {
             Object ins = Reflection.getNewInstance(classe_do_objeto);
             fillFields(ins, conteudo, session);
+            
+            if (ins instanceof Compatibility com) {
+                com.compatible();
+            }
+            
             return ins;
         }
     }

@@ -39,7 +39,7 @@ import java.util.Set;
  * por passar os arquivos .bak de volta para produção em caso de algum erro.
  * @author jhones
  */
-public class Backuper {
+public final class Backuper {
     
     public static void doBackup(Bottle newState, Bottle oldState) throws Exception {
         Set<String> oldKeys = new HashSet<>();

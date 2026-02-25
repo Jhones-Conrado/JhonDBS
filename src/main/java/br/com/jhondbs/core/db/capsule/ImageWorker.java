@@ -34,7 +34,7 @@ import javax.imageio.ImageIO;
  * Mantém funções auxiliares para trabalhar com imagens no banco de dados.
  * @author jhones
  */
-public class ImageWorker {
+public final class ImageWorker {
     
     public static byte[] getImageData(Image image) {
         BufferedImage bufferedImage = toBufferedImage(image);
