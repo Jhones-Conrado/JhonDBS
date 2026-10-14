@@ -90,7 +90,7 @@ public final class CascateAnalyzer {
     }
     
     public static Map<String, String> getCascateFields(Ref ente, Properties properties) {
-        List<String> cascateFieldsNames = FieldsManager.getAllSerializebleFields(ente.recoverClass())
+        List<String> cascateFieldsNames = FieldsManager.getAllSerializableFields(ente.recoverClass())
                 .stream()
                 .filter(field -> field.isAnnotationPresent(Cascate.class))
                 .toList()

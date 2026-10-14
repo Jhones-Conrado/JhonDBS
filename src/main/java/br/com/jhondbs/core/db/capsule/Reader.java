@@ -159,7 +159,9 @@ public final class Reader {
         return list;
     }
     
-    public static Calendar parseCalendarFromString(String calendarString, ClassLoader loader) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+    public static Calendar parseCalendarFromString(String calendarString) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, ClassNotFoundException, InstantiationException {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        
         Pattern patternYear = Pattern.compile("YEAR=(\\d+)");
         Pattern patternMonth = Pattern.compile("MONTH=(\\d+)");
         Pattern patternDayOfMonth = Pattern.compile("DAY_OF_MONTH=(\\d+)");
@@ -168,14 +170,14 @@ public final class Reader {
         Pattern patternSecond = Pattern.compile("SECOND=(\\d+)");
         Pattern patternMillisecond = Pattern.compile("MILLISECOND=(\\d+)");
         Pattern patternZone = Pattern.compile("id=\"([^\"]+)\"");
-        int year = extractValue(patternYear, calendarString, loader);
-        int month = extractValue(patternMonth, calendarString, loader);
-        int dayOfMonth = extractValue(patternDayOfMonth, calendarString, loader);
-        int hour = extractValue(patternHour, calendarString, loader);
-        int minute = extractValue(patternMinute, calendarString, loader);
-        int second = extractValue(patternSecond, calendarString, loader);
-        int millisecond = extractValue(patternMillisecond, calendarString, loader);
-        String timeZoneID = extractString(patternZone, calendarString, loader);
+        int year = extractValue(patternYear, calendarString);
+        int month = extractValue(patternMonth, calendarString);
+        int dayOfMonth = extractValue(patternDayOfMonth, calendarString);
+        int hour = extractValue(patternHour, calendarString);
+        int minute = extractValue(patternMinute, calendarString);
+        int second = extractValue(patternSecond, calendarString);
+        int millisecond = extractValue(patternMillisecond, calendarString);
+        String timeZoneID = extractString(patternZone, calendarString);
         Class<?> calendarClass = Class.forName("java.util.GregorianCalendar", true, loader);
         Class<?> timeZoneClass = Class.forName("java.util.TimeZone", true, loader);
         Calendar calendar = (Calendar) calendarClass.getDeclaredConstructor().newInstance();
@@ -191,7 +193,9 @@ public final class Reader {
         return calendar;
     }
 
-    public static Object parseDateTimeFromString(String dateTimeString, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static Object parseDateTimeFromString(String dateTimeString, Class<?> type) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        
         switch (type.getName()) {
             case "java.time.LocalDate" -> {
                 Class<?> localDateClass = Class.forName("java.time.LocalDate", true, loader);
@@ -219,8 +223,9 @@ public final class Reader {
         throw new IllegalArgumentException("Formato de data/tempo desconhecido: " + dateTimeString);
     }
 
-    public static Period parsePeriodFromString(String periodString, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static Period parsePeriodFromString(String periodString) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
         try {
+            ClassLoader loader = Thread.currentThread().getContextClassLoader();
             Class<?> periodClass = Class.forName("java.time.Period", true, loader);
             Object period = periodClass.getMethod("parse", CharSequence.class).invoke(null, periodString);
             return (Period) period;
@@ -229,10 +234,13 @@ public final class Reader {
         }
     }
 
-    public static Object parsePrimitiveFromString(String input, Class<?> type, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    public static Object parsePrimitiveFromString(String input, Class<?> type) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         if (type == String.class) {
             return input; // A string já é o valor
         }
+        
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        
         Class<?> charClass = Class.forName("java.lang.Character", true, loader);
         Class<?> shortClass = Class.forName("java.lang.Short", true, loader);
         Class<?> intClass = Class.forName("java.lang.Integer", true, loader);
@@ -292,8 +300,9 @@ public final class Reader {
         return FieldsManager.getFieldsUnique(allFields);
     }
     
-    public static int extractValue(Pattern pattern, String text, ClassLoader loader) {
+    public static int extractValue(Pattern pattern, String text) {
         Matcher matcher = pattern.matcher(text);
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
         if (matcher.find()) {
             try {
                 Class<?> integerClass = Class.forName("java.lang.Integer", true, loader);
@@ -305,7 +314,8 @@ public final class Reader {
         return 0; // valor padrão se o campo não for encontrado
     }
     
-    public static String extractString(Pattern pattern, String text, ClassLoader loader) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+    public static String extractString(Pattern pattern, String text) throws ClassNotFoundException, NoSuchMethodException, IllegalAccessException, InvocationTargetException {
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
         Class<?> matcherClass = Class.forName("java.util.regex.Matcher", true, loader);
         Matcher matcher = pattern.matcher(text);
         if ((boolean) matcherClass.getMethod("find").invoke(matcher)) {
@@ -337,7 +347,7 @@ public final class Reader {
      * @throws IllegalAccessException 
      */
     public void fillSubEntities(Object o, List<Entity> list, Entity parent) throws IllegalArgumentException, IllegalAccessException {
-        List<Field> fields = FieldsManager.getAllSerializebleFields(o.getClass());
+        List<Field> fields = FieldsManager.getAllSerializableFields(o.getClass());
         for(Field field : fields) {
             field.setAccessible(true);
             Object valor = field.get(o);

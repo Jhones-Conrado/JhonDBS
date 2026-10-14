@@ -91,37 +91,20 @@ public interface Entity extends Serializable, Cloneable, Compatibility{
      */
     default String getId() throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         
-        List<Field> ids = FieldsManager.getAllFields(this).parallelStream()
-                .filter(field -> (field.getType().getName().contains("String")))
-                .filter(field -> (field.getName().toUpperCase().contains("ID")))
-                .toList();
-        if(!ids.isEmpty()){
-            Field selected = null;
-            List<Field> toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("enteid")))
-                    .toList();
-            if(toList.size() == 1){
-                selected = toList.get(0);
+        Field fieldID = FieldsManager.getFieldId(this.getClass());
+        
+        if(fieldID != null){
+            fieldID.setAccessible(true);
+            String id = (String) fieldID.get(this);
+            if(id == null || id.isBlank()) {
+                UUID uuid = UUID.randomUUID();
+                fieldID.set(this, uuid.toString());
+                return uuid.toString();
             } else {
-                toList = ids.stream().filter(field -> (field.getName().equalsIgnoreCase("id")))
-                    .toList();
-                if(toList.size() == 1){
-                    selected = toList.get(0);
-                } else {
-                    selected = ids.get(0);
-                }
-            }
-            if(selected != null){
-                selected.setAccessible(true);
-                String id = (String) selected.get(this);
-                if(id == null || id.isBlank()) {
-                    UUID uuid = UUID.randomUUID();
-                    selected.set(this, uuid.toString());
-                    return uuid.toString();
-                } else {
-                    return id;
-                }
+                return id;
             }
         }
+        
         throw new EntityIdBadImplementationException("The entity does not have a String type variable for the ID.");
     }
     
@@ -145,7 +128,6 @@ public interface Entity extends Serializable, Cloneable, Compatibility{
         bottle.flush();
         
         SessionManager.add(bottle);
-        
         return true;
     }
     

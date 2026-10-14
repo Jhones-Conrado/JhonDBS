@@ -186,7 +186,7 @@ public final class Bottle {
      */
     public void engarrafar() throws Exception {
         bottledFields.clear();
-        List<Field> fields = FieldsManager.getAllSerializebleFields(this.entity.getClass());
+        List<Field> fields = FieldsManager.getAllSerializableFields(this.entity.getClass());
         for(Field field : fields) {
             field.setAccessible(true);
             Object valor = field.get(this.entity);

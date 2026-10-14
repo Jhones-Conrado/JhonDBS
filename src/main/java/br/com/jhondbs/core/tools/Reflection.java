@@ -82,6 +82,7 @@ public final class Reflection {
         double.class, Double.class,
         boolean.class, Boolean.class,
         char.class, Character.class,
+        Number.class,
         String.class
     );
     
@@ -107,9 +108,6 @@ public final class Reflection {
             Period.class,
             ChronoPeriod.class
     );
-    
-    private static volatile List<String> array; // volatile para thread-safety
-    private static List<String> notAbstracts;
     
     private static ConcurrentHashMap<String, Class<?>> CLASSES;
     
@@ -163,6 +161,30 @@ public final class Reflection {
         }
     }
     
+    /**
+     * Verifica se uma classe não é de um objeto complexo.
+     * @param clazz
+     * @return 
+     */
+    public static boolean isNotComplex(Class clazz) {
+        if(clazz == null) return false;
+        return 
+                PRIMITIVE_TYPES.contains(clazz) 
+                || ARRAY_TYPES.contains(clazz) 
+                || DATE_TYPES.contains(clazz)
+                || clazz.isEnum()
+                || Number.class.isAssignableFrom(clazz);
+    }
+    
+    /**
+     * Verifica se um objeto não é complexo.
+     * @param clazz
+     * @return 
+     */
+    public static boolean isNotComplex(Object object) {
+        if(object == null) return false;
+        return isNotComplex(object.getClass());
+    }
     
     /**
      * Creates a new instance of Reflection.
@@ -483,7 +505,7 @@ public final class Reflection {
     }
     
     public static boolean isComplexObject(Class clazz) {
-        return !isPrimitive(clazz) && !isDate(clazz);
+        return !isPrimitive(clazz) && !isDate(clazz) && !clazz.isEnum();
     }
     
     /**

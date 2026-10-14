@@ -23,9 +23,11 @@
  */
 package br;
 
-import java.awt.Image;
-import java.io.File;
-import javax.imageio.ImageIO;
+import br.com.jhondbs.core.db.capsule2.EnteAnalysis;
+import br.com.jhondbs.core.db.capsule2.EnteManager;
+import br.com.jhondbs.core.db.capsule2.EnteWriter;
+import java.util.List;
+import java.util.Properties;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -62,33 +64,20 @@ public class SporadicTests {
     @Test
     public void correr() throws Exception {
         
-//        EntidadePrincipal e = new EntidadePrincipal("jhones"+String.valueOf(System.nanoTime()));
-//        SubEntidade sub = new SubEntidade("COISA");
-//        sub.dono = e;
-//        e.enteb = sub;
-//        e.file = new File("./medidas.svg");
-//        Image img = ImageIO.read(new File("./img.jpg"));
-//        e.image = img;
-//        e.save();
-//        
-//        e = e.load(e.getId());
-//        e.enteb.file = new File("./img.jpg");
-//        e.file = null;
-//        e.save();
-//        
-//        e = e.load(e.getId());
-//        e.enteb.image = ImageIO.read(new File("./img2.png"));
-//        e.save();
-//        e = e.load(e.getId());
-//        e.image = null;
-//        e.save();
-//        e.delete();
-//        
-//        e.enteb.subDaSub = new SubEntidade("SUB DA SUB");
-//        e.enteb.subDaSub.subDaSub = e.enteb;
-//        e.save();
-//        
-//        e.delete();
+        EntidadePrincipal e = new EntidadePrincipal("jhones"+String.valueOf(System.nanoTime()));
+        SubEntidade sub = new SubEntidade("COISA");
+        sub.dono = e;
+        e.enteb = sub;
+        
+        EnteAnalysis save = EnteManager.save(e);
+        
+        
+        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+        System.out.println("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+        
+        EnteWriter.write(save);
+
+        
     }
     
     private void soutNames(EntidadePrincipal e) {

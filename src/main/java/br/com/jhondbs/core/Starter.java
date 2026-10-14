@@ -37,6 +37,37 @@ import java.util.logging.Logger;
  */
 public class Starter {
     
+    
+    
+    /**
+     * 
+     * 
+     * ETAPA ATUAL:
+     * Preciso editar o EnteAnalyzer para que ele marque as referências entre
+     * entidades.
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     * 
+     */
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     private static boolean namePrinted = false;
     
     /**

@@ -41,6 +41,10 @@ public final class BlockingIdList {
         addAll(new String[]{id});
     }
     
+    public void remove(String id) throws InterruptedException {
+        removeAll(new String[]{id});
+    }
+    
     /**
      * Adiciona uma lista de IDs à lista de bloqueados, esperando se algum ID já estiver bloqueado.
      * Os IDs são ordenados para evitar deadlocks.

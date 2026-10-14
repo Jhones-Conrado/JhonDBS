@@ -64,13 +64,10 @@ public final class Ref extends Pairing<String, Integer>{
     }
     
     public Entity recover() throws Exception{
-        Bottle bottle = new Bottle.BottleBuilder()
-                .entityClass(recoverClass())
-                .id(getKey())
-                .modoOperacional(Bottle.ROOT_STAGE)
-                .build();
-//        bottle.cleanFolders();
-        return bottle.entity;
+//        FromDB from = FromDB.init(getKey(), recoverClass());
+//        if(from == null) return null;
+//        return from.instance;
+        return null;
     }
     
     @Override

@@ -61,7 +61,8 @@ public final class Encapsulator {
             if(Reflection.isPrimitive(objeto.getClass()) || Reflection.isNumerical(objeto.getClass()) || Reflection.isDate(objeto.getClass())) {
                 return encapsulePrimitive(objeto);
             } else if(Reflection.isArrayMap(objeto)) {
-                return encapsuleArray(objeto, cascate, bottle);
+                return "";
+//                return encapsuleArray(objeto, cascate, bottle);
             } else if(Reflection.isInstance(objeto.getClass(), Entity.class)) {
                 Entity ente = (Entity) objeto;
                 if(!bottle.bottles.containsKey(ente.getId())) {
@@ -92,7 +93,7 @@ public final class Encapsulator {
                 sb.append(String.valueOf(ClassDictionary.getIndex(objeto.getClass())));
                 sb.append(":");
                         
-                List<Field> fields = FieldsManager.getAllSerializebleFields(objeto.getClass());
+                List<Field> fields = FieldsManager.getAllSerializableFields(objeto.getClass());
                 for(Field field : fields) {
                     field.setAccessible(true);
                     Object get = field.get(objeto);
@@ -106,7 +107,7 @@ public final class Encapsulator {
         }
     }
     
-    private static String encapsuleEnum(Enum e) {
+    public static String encapsuleEnum(Enum e) {
         StringBuilder sb = new StringBuilder();
         sb.append("{")
                 .append(String.valueOf(ClassDictionary.getIndex(e.getClass())))
@@ -116,7 +117,7 @@ public final class Encapsulator {
         return sb.toString();
     }
     
-    private static String encapsulePrimitive(Object object) {
+    public static String encapsulePrimitive(Object object) {
         if(object == null) {
             return "{}";
         }
@@ -129,7 +130,7 @@ public final class Encapsulator {
         return sb.toString();
     }
     
-    private static String encapsuleId(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
+    public static String encapsuleId(Entity entity) throws IllegalArgumentException, IllegalAccessException, EntityIdBadImplementationException {
         if(entity == null) {
             return "{}";
         }
@@ -142,7 +143,7 @@ public final class Encapsulator {
         return sb.toString();
     }
     
-    private static String encapsuleArray(Object object, boolean cascate, Bottle bottle) throws Exception {
+    public static String encapsuleArray(Object object, boolean cascate, Bottle bottle) throws Exception {
         if(object == null) {
             return "{}";
         }

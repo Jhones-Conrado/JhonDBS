@@ -32,11 +32,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -50,6 +52,9 @@ import java.util.stream.Collectors;
  */
 public class FieldsManager {
 
+    private static final Map<Class<?>, List<Field>> CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, Field> CACHEID = new ConcurrentHashMap<>();
+    
     private FieldsManager() {}
     
     /**
@@ -91,13 +96,40 @@ public class FieldsManager {
         return fields;
     }
     
-    public static List<Field> getAllSerializebleFields(Class clazz){
-        Set<Field> fields = new HashSet<>();
-        while(clazz != null){
-            fields.addAll(Arrays.asList(clazz.getDeclaredFields()));
-            clazz = clazz.getSuperclass();
-        }
-        return fields.stream().filter(field -> !Modifier.isStatic(field.getModifiers()) && !Modifier.isTransient(field.getModifiers())).toList();
+    public static List<Field> getAllSerializableFields(Class<?> clazz) {
+        return CACHE.computeIfAbsent(clazz, c -> {
+
+            List<Field> fields = new ArrayList<>();
+            List<Class<?>> hierarchy = new ArrayList<>();
+
+            // monta hierarquia
+            Class<?> current = c;
+            while (current != null && current != Object.class) {
+                hierarchy.add(current);
+                current = current.getSuperclass();
+            }
+
+            Collections.reverse(hierarchy); // super → sub
+
+            // coleta campos
+            for (Class<?> cl : hierarchy) {
+                for (Field field : cl.getDeclaredFields()) {
+
+                    if (Modifier.isStatic(field.getModifiers())) continue;
+                    if (Modifier.isTransient(field.getModifiers())) continue;
+                    if (field.isSynthetic()) continue;
+
+                    try {
+                        field.setAccessible(true);
+                    } catch (Exception ignored) {
+                    }
+
+                    fields.add(field);
+                }
+            }
+
+            return fields;
+        });
     }
     
     /**
@@ -106,9 +138,60 @@ public class FieldsManager {
      * @return 
      * @throws br.com.jhondbs.core.db.errors.EntityIdBadImplementationException 
      */
-    public static Field getFieldId(Class clazz) throws EntityIdBadImplementationException {
+    public static Field getFieldId(Class<?> clazz) throws EntityIdBadImplementationException {
+        if(CACHEID.containsKey(clazz)) {
+            return CACHEID.get(clazz);
+        }
+        
+        List<Field> fields = FieldsManager.getAllSerializableFields(clazz);
+        List<Field> stringFields = fields.stream()
+            .filter(f -> f.getType().equals(String.class))
+            .toList();
+
+        if (stringFields.isEmpty()) {
+            throw new EntityIdBadImplementationException(
+                "No String fields found in " + clazz.getName()
+            );
+        }
+
+        // prioridade 1: nome exatamente "id"
+        List<Field> exactId = stringFields.stream()
+            .filter(f -> f.getName().equalsIgnoreCase("id"))
+            .toList();
+
+        if (exactId.size() == 1) {
+            CACHEID.put(clazz, exactId.get(0));
+            return exactId.get(0);
+        } 
+
+        // prioridade 2: termina com "Id"
+        List<Field> endsWithId = stringFields.stream()
+            .filter(f -> f.getName().toLowerCase().endsWith("id"))
+            .toList();
+
+        if (endsWithId.size() == 1) {
+            CACHEID.put(clazz, endsWithId.get(0));
+            return endsWithId.get(0);
+        } 
+        
+        // prioridade 3: contém "Id"
+        List<Field> containsId = stringFields.stream()
+            .filter(f -> f.getName().toLowerCase().contains("id"))
+            .toList();
+
+        if (containsId.size() == 1) {
+            CACHEID.put(clazz, endsWithId.get(0));
+            return containsId.get(0);
+        }
+
+        throw new EntityIdBadImplementationException(
+            "Ambiguous ID field in " + clazz.getName()
+        );
+    }
+    
+    /*public static Field getFieldId(Class clazz) throws EntityIdBadImplementationException {
         List<Field> ids = FieldsManager.getAllFields(clazz).parallelStream()
-            .filter(field -> (field.getType().isAssignableFrom(String.class)))
+            .filter(field -> (String.class.isAssignableFrom(field.getType())))
             .filter(field -> (field.getName().toUpperCase().contains("ID")))
             .toList();
         if(!ids.isEmpty()){
@@ -133,7 +216,7 @@ public class FieldsManager {
             }
         }
         throw new EntityIdBadImplementationException();
-    }
+    }*/
     
     public static List<Field> getSerializableFields(Object obj){
         return getAllFields(obj).stream()

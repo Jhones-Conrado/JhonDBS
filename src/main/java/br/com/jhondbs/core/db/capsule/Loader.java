@@ -196,7 +196,7 @@ public final class Loader {
         };
         
         if (Reflection.isPrimitive(classe_do_objeto) || Reflection.isNumerical(classe_do_objeto)) {
-            return Reader.parsePrimitiveFromString(conteudo, classe_do_objeto, loader);
+           // return Reader.parsePrimitiveFromString(conteudo, classe_do_objeto, loader);
         } else if (Reflection.isDate(classe_do_objeto)) {
             if (Reflection.isInstance(classe_do_objeto, Date.class)) {
                 SimpleDateFormat formatter = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
@@ -205,11 +205,11 @@ public final class Loader {
                 SimpleDateFormat form = (SimpleDateFormat) constructor.newInstance("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
                 return form.parse(conteudo);
             } else if (Reflection.isInstance(classe_do_objeto, Calendar.class)) {
-                return Reader.parseCalendarFromString(conteudo, loader);
+            //    return Reader.parseCalendarFromString(conteudo, loader);
             } else if (Reflection.isInstance(classe_do_objeto, Temporal.class)) {
-                return Reader.parseDateTimeFromString(conteudo, classe_do_objeto, loader);
+             //   return Reader.parseDateTimeFromString(conteudo, classe_do_objeto, loader);
             } else if (Reflection.isInstance(classe_do_objeto, Period.class)) {
-                return Reader.parsePeriodFromString(conteudo, loader);
+            //    return Reader.parsePeriodFromString(conteudo, loader);
             } else {
                 throw new ObjectNotDesserializebleException("Objeto de data não reconhecido.");
             }
@@ -273,6 +273,7 @@ public final class Loader {
             
             return ins;
         }
+        return null;
     }
     
     public List parseListFromString(String str, ClassLoader loader, SessionCache session) throws Exception {
@@ -331,6 +332,33 @@ public final class Loader {
             rootBottle.imgs.put(hash, readed);
         }
         return rootBottle.imgs.get(hash);
+    }
+    
+    public static String ClassToPath(Class clazz) throws NullPointerException {
+        if(clazz == null) throw new NullPointerException("Parâmetro nulo no método ClassToPath: "+clazz);
+        String path = clazz.getName().replace(".class", "").replace(".", "/");
+        while(path.length() >= 1 && path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        if(path.isBlank()) throw new NullPointerException("Não foi possível montar o caminho da classe: "+clazz);
+        return Bottle.ROOT_DB.endsWith("/") ? Bottle.ROOT_DB+path : Bottle.ROOT_DB + "/" + path;
+    }
+    
+    /**
+     * Busca um arquivo properties da entidade no banco de dados.
+     * @param id ID da entidade a ser buscada.
+     * @param clazz Classe da entidade a ser buscada.
+     * @return Properties carregado ou null se não encontrar.
+     */
+    public static Properties load(String id, Class clazz) throws FileNotFoundException, IOException {
+        String path = ClassToPath(clazz);
+        File file = new File(path);
+        if(!file.exists()) throw new FileNotFoundException("Arquivo de entidade não existe: "+ clazz + " -> "+id);
+        
+        Properties props = new Properties();
+        props.load(new FileInputStream(file));
+        
+        return props;
     }
     
 }
